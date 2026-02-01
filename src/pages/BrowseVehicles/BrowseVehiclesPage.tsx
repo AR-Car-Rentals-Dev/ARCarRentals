@@ -1,266 +1,136 @@
 import { type FC, useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { Search, MapPin, ChevronDown } from 'lucide-react';
-import { Button, BookNowModal, CarCard, LocationPickerModal, BookingDateModal, type BookingData } from '@/components/ui';
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import { Search, MapPin, ChevronDown, AlertCircle, Calendar } from 'lucide-react';
+import { Button, CarCard, LocationPickerModal, BookingDateModal, type BookingData } from '@/components/ui';
 import type { Car } from '@/types';
+import { initSession, updateSearchCriteria, updateVehicle, getSession } from '@/utils/sessionManager';
+import { vehicleService } from '@/services/vehicleService';
 
-// Client's actual car fleet
-const allCars: Car[] = [
-  {
-    id: 'b1a2c3d4-e5f6-7890-abcd-200000000001',
-    name: 'Toyota Vios',
-    brand: 'Toyota',
-    model: 'Vios',
-    year: 2024,
-    category: 'sedan',
-    pricePerDay: 1800,
-    currency: 'PHP',
-    seats: 5,
-    transmission: 'automatic',
-    fuelType: 'gasoline',
-    image: 'https://images.unsplash.com/photo-1550355291-bbee04a92027?w=800&q=80',
-    images: [],
-    features: ['AC', 'Bluetooth', 'USB Charging'],
-    available: true,
-    rating: 4.8,
-    reviewCount: 124,
-  },
-  {
-    id: 'b1a2c3d4-e5f6-7890-abcd-200000000002',
-    name: 'Toyota Wigo',
-    brand: 'Toyota',
-    model: 'Wigo',
-    year: 2024,
-    category: 'sedan',
-    pricePerDay: 1500,
-    currency: 'PHP',
-    seats: 5,
-    transmission: 'automatic',
-    fuelType: 'gasoline',
-    image: 'https://images.unsplash.com/photo-1494976388531-d1058494cdd8?w=800&q=80',
-    images: [],
-    features: ['AC', 'Fuel Efficient', 'Compact'],
-    available: true,
-    rating: 4.6,
-    reviewCount: 98,
-  },
-  {
-    id: 'b1a2c3d4-e5f6-7890-abcd-200000000003',
-    name: 'Toyota Innova',
-    brand: 'Toyota',
-    model: 'Innova',
-    year: 2024,
-    category: 'suv',
-    pricePerDay: 2800,
-    currency: 'PHP',
-    seats: 8,
-    transmission: 'automatic',
-    fuelType: 'diesel',
-    image: 'https://images.unsplash.com/photo-1519641471654-76ce0107ad1b?w=800&q=80',
-    images: [],
-    features: ['AC', 'Spacious', 'Family-friendly', 'USB Charging'],
-    available: true,
-    rating: 4.9,
-    reviewCount: 187,
-  },
-  {
-    id: 'b1a2c3d4-e5f6-7890-abcd-200000000004',
-    name: 'Mitsubishi Xpander',
-    brand: 'Mitsubishi',
-    model: 'Xpander',
-    year: 2024,
-    category: 'suv',
-    pricePerDay: 2600,
-    currency: 'PHP',
-    seats: 7,
-    transmission: 'automatic',
-    fuelType: 'gasoline',
-    image: 'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?w=800&q=80',
-    images: [],
-    features: ['AC', 'Bluetooth', 'Spacious', 'Modern Design'],
-    available: true,
-    rating: 4.8,
-    reviewCount: 156,
-  },
-  {
-    id: 'b1a2c3d4-e5f6-7890-abcd-200000000005',
-    name: 'Mitsubishi Montero',
-    brand: 'Mitsubishi',
-    model: 'Montero Sport',
-    year: 2024,
-    category: 'suv',
-    pricePerDay: 4000,
-    currency: 'PHP',
-    seats: 7,
-    transmission: 'automatic',
-    fuelType: 'diesel',
-    image: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=800&q=80',
-    images: [],
-    features: ['AC', 'Leather Seats', '4WD', 'Navigation'],
-    available: true,
-    rating: 4.9,
-    reviewCount: 134,
-  },
-  {
-    id: 'b1a2c3d4-e5f6-7890-abcd-200000000006',
-    name: 'Toyota Fortuner',
-    brand: 'Toyota',
-    model: 'Fortuner',
-    year: 2024,
-    category: 'suv',
-    pricePerDay: 4000,
-    currency: 'PHP',
-    seats: 7,
-    transmission: 'automatic',
-    fuelType: 'diesel',
-    image: 'https://images.unsplash.com/photo-1606664515524-ed2f786a0bd6?w=800&q=80',
-    images: [],
-    features: ['AC', 'Leather Seats', '4WD', 'Navigation', 'Premium'],
-    available: true,
-    rating: 4.9,
-    reviewCount: 167,
-  },
-  {
-    id: 'b1a2c3d4-e5f6-7890-abcd-200000000007',
-    name: 'Hi-Ace Van Manual',
-    brand: 'Toyota',
-    model: 'Hi-Ace Highroof',
-    year: 2024,
-    category: 'van',
-    pricePerDay: 4000,
-    currency: 'PHP',
-    seats: 15,
-    transmission: 'manual',
-    fuelType: 'diesel',
-    image: 'https://images.unsplash.com/photo-1464219789935-c2d9d9aba644?w=800&q=80',
-    images: [],
-    features: ['AC', 'Spacious', 'Perfect for Groups'],
-    available: true,
-    rating: 4.7,
-    reviewCount: 112,
-  },
-  {
-    id: 'b1a2c3d4-e5f6-7890-abcd-200000000008',
-    name: 'Hi-Ace Van Automatic',
-    brand: 'Toyota',
-    model: 'Hi-Ace Highroof',
-    year: 2024,
-    category: 'van',
-    pricePerDay: 5000,
-    currency: 'PHP',
-    seats: 15,
-    transmission: 'automatic',
-    fuelType: 'diesel',
-    image: 'https://images.unsplash.com/photo-1570125909232-eb263c188f7e?w=800&q=80',
-    images: [],
-    features: ['AC', 'Spacious', 'Automatic', 'Perfect for Groups'],
-    available: true,
-    rating: 4.8,
-    reviewCount: 98,
-  },
-  {
-    id: 'b1a2c3d4-e5f6-7890-abcd-200000000009',
-    name: 'GL Grandia',
-    brand: 'Toyota',
-    model: 'Grandia GL',
-    year: 2024,
-    category: 'van',
-    pricePerDay: 5000,
-    currency: 'PHP',
-    seats: 12,
-    transmission: 'automatic',
-    fuelType: 'diesel',
-    image: 'https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?w=800&q=80',
-    images: [],
-    features: ['AC', 'Premium Interior', 'Automatic', 'Captain Seats'],
-    available: true,
-    rating: 4.9,
-    reviewCount: 145,
-  },
-  {
-    id: 'b1a2c3d4-e5f6-7890-abcd-200000000010',
-    name: 'Changan CS35',
-    brand: 'Changan',
-    model: 'CS35 Plus',
-    year: 2024,
-    category: 'suv',
-    pricePerDay: 2300,
-    currency: 'PHP',
-    seats: 5,
-    transmission: 'automatic',
-    fuelType: 'gasoline',
-    image: 'https://images.unsplash.com/photo-1583121274602-3e2820c69888?w=800&q=80',
-    images: [],
-    features: ['AC', 'Touchscreen', 'Modern Design', 'Fuel Efficient'],
-    available: true,
-    rating: 4.7,
-    reviewCount: 67,
-  },
-];
-
+/**
+ * Types
+ */
 interface FilterState {
   carTypes: string[];
   transmissions: string[];
   priceRange: { min: number; max: number };
 }
 
-/**
- * Search Form Component - Compact version
- */
-const SearchForm: FC<{
-  searchCriteria: { location: string; pickupDate: string; returnDate: string };
+interface SearchFormProps {
+  searchCriteria: {
+    location: string;
+    pickupDate: string;
+    returnDate: string;
+  };
   onLocationClick: () => void;
+  onDateClick: () => void;
   onSearchChange: (params: { location: string; pickupDate: string; returnDate: string }) => void;
   onSearch: () => void;
-}> = ({ searchCriteria, onLocationClick, onSearchChange, onSearch }) => (
-  <div className="bg-white border-b border-neutral-200">
-    <div className="px-4 sm:px-6 lg:px-12 xl:px-[200px] py-4">
-      <div className="flex flex-col lg:flex-row gap-3 items-stretch">
-        {/* Location */}
-        <div className="flex-1 w-full lg:w-auto">
+  errors: {
+    location: boolean;
+    pickupDate: boolean;
+    returnDate: boolean;
+  };
+}
+
+/**
+ * Search Form Component
+ */
+const SearchForm: FC<SearchFormProps> = ({ 
+  searchCriteria, 
+  onLocationClick, 
+  onDateClick, 
+  onSearch, 
+  errors 
+}) => {
+  // Format date for display
+  const formatDateDisplay = (dateString: string) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  };
+
+  return (
+    <div className="bg-white border-b border-neutral-200">
+      <div className="mx-auto w-full max-w-7xl py-4" style={{ paddingInline: 'clamp(1rem, 5vw, 5rem)' }}>
+        <div className="flex flex-col lg:flex-row gap-3 items-stretch">
+          {/* Location */}
+          <div className="flex-1 w-full lg:w-auto">
+            <button
+              onClick={onLocationClick}
+              className={`w-full h-10 px-3 text-left border rounded-lg bg-white hover:border-neutral-300 focus:outline-none focus:ring-2 focus:ring-[#E22B2B]/20 text-sm flex items-center gap-2 ${
+                errors.location ? 'border-[#E22B2B] ring-2 ring-[#E22B2B]/20' : 'border-neutral-200'
+              }`}
+            >
+              <MapPin className={`h-4 w-4 ${errors.location ? 'text-[#E22B2B]' : 'text-neutral-400'}`} />
+              <span className={`${searchCriteria.location ? 'text-neutral-900' : 'text-neutral-500'}`}>
+                {searchCriteria.location || 'City, Airport, or Address'}
+              </span>
+            </button>
+            {errors.location && (
+              <div className="flex items-center gap-1 mt-1 text-xs text-[#E22B2B]">
+                <AlertCircle className="h-3 w-3" />
+                <span>Please select a location</span>
+              </div>
+            )}
+          </div>
+
+          {/* Pickup Date */}
+          <div className="flex-1 w-full lg:w-auto">
+            <button
+              type="button"
+              onClick={onDateClick}
+              className={`w-full h-10 px-3 text-left border rounded-lg bg-white hover:border-neutral-300 focus:outline-none focus:ring-2 focus:ring-[#E22B2B]/20 text-sm flex items-center gap-2 ${
+                errors.pickupDate ? 'border-[#E22B2B] ring-2 ring-[#E22B2B]/20' : 'border-neutral-200'
+              }`}
+            >
+              <Calendar className={`h-4 w-4 ${errors.pickupDate ? 'text-[#E22B2B]' : 'text-neutral-400'}`} />
+              <span className={`${searchCriteria.pickupDate ? 'text-neutral-900' : 'text-neutral-500'}`}>
+                {searchCriteria.pickupDate ? formatDateDisplay(searchCriteria.pickupDate) : 'Select Date'}
+              </span>
+            </button>
+            {errors.pickupDate && (
+              <div className="flex items-center gap-1 mt-1 text-xs text-[#E22B2B]">
+                <AlertCircle className="h-3 w-3" />
+                <span>Please select pickup date</span>
+              </div>
+            )}
+          </div>
+
+          {/* Return Date */}
+          <div className="flex-1 w-full lg:w-auto">
+            <button
+              type="button"
+              onClick={onDateClick}
+              className={`w-full h-10 px-3 text-left border rounded-lg bg-white hover:border-neutral-300 focus:outline-none focus:ring-2 focus:ring-[#E22B2B]/20 text-sm flex items-center gap-2 ${
+                errors.returnDate ? 'border-[#E22B2B] ring-2 ring-[#E22B2B]/20' : 'border-neutral-200'
+              }`}
+            >
+              <Calendar className={`h-4 w-4 ${errors.returnDate ? 'text-[#E22B2B]' : 'text-neutral-400'}`} />
+              <span className={`${searchCriteria.returnDate ? 'text-neutral-900' : 'text-neutral-500'}`}>
+                {searchCriteria.returnDate ? formatDateDisplay(searchCriteria.returnDate) : 'Select Date'}
+              </span>
+            </button>
+            {errors.returnDate && (
+              <div className="flex items-center gap-1 mt-1 text-xs text-[#E22B2B]">
+                <AlertCircle className="h-3 w-3" />
+                <span>Please select return date</span>
+              </div>
+            )}
+          </div>
+
+          {/* Search Button - Just icon with red background */}
           <button
-            onClick={onLocationClick}
-            className="w-full h-10 px-3 text-left border border-neutral-200 rounded-lg bg-white hover:border-neutral-300 focus:outline-none focus:ring-2 focus:ring-[#E22B2B]/20 text-sm flex items-center gap-2"
+            onClick={onSearch}
+            className="w-full lg:w-12 h-10 bg-[#E22B2B] hover:bg-[#c92525] text-white rounded-lg flex items-center justify-center transition-colors"
+            aria-label="Search"
           >
-            <MapPin className="h-4 w-4 text-neutral-400" />
-            <span className={`${searchCriteria.location ? 'text-neutral-900' : 'text-neutral-500'}`}>
-              {searchCriteria.location || 'City, Airport, or Address'}
-            </span>
+            <Search className="h-5 w-5" />
           </button>
         </div>
-
-        {/* Pickup Date */}
-        <div className="flex-1 w-full lg:w-auto">
-          <input
-            type="date"
-            value={searchCriteria.pickupDate}
-            onChange={(e) => onSearchChange({ ...searchCriteria, pickupDate: e.target.value })}
-            className="w-full h-10 px-3 border border-neutral-200 rounded-lg bg-white hover:border-neutral-300 focus:outline-none focus:ring-2 focus:ring-[#E22B2B]/20 text-sm"
-          />
-        </div>
-
-        {/* Return Date */}
-        <div className="flex-1 w-full lg:w-auto">
-          <input
-            type="date"
-            value={searchCriteria.returnDate}
-            onChange={(e) => onSearchChange({ ...searchCriteria, returnDate: e.target.value })}
-            className="w-full h-10 px-3 border border-neutral-200 rounded-lg bg-white hover:border-neutral-300 focus:outline-none focus:ring-2 focus:ring-[#E22B2B]/20 text-sm"
-          />
-        </div>
-
-        {/* Search Button - Just icon with red background */}
-        <button
-          onClick={onSearch}
-          className="w-full lg:w-12 h-10 bg-[#E22B2B] hover:bg-[#c92525] text-white rounded-lg flex items-center justify-center transition-colors"
-          aria-label="Search"
-        >
-          <Search className="h-5 w-5" />
-        </button>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 /**
  * Filter Sidebar Component
@@ -475,6 +345,12 @@ const FilterSidebar: FC<{
  */
 export const BrowseVehiclesPage: FC = () => {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  
+  // Vehicle state
+  const [allCars, setAllCars] = useState<Car[]>([]);
+  const [isLoadingVehicles, setIsLoadingVehicles] = useState(true);
+  
   const [searchCriteria, setSearchCriteria] = useState({
     location: '',
     pickupDate: '',
@@ -490,23 +366,82 @@ export const BrowseVehiclesPage: FC = () => {
   });
 
   const [sortBy, setSortBy] = useState('recommended');
-  const [isBookNowModalOpen, setIsBookNowModalOpen] = useState(false);
-  const [selectedCar, setSelectedCar] = useState<Car | null>(null);
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
   const [isDateModalOpen, setIsDateModalOpen] = useState(false);
   const [visibleCount, setVisibleCount] = useState(6);
   const [bookingData, setBookingData] = useState<BookingData | null>(null);
+  const [validationErrors, setValidationErrors] = useState({
+    location: false,
+    pickupDate: false,
+    returnDate: false,
+  });
 
-  // Handle booking a car
-  const handleBookNow = (car: Car) => {
-    setSelectedCar(car);
-    setIsBookNowModalOpen(true);
+  // Fetch vehicles from database on mount
+  useEffect(() => {
+    const loadVehicles = async () => {
+      setIsLoadingVehicles(true);
+      const { data, error } = await vehicleService.getAvailableForBrowse();
+      
+      if (error) {
+        console.error('Failed to load vehicles:', error);
+        // Keep loading state to show error or empty state
+      } else {
+        setAllCars(data || []);
+        console.log('✅ Loaded vehicles from database:', data?.length || 0);
+      }
+      
+      setIsLoadingVehicles(false);
+    };
+    
+    loadVehicles();
+  }, []);
+
+  // Handle booking a car - navigate to booking page
+  const handleBookNow = async (car: Car) => {
+    // Validate that search form is filled
+    const errors = {
+      location: !searchCriteria.location,
+      pickupDate: !searchCriteria.pickupDate,
+      returnDate: !searchCriteria.returnDate,
+    };
+
+    // Check if any field has errors
+    if (errors.location || errors.pickupDate || errors.returnDate) {
+      setValidationErrors(errors);
+      // Scroll to search form
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
+    // Clear any previous errors
+    setValidationErrors({ location: false, pickupDate: false, returnDate: false });
+
+    // Save to session before navigating
+    await updateSearchCriteria({
+      pickupLocation: searchCriteria.location,
+      pickupDate: searchCriteria.pickupDate,
+      returnDate: searchCriteria.returnDate,
+      startTime: searchCriteria.startTime,
+      deliveryMethod: 'pickup'
+    });
+    
+    await updateVehicle(car);
+
+    navigate('/browsevehicles/booking', {
+      state: {
+        vehicle: car,
+        searchCriteria,
+      },
+    });
   };
 
-  const handleCloseModal = () => {
-    setIsBookNowModalOpen(false);
-    setSelectedCar(null);
-  };
+  // Initialize session on mount
+  useEffect(() => {
+    const session = getSession();
+    if (!session.sessionId) {
+      initSession();
+    }
+  }, []);
 
   // Load search parameters from URL on component mount
   useEffect(() => {
@@ -541,10 +476,18 @@ export const BrowseVehiclesPage: FC = () => {
       ...prev,
       ...params
     }));
+    // Clear validation errors when user starts filling the form
+    setValidationErrors(prev => ({
+      location: params.location ? false : prev.location,
+      pickupDate: params.pickupDate ? false : prev.pickupDate,
+      returnDate: params.returnDate ? false : prev.returnDate,
+    }));
   };
 
   const handleLocationConfirm = (location: string) => {
     setSearchCriteria(prev => ({ ...prev, location }));
+    // Clear location error
+    setValidationErrors(prev => ({ ...prev, location: false }));
   };
 
   const handleDateConfirm = (data: BookingData) => {
@@ -610,12 +553,14 @@ export const BrowseVehiclesPage: FC = () => {
       <SearchForm
         searchCriteria={searchCriteria}
         onLocationClick={() => setIsLocationModalOpen(true)}
+        onDateClick={() => setIsDateModalOpen(true)}
         onSearchChange={handleSearchChange}
         onSearch={handleSearch}
+        errors={validationErrors}
       />
 
       {/* Main Content */}
-      <div className="px-4 sm:px-6 lg:px-12 xl:px-[200px] py-8">
+      <div className="mx-auto w-full max-w-7xl py-8" style={{ paddingInline: 'clamp(1rem, 5vw, 5rem)' }}>
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Sidebar - Hidden on mobile */}
           <div className="hidden lg:block w-64 flex-shrink-0">
@@ -673,14 +618,20 @@ export const BrowseVehiclesPage: FC = () => {
 
             {/* Cars Grid */}
             <div id="cars-section" className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
-              {visibleCars.map((car) => (
-                <CarCard
-                  key={car.id}
-                  car={car}
-                  onBookNow={handleBookNow}
-                  showAvailability
-                />
-              ))}
+              {isLoadingVehicles ? (
+                <div className="col-span-full text-center py-16">
+                  <p className="text-neutral-500">Loading vehicles...</p>
+                </div>
+              ) : (
+                visibleCars.map((car) => (
+                  <CarCard
+                    key={car.id}
+                    car={car}
+                    onBookNow={handleBookNow}
+                    showAvailability
+                  />
+                ))
+              )}
             </div>
 
             {/* Load More Button */}
@@ -718,12 +669,6 @@ export const BrowseVehiclesPage: FC = () => {
       </div>
 
       {/* Modals */}
-      <BookNowModal
-        isOpen={isBookNowModalOpen}
-        onClose={handleCloseModal}
-        selectedVehicle={selectedCar}
-      />
-
       <LocationPickerModal
         isOpen={isLocationModalOpen}
         onClose={() => setIsLocationModalOpen(false)}
@@ -735,7 +680,7 @@ export const BrowseVehiclesPage: FC = () => {
         isOpen={isDateModalOpen}
         onClose={() => setIsDateModalOpen(false)}
         onConfirm={handleDateConfirm}
-        initialData={bookingData}
+        initialData={bookingData || undefined}
       />
     </div>
   );

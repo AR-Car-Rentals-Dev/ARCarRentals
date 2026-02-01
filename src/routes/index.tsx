@@ -12,6 +12,9 @@ import {
   AdminFleetPage,
   AdminBookingsPage,
 } from '@pages/index';
+import { BookingPage, CheckoutPage, ReceiptSubmittedPage } from '@pages/BrowseVehicles';
+import { TrackBookingPage } from '@pages/TrackBookingPage';
+import { BookingRouteGuard } from '@components/BookingRouteGuard';
 
 /**
  * Route configuration
@@ -24,6 +27,40 @@ export const routes: RouteObject[] = [
   {
     path: '/browsevehicles',
     element: <MainLayout><BrowseVehiclesPage /></MainLayout>,
+  },
+  {
+    path: '/browsevehicles/booking',
+    element: (
+      <MainLayout>
+        <BookingRouteGuard requiredStep="booking">
+          <BookingPage />
+        </BookingRouteGuard>
+      </MainLayout>
+    ),
+  },
+  {
+    path: '/browsevehicles/checkout',
+    element: (
+      <MainLayout>
+        <BookingRouteGuard requiredStep="checkout">
+          <CheckoutPage />
+        </BookingRouteGuard>
+      </MainLayout>
+    ),
+  },
+  {
+    path: '/browsevehicles/receipt-submitted',
+    element: (
+      <MainLayout hideFooter>
+        <BookingRouteGuard requiredStep="submitted">
+          <ReceiptSubmittedPage />
+        </BookingRouteGuard>
+      </MainLayout>
+    ),
+  },
+  {
+    path: '/browsevehicles/track/:reference',
+    element: <MainLayout><TrackBookingPage /></MainLayout>,
   },
   {
     path: '/pricing',

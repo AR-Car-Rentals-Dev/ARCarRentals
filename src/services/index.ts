@@ -1,6 +1,8 @@
 export { apiClient, get, post, put, patch, del, apiRequest } from './api';
 export { carService } from './carService';
 export { bookingService } from './bookingService';
+export * from './bookingSecurityService';
+export { sendMagicLinkEmail, sendReceiptEmail } from './emailService';
 export { supabase } from './supabase';
 export { authService } from './authService';
 export { databaseService } from './databaseService';

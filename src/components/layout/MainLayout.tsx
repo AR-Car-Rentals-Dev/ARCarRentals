@@ -4,13 +4,14 @@ import { Footer } from './Footer';
 
 interface MainLayoutProps {
   children: ReactNode;
+  hideFooter?: boolean;
 }
 
 /**
  * Main layout wrapper component with 4K scaling support
  * Scales content proportionally from 1920px base to larger screens
  */
-export const MainLayout: FC<MainLayoutProps> = ({ children }) => {
+export const MainLayout: FC<MainLayoutProps> = ({ children, hideFooter = false }) => {
   const [scale, setScale] = useState(1);
   const baseWidth = 1920;
 
@@ -43,7 +44,7 @@ export const MainLayout: FC<MainLayoutProps> = ({ children }) => {
       {/* Spacer for fixed header: TopBar (40px on desktop, 0 on mobile) + Nav (80px) */}
       <div className="h-[80px] lg:h-[120px]" />
       <main className="flex-1">{children}</main>
-      <Footer />
+      {!hideFooter && <Footer />}
     </div>
   );
 };

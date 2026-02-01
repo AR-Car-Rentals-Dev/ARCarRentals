@@ -141,6 +141,58 @@ export const vehicleService = {
       return { data: null, error: error.message || 'Failed to search vehicles' };
     }
   },
+
+  /**
+   * Get vehicles formatted for browse page (Car type)
+   */
+  async getAvailableForBrowse() {
+    try {
+      const { data, error } = await supabase
+        .from('vehicles')
+        .select('*')
+        .eq('status', 'available')
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      
+      // Map to Car type
+      const vehicles = (data || []).map((vehicle: Vehicle) => ({
+        id: vehicle.id,
+        name: `${vehicle.brand} ${vehicle.model}`,
+        brand: vehicle.brand,
+        model: vehicle.model,
+        year: new Date().getFullYear(),
+        category: mapVehicleCategory(vehicle.type || vehicle.category_id),
+        pricePerDay: Number(vehicle.price_per_day),
+        currency: 'PHP',
+        seats: vehicle.seats || 5,
+        transmission: (vehicle.transmission?.toLowerCase() || 'automatic') as 'automatic' | 'manual',
+        fuelType: (vehicle.fuel_type?.toLowerCase() || 'gasoline') as 'gasoline' | 'diesel' | 'electric' | 'hybrid',
+        image: vehicle.image_url || 'https://images.unsplash.com/photo-1550355291-bbee04a92027?w=800&q=80',
+        images: vehicle.image_url ? [vehicle.image_url] : [],
+        features: Array.isArray(vehicle.features) ? vehicle.features : ['AC', 'Bluetooth'],
+        available: vehicle.status === 'available',
+        rating: 4.8,
+        reviewCount: Math.floor(Math.random() * 150) + 50,
+      }));
+      
+      return { data: vehicles, error: null };
+    } catch (error: any) {
+      console.error('Error fetching vehicles for browse:', error);
+      return { data: [], error: error.message || 'Failed to fetch vehicles' };
+    }
+  },
+};
+
+/**
+ * Map vehicle type/category to Car category
+ */
+const mapVehicleCategory = (type: string | null | undefined): 'sedan' | 'suv' | 'van' => {
+  if (!type) return 'sedan';
+  const t = type.toLowerCase();
+  if (t.includes('suv')) return 'suv';
+  if (t.includes('van')) return 'van';
+  return 'sedan';
 };
 
 export default vehicleService;
