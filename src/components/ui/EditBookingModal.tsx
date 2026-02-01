@@ -19,7 +19,7 @@ import { supabase } from '@services/supabase';
 interface BookingInput {
   id: string;
   booking_number?: string;
-  user_id?: string;
+  user_id?: string | null;
   vehicle_id?: string;
   pickup_date?: string;
   return_date?: string;
@@ -35,6 +35,11 @@ interface BookingInput {
   status?: 'pending' | 'confirmed' | 'active' | 'completed' | 'cancelled';
   payment_status?: 'pending' | 'partial' | 'paid' | 'refunded';
   notes?: string | null;
+  // Guest booking fields
+  customer_name?: string | null;
+  customer_phone?: string | null;
+  customer_email?: string | null;
+  drive_option?: string | null;
 }
 
 interface EditBookingModalProps {

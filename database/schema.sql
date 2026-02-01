@@ -4,7 +4,7 @@
 CREATE TABLE public.bookings (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   booking_number text NOT NULL UNIQUE,
-  user_id uuid NOT NULL,
+  user_id uuid,
   vehicle_id uuid NOT NULL,
   pickup_date date NOT NULL,
   return_date date NOT NULL,
@@ -24,9 +24,22 @@ CREATE TABLE public.bookings (
   cancellation_reason text,
   created_at timestamp with time zone DEFAULT now(),
   updated_at timestamp with time zone DEFAULT now(),
+  driver_id uuid,
+  customer_name text,
+  customer_phone text NOT NULL,
+  customer_email text,
+  drive_option text CHECK (drive_option = ANY (ARRAY['self-drive'::text, 'with-driver'::text])),
+  start_time time without time zone,
+  end_time time without time zone,
+  payment_method text CHECK (payment_method = ANY (ARRAY['pay_now'::text, 'pay_later'::text])),
+  payment_receipt_url text,
+  location_cost numeric DEFAULT 0,
+  driver_cost numeric DEFAULT 0,
+  pickup_delivery_location character varying,
   CONSTRAINT bookings_pkey PRIMARY KEY (id),
   CONSTRAINT bookings_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id),
-  CONSTRAINT bookings_vehicle_id_fkey FOREIGN KEY (vehicle_id) REFERENCES public.vehicles(id)
+  CONSTRAINT bookings_vehicle_id_fkey FOREIGN KEY (vehicle_id) REFERENCES public.vehicles(id),
+  CONSTRAINT bookings_driver_id_fkey FOREIGN KEY (driver_id) REFERENCES public.drivers(id)
 );
 CREATE TABLE public.contact_inquiries (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -38,6 +51,25 @@ CREATE TABLE public.contact_inquiries (
   status text DEFAULT 'new'::text CHECK (status = ANY (ARRAY['new'::text, 'read'::text, 'replied'::text, 'closed'::text])),
   created_at timestamp with time zone DEFAULT now(),
   CONSTRAINT contact_inquiries_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.drivers (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  full_name text NOT NULL,
+  date_of_birth date,
+  phone_number character varying NOT NULL,
+  email character varying,
+  profile_photo text,
+  license_number character varying NOT NULL UNIQUE,
+  license_expiry date NOT NULL,
+  years_of_experience integer DEFAULT 0,
+  status character varying DEFAULT 'available'::character varying CHECK (status::text = ANY (ARRAY['available'::character varying, 'on_duty'::character varying, 'unavailable'::character varying]::text[])),
+  rate_per_day numeric NOT NULL,
+  languages_spoken ARRAY,
+  specializations ARRAY,
+  notes text,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT drivers_pkey PRIMARY KEY (id)
 );
 CREATE TABLE public.favorites (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -84,6 +116,7 @@ CREATE TABLE public.profiles (
   date_of_birth date,
   created_at timestamp with time zone DEFAULT now(),
   updated_at timestamp with time zone DEFAULT now(),
+  phone_number character varying UNIQUE,
   CONSTRAINT profiles_pkey PRIMARY KEY (id),
   CONSTRAINT profiles_id_fkey FOREIGN KEY (id) REFERENCES public.users(id)
 );
@@ -111,6 +144,8 @@ CREATE TABLE public.users (
   is_active boolean DEFAULT true,
   created_at timestamp with time zone DEFAULT now(),
   updated_at timestamp with time zone DEFAULT now(),
+  phone_number character varying UNIQUE,
+  full_name text,
   CONSTRAINT users_pkey PRIMARY KEY (id),
   CONSTRAINT users_id_fkey FOREIGN KEY (id) REFERENCES auth.users(id)
 );
@@ -127,29 +162,18 @@ CREATE TABLE public.vehicles (
   category_id uuid,
   brand text NOT NULL,
   model text NOT NULL,
-  year integer NOT NULL,
-  license_plate text NOT NULL UNIQUE,
   color text,
   transmission text DEFAULT 'automatic'::text CHECK (transmission = ANY (ARRAY['automatic'::text, 'manual'::text])),
   fuel_type text DEFAULT 'gasoline'::text CHECK (fuel_type = ANY (ARRAY['gasoline'::text, 'diesel'::text, 'electric'::text, 'hybrid'::text])),
   seats integer DEFAULT 5,
-  doors integer DEFAULT 4,
-  luggage_capacity integer DEFAULT 2,
   features jsonb DEFAULT '[]'::jsonb,
-  images jsonb DEFAULT '[]'::jsonb,
   thumbnail text,
   price_per_day numeric NOT NULL,
-  price_per_week numeric,
-  price_per_month numeric,
-  deposit_amount numeric DEFAULT 0,
-  mileage integer DEFAULT 0,
   status text DEFAULT 'available'::text CHECK (status = ANY (ARRAY['available'::text, 'rented'::text, 'maintenance'::text, 'retired'::text])),
-  location text DEFAULT 'Cebu City'::text,
   is_featured boolean DEFAULT false,
-  average_rating numeric DEFAULT 0,
-  total_reviews integer DEFAULT 0,
   created_at timestamp with time zone DEFAULT now(),
   updated_at timestamp with time zone DEFAULT now(),
+  image_url text,
   CONSTRAINT vehicles_pkey PRIMARY KEY (id),
   CONSTRAINT vehicles_category_id_fkey FOREIGN KEY (category_id) REFERENCES public.vehicle_categories(id)
 );

@@ -1,15 +1,14 @@
-import { type FC, useState } from 'react';
+import { type FC, useState, useRef, useEffect } from 'react';
 import {
   Car,
   DollarSign,
-  Users,
   Settings2,
-  Image,
-  MapPin,
   Loader2,
   ChevronRight,
   ChevronLeft,
   Check,
+  Upload,
+  X,
 } from 'lucide-react';
 import { Modal } from './Modal';
 import { Input } from './Input';
@@ -22,56 +21,44 @@ interface AddVehicleModalProps {
   onSuccess?: () => void;
 }
 
+interface VehicleCategory {
+  id: string;
+  name: string;
+  description?: string;
+}
+
 interface VehicleFormData {
   brand: string;
   model: string;
-  year: string;
-  license_plate: string;
+  category_id: string;
   color: string;
   transmission: 'automatic' | 'manual';
   fuel_type: 'gasoline' | 'diesel' | 'hybrid' | 'electric';
   seats: string;
-  doors: string;
-  luggage_capacity: string;
   features: string;
-  thumbnail: string;
+  image_url: string;
   price_per_day: string;
-  price_per_week: string;
-  price_per_month: string;
-  deposit_amount: string;
-  mileage: string;
   status: 'available' | 'rented' | 'maintenance';
-  location: string;
 }
 
 const initialFormData: VehicleFormData = {
   brand: '',
   model: '',
-  year: new Date().getFullYear().toString(),
-  license_plate: '',
+  category_id: '',
   color: '',
   transmission: 'automatic',
   fuel_type: 'gasoline',
   seats: '5',
-  doors: '4',
-  luggage_capacity: '2',
   features: '',
-  thumbnail: '',
+  image_url: '',
   price_per_day: '',
-  price_per_week: '',
-  price_per_month: '',
-  deposit_amount: '',
-  mileage: '0',
   status: 'available',
-  location: 'Cebu City',
 };
 
 const STEPS = [
-  { id: 1, title: 'Basic Information', icon: Car },
+  { id: 1, title: 'Basic Info', icon: Car },
   { id: 2, title: 'Specifications', icon: Settings2 },
-  { id: 3, title: 'Appearance', icon: Image },
-  { id: 4, title: 'Pricing', icon: DollarSign },
-  { id: 5, title: 'Additional Info', icon: MapPin },
+  { id: 3, title: 'Image & Pricing', icon: DollarSign },
 ];
 
 /**
@@ -86,6 +73,41 @@ export const AddVehicleModal: FC<AddVehicleModalProps> = ({
   const [formData, setFormData] = useState<VehicleFormData>(initialFormData);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string>('');
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [categories, setCategories] = useState<VehicleCategory[]>([]);
+  const [loadingCategories, setLoadingCategories] = useState(true);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Fetch vehicle categories
+  useEffect(() => {
+    const fetchCategories = async () => {
+      setLoadingCategories(true);
+      try {
+        const { data, error } = await supabase
+          .from('vehicle_categories')
+          .select('*')
+          .order('name');
+        
+        if (error) throw error;
+        setCategories(data || []);
+        
+        // Set default category if available
+        if (data && data.length > 0 && !formData.category_id) {
+          setFormData(prev => ({ ...prev, category_id: data[0].id }));
+        }
+      } catch (err) {
+        console.error('Error fetching categories:', err);
+      } finally {
+        setLoadingCategories(false);
+      }
+    };
+
+    if (isOpen) {
+      fetchCategories();
+    }
+  }, [isOpen]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
@@ -97,18 +119,78 @@ export const AddVehicleModal: FC<AddVehicleModalProps> = ({
     }));
   };
 
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImageFile(file);
+      const previewUrl = URL.createObjectURL(file);
+      setImagePreview(previewUrl);
+    }
+  };
+
+  const removeImage = () => {
+    setImageFile(null);
+    setImagePreview('');
+    setFormData(prev => ({ ...prev, image_url: '' }));
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const uploadImage = async (): Promise<string | null> => {
+    if (!imageFile) return formData.image_url || null;
+
+    setUploadingImage(true);
+    try {
+      const fileExt = imageFile.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      const filePath = `vehicles/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('vehicle-images')
+        .upload(filePath, imageFile);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('vehicle-images')
+        .getPublicUrl(filePath);
+
+      return publicUrl;
+    } catch (err) {
+      console.error('Error uploading image:', err);
+      return formData.image_url || null;
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
   const validateStep = (step: number): boolean => {
+    setError(null);
+    
     switch (step) {
       case 1:
-        return !!(formData.brand && formData.model && formData.year && formData.license_plate);
+        if (!formData.brand.trim()) {
+          setError('Brand is required');
+          return false;
+        }
+        if (!formData.model.trim()) {
+          setError('Model is required');
+          return false;
+        }
+        if (!formData.category_id) {
+          setError('Vehicle category is required');
+          return false;
+        }
+        return true;
       case 2:
-        return !!(formData.transmission && formData.fuel_type);
+        return true;
       case 3:
-        return true; // Optional step
-      case 4:
-        return !!formData.price_per_day;
-      case 5:
-        return true; // Optional step
+        if (!formData.price_per_day || parseFloat(formData.price_per_day) <= 0) {
+          setError('Valid price per day is required');
+          return false;
+        }
+        return true;
       default:
         return true;
     }
@@ -117,22 +199,24 @@ export const AddVehicleModal: FC<AddVehicleModalProps> = ({
   const handleNext = () => {
     if (validateStep(currentStep)) {
       setCurrentStep((prev) => Math.min(prev + 1, STEPS.length));
-      setError(null);
-    } else {
-      setError('Please fill in all required fields');
     }
   };
 
   const handleBack = () => {
     setCurrentStep((prev) => Math.max(prev - 1, 1));
-    setError(null);
   };
 
   const handleSubmit = async () => {
+    if (!validateStep(currentStep)) return;
+
     setIsLoading(true);
     setError(null);
 
     try {
+      // Upload image first if selected
+      const imageUrl = await uploadImage();
+
+      // Parse features to array
       const featuresArray = formData.features
         ? formData.features.split(',').map((f) => f.trim()).filter(Boolean)
         : [];
@@ -140,29 +224,24 @@ export const AddVehicleModal: FC<AddVehicleModalProps> = ({
       const { error: insertError } = await supabase.from('vehicles').insert({
         brand: formData.brand,
         model: formData.model,
-        year: parseInt(formData.year),
-        license_plate: formData.license_plate.toUpperCase(),
+        category_id: formData.category_id || null,
         color: formData.color || null,
         transmission: formData.transmission,
         fuel_type: formData.fuel_type,
         seats: parseInt(formData.seats) || 5,
-        doors: parseInt(formData.doors) || 4,
-        luggage_capacity: parseInt(formData.luggage_capacity) || 2,
         features: featuresArray,
-        thumbnail: formData.thumbnail || null,
+        image_url: imageUrl,
+        thumbnail: imageUrl,
         price_per_day: parseFloat(formData.price_per_day),
-        price_per_week: formData.price_per_week ? parseFloat(formData.price_per_week) : null,
-        price_per_month: formData.price_per_month ? parseFloat(formData.price_per_month) : null,
-        deposit_amount: formData.deposit_amount ? parseFloat(formData.deposit_amount) : null,
-        mileage: parseInt(formData.mileage) || 0,
         status: formData.status,
-        location: formData.location || 'Cebu City',
       });
 
       if (insertError) throw insertError;
 
       setFormData(initialFormData);
       setCurrentStep(1);
+      setImageFile(null);
+      setImagePreview('');
       onSuccess?.();
       onClose();
     } catch (err: any) {
@@ -177,6 +256,8 @@ export const AddVehicleModal: FC<AddVehicleModalProps> = ({
     setFormData(initialFormData);
     setCurrentStep(1);
     setError(null);
+    setImageFile(null);
+    setImagePreview('');
     onClose();
   };
 
@@ -195,30 +276,46 @@ export const AddVehicleModal: FC<AddVehicleModalProps> = ({
               name="brand"
               value={formData.brand}
               onChange={handleChange}
-              placeholder="e.g., Toyota, Honda, Ford"
+              placeholder="e.g., Toyota, Honda, Mitsubishi"
             />
             <Input
               label="Model *"
               name="model"
               value={formData.model}
               onChange={handleChange}
-              placeholder="e.g., Camry, Civic, Mustang"
+              placeholder="e.g., Vios, Fortuner, Xpander"
             />
             <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="mb-2 block text-sm font-medium text-neutral-700">
+                  Vehicle Category *
+                </label>
+                {loadingCategories ? (
+                  <div className="w-full rounded-lg border border-neutral-300 bg-neutral-50 px-4 py-3 text-neutral-500">
+                    Loading categories...
+                  </div>
+                ) : (
+                  <select
+                    name="category_id"
+                    value={formData.category_id}
+                    onChange={handleChange}
+                    className="w-full rounded-lg border border-neutral-300 bg-white px-4 py-3 text-neutral-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+                  >
+                    <option value="">Select Category</option>
+                    {categories.map((cat) => (
+                      <option key={cat.id} value={cat.id}>
+                        {cat.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
               <Input
-                label="Year *"
-                name="year"
-                type="number"
-                value={formData.year}
+                label="Color"
+                name="color"
+                value={formData.color}
                 onChange={handleChange}
-                placeholder="2024"
-              />
-              <Input
-                label="License Plate *"
-                name="license_plate"
-                value={formData.license_plate}
-                onChange={handleChange}
-                placeholder="ABC 1234"
+                placeholder="e.g., White, Black, Silver"
               />
             </div>
           </div>
@@ -228,7 +325,7 @@ export const AddVehicleModal: FC<AddVehicleModalProps> = ({
         return (
           <div className="space-y-4">
             <p className="text-neutral-500 text-sm mb-6">
-              Select the vehicle specifications and capacity details.
+              Select the vehicle specifications.
             </p>
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -262,29 +359,44 @@ export const AddVehicleModal: FC<AddVehicleModalProps> = ({
                 </select>
               </div>
             </div>
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 gap-4">
               <Input
-                label="Seats"
+                label="Seats *"
                 name="seats"
                 type="number"
                 value={formData.seats}
                 onChange={handleChange}
-                leftIcon={<Users className="h-4 w-4" />}
+                placeholder="5"
+                min="1"
+                max="20"
               />
-              <Input
-                label="Doors"
-                name="doors"
-                type="number"
-                value={formData.doors}
+              <div>
+                <label className="mb-2 block text-sm font-medium text-neutral-700">
+                  Status *
+                </label>
+                <select
+                  name="status"
+                  value={formData.status}
+                  onChange={handleChange}
+                  className="w-full rounded-lg border border-neutral-300 bg-white px-4 py-3 text-neutral-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+                >
+                  <option value="available">Available</option>
+                  <option value="rented">Rented</option>
+                  <option value="maintenance">Maintenance</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <label className="mb-2 block text-sm font-medium text-neutral-700">
+                Features (comma-separated)
+              </label>
+              <textarea
+                name="features"
+                value={formData.features}
                 onChange={handleChange}
-              />
-              <Input
-                label="Luggage"
-                name="luggage_capacity"
-                type="number"
-                value={formData.luggage_capacity}
-                onChange={handleChange}
-                helperText="Number of bags"
+                placeholder="e.g., GPS, Bluetooth, Backup Camera, Leather Seats"
+                rows={2}
+                className="w-full rounded-lg border border-neutral-300 bg-white px-4 py-3 text-neutral-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 resize-none"
               />
             </div>
           </div>
@@ -292,135 +404,93 @@ export const AddVehicleModal: FC<AddVehicleModalProps> = ({
 
       case 3:
         return (
-          <div className="space-y-4">
-            <p className="text-neutral-500 text-sm mb-6">
-              Add appearance details and vehicle image (optional).
+          <div className="space-y-6">
+            <p className="text-neutral-500 text-sm">
+              Upload vehicle image and set the daily rental price.
             </p>
-            <Input
-              label="Color"
-              name="color"
-              value={formData.color}
-              onChange={handleChange}
-              placeholder="e.g., White, Black, Silver"
-            />
-            <Input
-              label="Thumbnail URL"
-              name="thumbnail"
-              value={formData.thumbnail}
-              onChange={handleChange}
-              placeholder="https://example.com/car-image.jpg"
-              helperText="Direct link to vehicle image"
-            />
-            {formData.thumbnail && (
-              <div className="mt-4 rounded-lg overflow-hidden border border-neutral-200">
-                <img
-                  src={formData.thumbnail}
-                  alt="Vehicle preview"
-                  className="w-full h-48 object-cover"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).style.display = 'none';
-                  }}
-                />
-              </div>
-            )}
-          </div>
-        );
 
-      case 4:
-        return (
-          <div className="space-y-4">
-            <p className="text-neutral-500 text-sm mb-6">
-              Set the rental pricing for this vehicle.
-            </p>
+            {/* Image Upload */}
+            <div>
+              <label className="mb-2 block text-sm font-medium text-neutral-700">
+                Vehicle Image
+              </label>
+              {imagePreview || formData.image_url ? (
+                <div className="relative rounded-lg overflow-hidden border border-neutral-200">
+                  <img
+                    src={imagePreview || formData.image_url}
+                    alt="Vehicle preview"
+                    className="w-full h-48 object-cover"
+                  />
+                  <button
+                    type="button"
+                    onClick={removeImage}
+                    className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="absolute bottom-2 right-2 px-3 py-1.5 bg-white text-neutral-700 rounded-lg text-sm font-medium hover:bg-neutral-100 transition-colors border"
+                  >
+                    Change Image
+                  </button>
+                </div>
+              ) : (
+                <div
+                  onClick={() => fileInputRef.current?.click()}
+                  className="border-2 border-dashed border-neutral-300 rounded-lg p-8 text-center cursor-pointer hover:border-primary-500 hover:bg-primary-50/50 transition-colors"
+                >
+                  <Upload className="h-10 w-10 text-neutral-400 mx-auto mb-3" />
+                  <p className="text-neutral-600 font-medium">Click to upload image</p>
+                  <p className="text-neutral-400 text-sm mt-1">PNG, JPG up to 5MB</p>
+                </div>
+              )}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleImageSelect}
+                className="hidden"
+              />
+            </div>
+
+            {/* Or paste URL */}
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-neutral-200"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-white text-neutral-500">or paste image URL</span>
+              </div>
+            </div>
+
             <Input
-              label="Price Per Day (₱) *"
+              label="Image URL"
+              name="image_url"
+              value={formData.image_url}
+              onChange={(e) => {
+                handleChange(e);
+                if (e.target.value) {
+                  setImagePreview('');
+                  setImageFile(null);
+                }
+              }}
+              placeholder="https://example.com/car-image.jpg"
+              disabled={!!imageFile}
+            />
+
+            {/* Price */}
+            <Input
+              label="Price per Day (₱) *"
               name="price_per_day"
               type="number"
               value={formData.price_per_day}
               onChange={handleChange}
               placeholder="2500"
-              leftIcon={<DollarSign className="h-4 w-4" />}
+              min="0"
+              step="100"
             />
-            <div className="grid grid-cols-2 gap-4">
-              <Input
-                label="Price Per Week (₱)"
-                name="price_per_week"
-                type="number"
-                value={formData.price_per_week}
-                onChange={handleChange}
-                placeholder="15000"
-              />
-              <Input
-                label="Price Per Month (₱)"
-                name="price_per_month"
-                type="number"
-                value={formData.price_per_month}
-                onChange={handleChange}
-                placeholder="50000"
-              />
-            </div>
-            <Input
-              label="Security Deposit (₱)"
-              name="deposit_amount"
-              type="number"
-              value={formData.deposit_amount}
-              onChange={handleChange}
-              placeholder="5000"
-              helperText="Refundable deposit amount"
-            />
-          </div>
-        );
-
-      case 5:
-        return (
-          <div className="space-y-4">
-            <p className="text-neutral-500 text-sm mb-6">
-              Additional information about the vehicle.
-            </p>
-            <div className="grid grid-cols-2 gap-4">
-              <Input
-                label="Location"
-                name="location"
-                value={formData.location}
-                onChange={handleChange}
-                placeholder="Cebu City"
-              />
-              <Input
-                label="Current Mileage"
-                name="mileage"
-                type="number"
-                value={formData.mileage}
-                onChange={handleChange}
-                placeholder="0"
-              />
-            </div>
-            <div>
-              <label className="mb-2 block text-sm font-medium text-neutral-700">
-                Initial Status
-              </label>
-              <select
-                name="status"
-                value={formData.status}
-                onChange={handleChange}
-                className="w-full rounded-lg border border-neutral-300 bg-white px-4 py-3 text-neutral-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
-              >
-                <option value="available">Available</option>
-                <option value="maintenance">Under Maintenance</option>
-              </select>
-            </div>
-            <div>
-              <label className="mb-2 block text-sm font-medium text-neutral-700">
-                Features
-              </label>
-              <textarea
-                name="features"
-                value={formData.features}
-                onChange={handleChange}
-                placeholder="GPS, Bluetooth, Backup Camera, Leather Seats"
-                className="w-full rounded-lg border border-neutral-300 bg-white px-4 py-3 text-neutral-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 min-h-[100px]"
-              />
-              <p className="mt-1 text-xs text-neutral-500">Separate features with commas</p>
-            </div>
           </div>
         );
 
@@ -430,80 +500,87 @@ export const AddVehicleModal: FC<AddVehicleModalProps> = ({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title="" size="md">
-      <div className="space-y-6">
-        {/* Header */}
-        <div>
-          <h2 className="text-xl font-bold text-neutral-900 uppercase tracking-wide">
-            Add New Vehicle
-          </h2>
-          {/* Progress Bar */}
-          <div className="mt-4 h-1.5 bg-neutral-200 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-primary-600 transition-all duration-300 ease-out"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
+    <Modal isOpen={isOpen} onClose={handleClose} title="" size="lg">
+      <div className="relative">
+        {/* Progress Bar */}
+        <div className="absolute top-0 left-0 right-0 h-1 bg-neutral-200 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-primary-600 transition-all duration-300"
+            style={{ width: `${progress}%` }}
+          />
         </div>
 
-        {/* Step Title */}
-        <div>
-          <h3 className="text-lg font-semibold text-neutral-900 flex items-center gap-2">
-            {(() => {
-              const StepIcon = STEPS[currentStep - 1].icon;
-              return <StepIcon className="h-5 w-5 text-primary-600" />;
-            })()}
-            {STEPS[currentStep - 1].title}
-          </h3>
-          <p className="text-xs text-neutral-400 mt-1">
-            Step {currentStep} of {STEPS.length}
-          </p>
+        {/* Step Indicators */}
+        <div className="flex justify-between mb-8 pt-6">
+          {STEPS.map((step, index) => {
+            const Icon = step.icon;
+            const isActive = currentStep === step.id;
+            const isCompleted = currentStep > step.id;
+
+            return (
+              <div key={step.id} className="flex flex-col items-center flex-1">
+                <div
+                  className={`
+                    w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300
+                    ${isCompleted ? 'bg-green-500 text-white' : ''}
+                    ${isActive ? 'bg-primary-600 text-white ring-4 ring-primary-100' : ''}
+                    ${!isActive && !isCompleted ? 'bg-neutral-100 text-neutral-400' : ''}
+                  `}
+                >
+                  {isCompleted ? <Check className="h-6 w-6" /> : <Icon className="h-6 w-6" />}
+                </div>
+                <span
+                  className={`mt-2 text-sm font-medium ${
+                    isActive ? 'text-primary-600' : 'text-neutral-500'
+                  }`}
+                >
+                  {step.title}
+                </span>
+                {index < STEPS.length - 1 && (
+                  <div className="hidden sm:block absolute top-[42px] left-1/2 w-full h-0.5 bg-neutral-200 -z-10" />
+                )}
+              </div>
+            );
+          })}
         </div>
 
         {/* Error Message */}
         {error && (
-          <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
             {error}
           </div>
         )}
 
         {/* Step Content */}
-        <div className="min-h-[280px]">{renderStepContent()}</div>
+        <div className="min-h-[300px]">{renderStepContent()}</div>
 
-        {/* Navigation */}
-        <div className="flex gap-3 pt-4 border-t border-neutral-200">
-          {currentStep > 1 && (
+        {/* Navigation Buttons */}
+        <div className="flex justify-between mt-8 pt-6 border-t border-neutral-200">
+          <Button
+            variant="outline"
+            onClick={currentStep === 1 ? handleClose : handleBack}
+            disabled={isLoading}
+          >
+            {currentStep === 1 ? (
+              'Cancel'
+            ) : (
+              <>
+                <ChevronLeft className="h-4 w-4 mr-1" />
+                Back
+              </>
+            )}
+          </Button>
+
+          {currentStep === STEPS.length ? (
             <Button
-              type="button"
-              variant="outline"
-              onClick={handleBack}
-              disabled={isLoading}
-              className="flex-1"
-            >
-              <ChevronLeft className="h-4 w-4 mr-1" />
-              Back
-            </Button>
-          )}
-          {currentStep < STEPS.length ? (
-            <Button
-              type="button"
-              onClick={handleNext}
-              className="flex-1 bg-primary-600 hover:bg-primary-700"
-            >
-              Continue
-              <ChevronRight className="h-4 w-4 ml-1" />
-            </Button>
-          ) : (
-            <Button
-              type="button"
               onClick={handleSubmit}
-              className="flex-1 bg-primary-600 hover:bg-primary-700"
-              disabled={isLoading}
+              disabled={isLoading || uploadingImage}
+              className="bg-primary-600 hover:bg-primary-700"
             >
-              {isLoading ? (
+              {isLoading || uploadingImage ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Adding Vehicle...
+                  {uploadingImage ? 'Uploading...' : 'Adding...'}
                 </>
               ) : (
                 <>
@@ -511,6 +588,11 @@ export const AddVehicleModal: FC<AddVehicleModalProps> = ({
                   Add Vehicle
                 </>
               )}
+            </Button>
+          ) : (
+            <Button onClick={handleNext} className="bg-primary-600 hover:bg-primary-700">
+              Next
+              <ChevronRight className="h-4 w-4 ml-1" />
             </Button>
           )}
         </div>

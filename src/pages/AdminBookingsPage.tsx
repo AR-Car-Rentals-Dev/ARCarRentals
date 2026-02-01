@@ -3,7 +3,6 @@ import {
   Calendar,
   Search,
   Filter,
-  Edit,
   Trash2,
   CheckCircle,
   XCircle,
@@ -13,11 +12,11 @@ import {
   MapPin,
   Download,
 } from 'lucide-react';
-import { Card, Button, Input, AddBookingModal, EditBookingModal, ConfirmDialog } from '@components/ui';
+import { Card, Button, Input, AddBookingModal, EditBookingModal, ConfirmDialog, BookingDetailsModal, StatusUpdateModal } from '@components/ui';
 import { bookingService as adminBookingService, type Booking as BookingType, type BookingStats } from '@services/adminBookingService';
 import { supabase } from '@services/supabase';
 
-const StatusBadge: FC<{ status: BookingType['status'] }> = ({ status }) => {
+const StatusBadge: FC<{ status: BookingType['status']; onClick?: () => void }> = ({ status, onClick }) => {
   const config = {
     pending: { bg: 'bg-yellow-100', text: 'text-yellow-700', icon: Clock },
     confirmed: { bg: 'bg-blue-100', text: 'text-blue-700', icon: CheckCircle },
@@ -29,10 +28,16 @@ const StatusBadge: FC<{ status: BookingType['status'] }> = ({ status }) => {
   const { bg, text, icon: Icon } = config[status];
 
   return (
-    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${bg} ${text}`}>
+    <button 
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick?.();
+      }}
+      className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${bg} ${text} hover:opacity-80 transition-opacity cursor-pointer`}
+    >
       <Icon className="h-3 w-3" />
       {status.charAt(0).toUpperCase() + status.slice(1)}
-    </span>
+    </button>
   );
 };
 
@@ -48,12 +53,19 @@ export const AdminBookingsPage: FC = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<BookingType | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const handleEdit = (booking: BookingType) => {
+  const handleRowClick = (booking: BookingType) => {
     setSelectedBooking(booking);
-    setIsEditModalOpen(true);
+    setIsDetailsModalOpen(true);
+  };
+
+  const handleStatusClick = (booking: BookingType) => {
+    setSelectedBooking(booking);
+    setIsStatusModalOpen(true);
   };
 
   const handleDeleteClick = (booking: BookingType) => {
@@ -143,13 +155,6 @@ export const AdminBookingsPage: FC = () => {
           <Button variant="outline" className="gap-2">
             <Download className="h-4 w-4" />
             Export
-          </Button>
-          <Button 
-            className="bg-primary-600 hover:bg-primary-700 shadow-lg shadow-primary-600/30"
-            onClick={() => setIsAddModalOpen(true)}
-          >
-            <Calendar className="h-5 w-5 mr-2" />
-            New Booking
           </Button>
         </div>
       </div>
@@ -287,7 +292,11 @@ export const AdminBookingsPage: FC = () => {
               </thead>
               <tbody>
                 {bookings.map((booking) => (
-                  <tr key={booking.id} className="border-b border-neutral-100 hover:bg-neutral-50 transition-colors">
+                  <tr 
+                    key={booking.id} 
+                    onClick={() => handleRowClick(booking)}
+                    className="border-b border-neutral-100 hover:bg-neutral-50 transition-colors cursor-pointer"
+                  >
                     <td className="py-4 px-6">
                       <span className="font-medium text-primary-600">{booking.booking_number}</span>
                     </td>
@@ -297,8 +306,9 @@ export const AdminBookingsPage: FC = () => {
                           <User className="h-4 w-4 text-primary-600" />
                         </div>
                         <div>
-                          <p className="font-medium text-neutral-900">{booking.users?.full_name || 'Unknown'}</p>
-                          <p className="text-sm text-neutral-500">{booking.users?.phone_number || ''}</p>
+                          <p className="font-medium text-neutral-900">
+                            {booking.customer_name || booking.users?.full_name || 'Guest'}
+                          </p>
                         </div>
                       </div>
                     </td>
@@ -309,7 +319,7 @@ export const AdminBookingsPage: FC = () => {
                           <p className="font-medium text-neutral-900">
                             {booking.vehicles ? `${booking.vehicles.brand} ${booking.vehicles.model}` : 'Unknown'}
                           </p>
-                          <p className="text-sm text-neutral-500">{booking.vehicles?.type || ''}</p>
+                          <p className="text-sm text-neutral-500">{booking.drive_option === 'with-driver' ? 'With Driver' : 'Self-Drive'}</p>
                         </div>
                       </div>
                     </td>
@@ -322,26 +332,22 @@ export const AdminBookingsPage: FC = () => {
                     <td className="py-4 px-6">
                       <div className="flex items-center gap-1 text-neutral-600">
                         <MapPin className="h-4 w-4" />
-                        <span className="text-sm">{booking.pickup_location || 'N/A'}</span>
+                        <span className="text-sm">{booking.pickup_delivery_location || booking.pickup_location || 'Office'}</span>
                       </div>
                     </td>
                     <td className="py-4 px-6">
-                      <StatusBadge status={booking.status} />
+                      <StatusBadge status={booking.status} onClick={() => handleStatusClick(booking)} />
                     </td>
                     <td className="py-4 px-6 text-right">
-                      <span className="font-semibold text-neutral-900">₱{booking.total_amount.toLocaleString()}</span>
+                      <span className="font-semibold text-neutral-900">₱{(booking.total_amount || booking.total_price || 0).toLocaleString()}</span>
                     </td>
                     <td className="py-4 px-6">
                       <div className="flex items-center justify-center gap-2">
                         <button 
-                          onClick={() => handleEdit(booking)}
-                          className="p-2 hover:bg-neutral-100 rounded-lg transition-colors text-neutral-600"
-                          title="Edit booking"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </button>
-                        <button 
-                          onClick={() => handleDeleteClick(booking)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteClick(booking);
+                          }}
                           className="p-2 hover:bg-red-50 rounded-lg transition-colors text-red-600"
                           title="Delete booking"
                         >
@@ -369,6 +375,28 @@ export const AdminBookingsPage: FC = () => {
         isOpen={isEditModalOpen}
         onClose={() => {
           setIsEditModalOpen(false);
+          setSelectedBooking(null);
+        }}
+        onSuccess={fetchBookings}
+        booking={selectedBooking}
+      />
+
+      {/* Booking Details Modal */}
+      <BookingDetailsModal
+        isOpen={isDetailsModalOpen}
+        onClose={() => {
+          setIsDetailsModalOpen(false);
+          setSelectedBooking(null);
+        }}
+        onStatusUpdate={fetchBookings}
+        booking={selectedBooking}
+      />
+
+      {/* Status Update Modal */}
+      <StatusUpdateModal
+        isOpen={isStatusModalOpen}
+        onClose={() => {
+          setIsStatusModalOpen(false);
           setSelectedBooking(null);
         }}
         onSuccess={fetchBookings}

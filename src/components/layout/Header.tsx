@@ -27,26 +27,26 @@ const TopBar: FC = () => (
   <div className="relative h-[40px] bg-white overflow-hidden hidden lg:block">
     {/* Red gradient section - wider width with subtle slant (bottom points outward) */}
     <div 
-      className="absolute left-0 top-0 h-full w-[48%]"
+      className="absolute left-0 top-0 h-full w-[58%]"
       style={{
         background: 'linear-gradient(to right, #FB3030 0%, #480E0E 100%)',
         clipPath: 'polygon(0 0, 96% 0, 100% 100%, 0 100%)',
       }}
     >
-      <div className="flex items-center h-full pl-6 lg:pl-12 xl:pl-[360px] gap-6 text-white text-sm font-medium">
+      <div className="flex items-center h-full pl-6 lg:pl-12 xl:pl-[200px] gap-8 text-white text-sm font-medium">
         <div className="flex items-center gap-2">
-          <Clock className="h-4 w-4" aria-hidden="true" />
+          <Clock className="h-4 w-4 flex-shrink-0" aria-hidden="true" />
           <span className="whitespace-nowrap">{config.contact.businessHours}</span>
         </div>
         <div className="flex items-center gap-2">
-          <MapPin className="h-4 w-4" aria-hidden="true" />
+          <MapPin className="h-4 w-4 flex-shrink-0" aria-hidden="true" />
           <span className="whitespace-nowrap">{config.contact.location}</span>
         </div>
       </div>
     </div>
     
     {/* Social icons on the right - black icons */}
-    <div className="absolute right-6 lg:right-12 xl:right-[360px] top-0 h-full flex items-center gap-4">
+    <div className="absolute right-6 lg:right-12 xl:right-[200px] top-0 h-full flex items-center gap-4">
       <a
         href="https://facebook.com"
         target="_blank"
@@ -168,12 +168,12 @@ export const Header: FC = () => {
           isScrolled && 'shadow-md'
         )}
       >
-        <div className="h-full px-4 sm:px-6 lg:px-12 xl:px-[360px]">
+        <div className="h-full px-4 sm:px-6 lg:px-12 xl:px-[200px]">
           <div className="flex h-full items-center justify-between">
             {/* Logo */}
             <Link
               to="/"
-              className="flex items-center gap-2 sm:gap-3"
+              className="flex items-center gap-2 sm:gap-3 flex-shrink-0"
               onClick={closeMobileMenu}
             >
               <img 
@@ -181,13 +181,13 @@ export const Header: FC = () => {
                 alt="AR Car Rentals Logo" 
                 className="h-10 sm:h-14 w-auto"
               />
-              <span className="font-semibold text-sm sm:text-lg text-white tracking-wide">
+              <span className="font-semibold text-sm sm:text-lg text-white tracking-wide whitespace-nowrap">
                 AR CAR RENTALS
               </span>
             </Link>
 
             {/* Desktop Navigation */}
-            <div className="hidden md:flex items-center gap-10">
+            <div className="hidden lg:flex items-center gap-6 xl:gap-8">
               {navItems.map((item) => (
                 <NavLink
                   key={item.href}
@@ -205,12 +205,12 @@ export const Header: FC = () => {
             </div>
 
             {/* Desktop CTA */}
-            <div className="hidden md:flex items-center">
+            <div className="hidden lg:flex items-center flex-shrink-0">
               <Button 
                 variant="primary" 
                 size="md"
                 onClick={handleBookNowClick}
-                className="bg-[#E22B2B] hover:bg-[#c92525] border-none rounded-md px-6 font-medium"
+                className="bg-[#E22B2B] hover:bg-[#c92525] border-none rounded-md px-6 font-medium whitespace-nowrap"
               >
                 {isBrowseVehiclesPage ? 'View Cars' : 'Book Now'}
               </Button>
@@ -218,7 +218,7 @@ export const Header: FC = () => {
 
             {/* Mobile Menu Button */}
             <button
-              className="md:hidden p-2 text-white hover:text-[#E22B2B] transition-colors"
+              className="lg:hidden p-2 text-white hover:text-[#E22B2B] transition-colors"
               onClick={toggleMobileMenu}
               aria-label={isMobileMenuOpen ? 'Close menu' : 'Open menu'}
               aria-expanded={isMobileMenuOpen}

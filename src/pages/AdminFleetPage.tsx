@@ -279,7 +279,10 @@ export const AdminFleetPage: FC = () => {
               <div className="flex items-start justify-between mb-2">
                 <div>
                   <h3 className="font-bold text-neutral-900">{vehicle.brand} {vehicle.model}</h3>
-                  <p className="text-sm text-neutral-500">{vehicle.type} • {vehicle.year}</p>
+                  <p className="text-sm text-neutral-500">
+                    {vehicle.vehicle_categories?.name || vehicle.type || 'Uncategorized'}
+                    {vehicle.color ? ` • ${vehicle.color}` : ''}
+                  </p>
                 </div>
               </div>
 

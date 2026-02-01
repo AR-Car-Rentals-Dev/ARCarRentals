@@ -10,18 +10,14 @@ import {
   Calendar,
   MapPin,
   Phone,
-  Users,
   AlertTriangle,
   UserCheck,
   Check,
   Filter,
   Eye,
-  EyeOff,
   X,
   CreditCard,
   Upload,
-  LogIn,
-  Lock,
   Smartphone,
   Copy,
   Info,
@@ -36,6 +32,20 @@ interface BookNowModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: () => void;
+  /** Pre-selected vehicle - if provided, modal starts at step 2 (Drive Option) */
+  selectedVehicle?: {
+    id: string;
+    name: string;
+    brand: string;
+    model: string;
+    year: number;
+    category: string;
+    pricePerDay: number;
+    seats: number;
+    transmission: string;
+    fuelType: string;
+    image?: string;
+  } | null;
 }
 
 interface Vehicle {
@@ -63,25 +73,16 @@ interface BookingFormData {
   // Drive Option
   drive_option: 'self-drive' | 'with-driver' | '';
   
-  // Auth
-  auth_mode: 'login' | 'register' | '';
-  email: string;
-  password: string;
-  confirm_password: string;
-  
   // Customer Details
   name: string;
-  address: string;
+  email: string;
   contact_number: string;
   rent_start_date: string;
   rent_start_time: string;
   rental_days: number;
   rent_end_date: string;
   rent_end_time: string;
-  delivery_location: string;
-  pickup_location: string;
-  destination: string;
-  number_of_passengers: number;
+  pickup_delivery_location: 'lapu-lapu' | 'mandaue' | 'cebu' | '';
   
   // Agreement
   agreed_to_terms: boolean;
@@ -92,26 +93,33 @@ interface BookingFormData {
   receipt_preview: string;
 }
 
+// Pickup/Delivery location costs
+const LOCATION_COSTS: Record<string, { label: string; cost: number }> = {
+  'lapu-lapu': { label: 'Lapu-Lapu', cost: 600 },
+  'mandaue': { label: 'Mandaue', cost: 700 },
+  'cebu': { label: 'Cebu', cost: 900 },
+};
+
+// Driver cost
+const DRIVER_COST = {
+  base: 1000, // 12 hours
+  baseHours: 12,
+  excessPerHour: 150,
+};
+
 const initialFormData: BookingFormData = {
   vehicle_id: '',
   vehicle: null,
   drive_option: '',
-  auth_mode: '',
-  email: '',
-  password: '',
-  confirm_password: '',
   name: '',
-  address: '',
+  email: '',
   contact_number: '',
   rent_start_date: '',
   rent_start_time: '08:00',
   rental_days: 1,
   rent_end_date: '',
   rent_end_time: '08:00',
-  delivery_location: '',
-  pickup_location: '',
-  destination: '',
-  number_of_passengers: 1,
+  pickup_delivery_location: '',
   agreed_to_terms: false,
   payment_method: '',
   payment_receipt: null,
@@ -121,10 +129,9 @@ const initialFormData: BookingFormData = {
 const STEPS = [
   { id: 1, title: 'Select Vehicle', icon: Car },
   { id: 2, title: 'Drive Option', icon: UserCheck },
-  { id: 3, title: 'Account', icon: LogIn },
-  { id: 4, title: 'Your Details', icon: User },
-  { id: 5, title: 'Terms & Conditions', icon: FileText },
-  { id: 6, title: 'Payment', icon: CreditCard },
+  { id: 3, title: 'Your Details', icon: User },
+  { id: 4, title: 'Terms & Conditions', icon: FileText },
+  { id: 5, title: 'Payment', icon: CreditCard },
 ];
 
 const WASH_RATES: Record<string, number> = {
@@ -156,8 +163,11 @@ export const BookNowModal: FC<BookNowModalProps> = ({
   isOpen,
   onClose,
   onSuccess,
+  selectedVehicle,
 }) => {
-  const [currentStep, setCurrentStep] = useState(1);
+  // If a vehicle is pre-selected, start at step 2 (Drive Option)
+  const initialStep = selectedVehicle ? 2 : 1;
+  const [currentStep, setCurrentStep] = useState(initialStep);
   const [formData, setFormData] = useState<BookingFormData>(initialFormData);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -166,12 +176,12 @@ export const BookNowModal: FC<BookNowModalProps> = ({
   const [hasScrolledToBottom, setHasScrolledToBottom] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedVehicleDetails, setSelectedVehicleDetails] = useState<Vehicle | null>(null);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [authLoading, setAuthLoading] = useState(false);
   const [bookingComplete, setBookingComplete] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [copiedNumber, setCopiedNumber] = useState(false);
+  // Collapsible payment sections
+  const [paymentMethodExpanded, setPaymentMethodExpanded] = useState(true);
+  const [sendPaymentExpanded, setSendPaymentExpanded] = useState(true);
+  const [uploadExpanded, setUploadExpanded] = useState(true);
   const termsRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -182,17 +192,43 @@ export const BookNowModal: FC<BookNowModalProps> = ({
     setTimeout(() => setCopiedNumber(false), 2000);
   };
 
-  // Check if user is logged in
+  // Handle pre-selected vehicle
+  useEffect(() => {
+    if (isOpen && selectedVehicle) {
+      // Convert the Car type to Vehicle type for the form
+      const vehicleData: Vehicle = {
+        id: selectedVehicle.id,
+        make: selectedVehicle.brand,
+        model: selectedVehicle.model,
+        year: selectedVehicle.year,
+        type: selectedVehicle.category,
+        transmission: selectedVehicle.transmission,
+        fuel_type: selectedVehicle.fuelType,
+        seats: selectedVehicle.seats,
+        price_per_day: selectedVehicle.pricePerDay,
+        image_url: selectedVehicle.image,
+        status: 'available',
+      };
+      setFormData(prev => ({
+        ...prev,
+        vehicle_id: selectedVehicle.id,
+        vehicle: vehicleData,
+      }));
+      setCurrentStep(2);
+    } else if (isOpen && !selectedVehicle) {
+      setCurrentStep(1);
+    }
+  }, [isOpen, selectedVehicle]);
+
+  // Pre-fill user data if logged in
   useEffect(() => {
     const checkAuth = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        setIsLoggedIn(true);
-        
         // Fetch profile to pre-fill customer details
         const { data: profile } = await supabase
           .from('profiles')
-          .select('full_name, phone_number, address')
+          .select('full_name, phone_number')
           .eq('id', user.id)
           .single();
 
@@ -200,13 +236,11 @@ export const BookNowModal: FC<BookNowModalProps> = ({
           setFormData(prev => ({
             ...prev,
             email: user.email || '',
-            auth_mode: 'login',
             name: profile.full_name || prev.name,
             contact_number: profile.phone_number || prev.contact_number,
-            address: profile.address || prev.address,
           }));
         } else {
-          setFormData(prev => ({ ...prev, email: user.email || '', auth_mode: 'login' }));
+          setFormData(prev => ({ ...prev, email: user.email || '' }));
         }
       }
     };
@@ -239,10 +273,10 @@ export const BookNowModal: FC<BookNowModalProps> = ({
       setVehicles(data || []);
     } catch (err) {
       console.error('Error fetching vehicles:', err);
-      // Set mock data for demo
+      // Set mock data for demo - using proper UUIDs
       setVehicles([
         {
-          id: '1',
+          id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
           make: 'Toyota',
           model: 'Vios',
           year: 2023,
@@ -257,7 +291,7 @@ export const BookNowModal: FC<BookNowModalProps> = ({
           features: ['Air Conditioning', 'Bluetooth', 'USB Port', 'Backup Camera'],
         },
         {
-          id: '2',
+          id: 'b2c3d4e5-f6a7-8901-bcde-f12345678901',
           make: 'Toyota',
           model: 'Fortuner',
           year: 2023,
@@ -272,7 +306,7 @@ export const BookNowModal: FC<BookNowModalProps> = ({
           features: ['Air Conditioning', 'Leather Seats', '4x4', 'Navigation', 'Sunroof'],
         },
         {
-          id: '3',
+          id: 'c3d4e5f6-a7b8-9012-cdef-123456789012',
           make: 'Toyota',
           model: 'Hiace',
           year: 2022,
@@ -287,7 +321,7 @@ export const BookNowModal: FC<BookNowModalProps> = ({
           features: ['Air Conditioning', 'PA System', 'Large Luggage Space', 'Comfortable Seats'],
         },
         {
-          id: '4',
+          id: 'd4e5f6a7-b8c9-0123-defa-234567890123',
           make: 'Honda',
           model: 'City',
           year: 2023,
@@ -302,7 +336,7 @@ export const BookNowModal: FC<BookNowModalProps> = ({
           features: ['Air Conditioning', 'Apple CarPlay', 'Android Auto', 'Cruise Control'],
         },
         {
-          id: '5',
+          id: 'e5f6a7b8-c9d0-1234-efab-345678901234',
           make: 'Mitsubishi',
           model: 'Montero Sport',
           year: 2023,
@@ -351,170 +385,6 @@ export const BookNowModal: FC<BookNowModalProps> = ({
     }));
   };
 
-  const handleAuthModeSelect = (mode: 'login' | 'register') => {
-    setFormData(prev => ({
-      ...prev,
-      auth_mode: mode,
-    }));
-  };
-
-  const handleLogin = async () => {
-    if (!formData.contact_number || !formData.password) {
-      setError('Please enter phone number and password');
-      return;
-    }
-
-    setAuthLoading(true);
-    setError(null);
-
-    try {
-      // Normalize phone number - remove spaces and +63, ensure starts with 09
-      let normalizedPhone = formData.contact_number.replace(/\s/g, '');
-      if (normalizedPhone.startsWith('+63')) {
-        normalizedPhone = '0' + normalizedPhone.slice(3);
-      }
-
-      // Find user by phone number in profiles
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('id, full_name, phone_number, address')
-        .eq('phone_number', normalizedPhone)
-        .single();
-
-      if (profileError || !profile) {
-        throw new Error('Phone number not found. Please register first.');
-      }
-
-      // Get user's email from users table
-      const { data: user } = await supabase
-        .from('users')
-        .select('email')
-        .eq('id', profile.id)
-        .single();
-
-      if (!user?.email) {
-        throw new Error('Account not found. Please contact support.');
-      }
-
-      // Login with email and password
-      const { data, error: authError } = await supabase.auth.signInWithPassword({
-        email: user.email,
-        password: formData.password,
-      });
-
-      if (authError) throw authError;
-
-      if (data.user) {
-        setIsLoggedIn(true);
-        // Pre-fill customer details
-        setFormData(prev => ({
-          ...prev,
-          name: profile.full_name || prev.name,
-          contact_number: profile.phone_number || prev.contact_number,
-          address: profile.address || prev.address,
-          email: user.email,
-        }));
-        setCurrentStep(4); // Move to details step
-      }
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Login failed';
-      setError(errorMessage);
-    } finally {
-      setAuthLoading(false);
-    }
-  };
-
-  const handleRegister = async () => {
-    if (!formData.contact_number || !formData.password || !formData.name) {
-      setError('Please fill in all required fields');
-      return;
-    }
-
-    if (formData.password !== formData.confirm_password) {
-      setError('Passwords do not match');
-      return;
-    }
-
-    if (formData.password.length < 6) {
-      setError('Password must be at least 6 characters');
-      return;
-    }
-
-    // Normalize phone number - remove spaces and +63, ensure starts with 09
-    let normalizedPhone = formData.contact_number.replace(/\s/g, '');
-    if (normalizedPhone.startsWith('+63')) {
-      normalizedPhone = '0' + normalizedPhone.slice(3);
-    }
-
-    // Validate phone number format (must be 09XXXXXXXXX - 11 digits)
-    const phoneRegex = /^09\d{9}$/;
-    if (!phoneRegex.test(normalizedPhone)) {
-      setError('Please enter a valid Philippine phone number (09XXXXXXXXX)');
-      return;
-    }
-
-    setAuthLoading(true);
-    setError(null);
-
-    try {
-      // Check if phone number already exists
-      const { data: existingProfile } = await supabase
-        .from('profiles')
-        .select('phone_number')
-        .eq('phone_number', normalizedPhone)
-        .single();
-
-      if (existingProfile) {
-        throw new Error('Phone number already registered. Please login instead.');
-      }
-
-      // Generate email from phone number for Supabase auth
-      const generatedEmail = `${normalizedPhone}@arcars.com`;
-
-      const { data, error: authError } = await supabase.auth.signUp({
-        email: generatedEmail,
-        password: formData.password,
-        options: {
-          data: { 
-            full_name: formData.name,
-            phone: normalizedPhone,
-          },
-        },
-      });
-
-      if (authError) throw authError;
-
-      if (data.user) {
-        // Update the profile to store phone number in the correct column
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .update({ 
-            phone_number: normalizedPhone,
-            full_name: formData.name,
-          })
-          .eq('id', data.user.id);
-
-        if (profileError) {
-          console.error('Error updating profile:', profileError);
-        }
-
-        // Update form data with normalized phone
-        setFormData(prev => ({
-          ...prev,
-          contact_number: normalizedPhone,
-        }));
-
-        setIsLoggedIn(true);
-        setCurrentStep(4); // Move to details step
-      }
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Registration failed';
-      setError(errorMessage);
-    } finally {
-      setAuthLoading(false);
-    }
-  };
-
   const handlePaymentMethodSelect = (method: 'pay_now' | 'pay_later') => {
     setFormData(prev => ({
       ...prev,
@@ -551,19 +421,19 @@ export const BookNowModal: FC<BookNowModalProps> = ({
       case 2:
         return !!formData.drive_option;
       case 3:
-        // Account step - must be logged in
-        return isLoggedIn;
-      case 4:
+        // Your Details step
         return !!(
           formData.name &&
-          formData.address &&
           formData.contact_number &&
           formData.rent_start_date &&
-          formData.rental_days > 0
+          formData.rental_days > 0 &&
+          formData.pickup_delivery_location
         );
-      case 5:
+      case 4:
+        // Terms & Conditions step
         return hasScrolledToBottom && formData.agreed_to_terms;
-      case 6:
+      case 5:
+        // Payment step
         if (formData.payment_method === 'pay_now') {
           return !!formData.payment_receipt;
         }
@@ -575,21 +445,22 @@ export const BookNowModal: FC<BookNowModalProps> = ({
 
   const handleNext = () => {
     if (validateStep(currentStep)) {
-      // Skip account step if already logged in
-      if (currentStep === 2 && isLoggedIn) {
-        setCurrentStep(4);
-      } else {
-        setCurrentStep((prev) => Math.min(prev + 1, STEPS.length));
-      }
+      const nextStep = Math.min(currentStep + 1, STEPS.length);
+      setCurrentStep(nextStep);
       setError(null);
+      // Reset payment section states when entering payment step
+      if (nextStep === 5) {
+        setPaymentMethodExpanded(true);
+        setSendPaymentExpanded(true);
+        setUploadExpanded(true);
+      }
     } else {
       const messages: Record<number, string> = {
         1: 'Please select a vehicle',
         2: 'Please select a drive option',
-        3: 'Please login or create an account to continue',
-        4: 'Please fill in all required fields',
-        5: 'Please read the terms and check the agreement box',
-        6: formData.payment_method === 'pay_now' 
+        3: 'Please fill in all required fields',
+        4: 'Please read the terms and check the agreement box',
+        5: formData.payment_method === 'pay_now' 
           ? 'Please upload your payment receipt' 
           : 'Please select a payment method',
       };
@@ -598,12 +469,12 @@ export const BookNowModal: FC<BookNowModalProps> = ({
   };
 
   const handleBack = () => {
-    // Skip account step when going back if already logged in
-    if (currentStep === 4 && isLoggedIn) {
-      setCurrentStep(2);
-    } else {
-      setCurrentStep((prev) => Math.max(prev - 1, 1));
+    // If pre-selected vehicle, don't go back to step 1
+    if (currentStep === 2 && selectedVehicle) {
+      // Can't go back - vehicle was pre-selected
+      return;
     }
+    setCurrentStep((prev) => Math.max(prev - 1, 1));
     setError(null);
   };
 
@@ -612,14 +483,8 @@ export const BookNowModal: FC<BookNowModalProps> = ({
     setError(null);
 
     try {
-      // Get current user
+      // Get current user (optional - guest bookings allowed)
       const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        setError('You must be logged in to make a booking');
-        setIsLoading(false);
-        return;
-      }
 
       // Validate required fields
       if (!formData.contact_number) {
@@ -631,19 +496,22 @@ export const BookNowModal: FC<BookNowModalProps> = ({
       // Generate booking number
       const bookingNumber = `BK-${Date.now().toString(36).toUpperCase()}`;
       
-      // Calculate total
-      const totalAmount = formData.vehicle ? formData.vehicle.price_per_day * formData.rental_days : 0;
+      // Calculate costs
+      const vehicleCost = formData.vehicle ? formData.vehicle.price_per_day * formData.rental_days : 0;
+      const locationCost = formData.pickup_delivery_location ? LOCATION_COSTS[formData.pickup_delivery_location]?.cost || 0 : 0;
+      const driverCost = formData.drive_option === 'with-driver' ? DRIVER_COST.base * formData.rental_days : 0;
+      const totalAmount = vehicleCost + locationCost + driverCost;
 
       // Use the dedicated columns for booking data
       // payment_status: 'pending' for all new bookings (valid values: pending, paid, failed, refunded)
       const bookingData = {
         booking_number: bookingNumber,
-        user_id: user.id,
+        user_id: user?.id || null, // Allow guest bookings
         vehicle_id: formData.vehicle_id,
         pickup_date: formData.rent_start_date,
         return_date: formData.rent_end_date,
-        pickup_location: formData.delivery_location || 'Cebu City',
-        return_location: formData.pickup_location || 'Cebu City',
+        pickup_location: formData.pickup_delivery_location ? LOCATION_COSTS[formData.pickup_delivery_location]?.label : 'Cebu',
+        return_location: formData.pickup_delivery_location ? LOCATION_COSTS[formData.pickup_delivery_location]?.label : 'Cebu',
         total_days: formData.rental_days,
         base_price: formData.vehicle?.price_per_day || 0,
         total_price: totalAmount,
@@ -653,11 +521,8 @@ export const BookNowModal: FC<BookNowModalProps> = ({
         customer_name: formData.name,
         customer_phone: formData.contact_number,
         customer_email: formData.email || null,
-        customer_address: formData.address,
         // Booking details (dedicated columns)
         drive_option: formData.drive_option,
-        destination: formData.destination || null,
-        number_of_passengers: formData.number_of_passengers,
         start_time: formData.rent_start_time || null,
         end_time: formData.rent_end_time || null,
         payment_method: formData.payment_method,
@@ -666,8 +531,12 @@ export const BookNowModal: FC<BookNowModalProps> = ({
           vehicle_make: formData.vehicle?.make,
           vehicle_model: formData.vehicle?.model,
           vehicle_year: formData.vehicle?.year,
+          is_guest_booking: !user,
+          location_cost: locationCost,
+          driver_cost: driverCost,
+          vehicle_cost: vehicleCost,
         },
-        notes: `Booking via web | ${formData.name} | ${formData.contact_number}`,
+        notes: `Booking via web${!user ? ' (Guest)' : ''} | ${formData.name} | ${formData.contact_number} | Location: ${formData.pickup_delivery_location ? LOCATION_COSTS[formData.pickup_delivery_location]?.label : 'N/A'}${formData.drive_option === 'with-driver' ? ' | With Driver' : ' | Self-Drive'}`,
       };
 
       const { error: insertError } = await supabase
@@ -715,9 +584,23 @@ export const BookNowModal: FC<BookNowModalProps> = ({
     return WASH_RATES[formData.vehicle.type.toLowerCase()] || 300;
   };
 
+  const getLocationCost = () => {
+    if (!formData.pickup_delivery_location) return 0;
+    return LOCATION_COSTS[formData.pickup_delivery_location]?.cost || 0;
+  };
+
+  const getDriverCost = () => {
+    if (formData.drive_option !== 'with-driver') return 0;
+    // Base cost for 12 hours per day
+    return DRIVER_COST.base * formData.rental_days;
+  };
+
   const getTotalAmount = () => {
     if (!formData.vehicle) return 0;
-    return formData.vehicle.price_per_day * formData.rental_days;
+    const vehicleCost = formData.vehicle.price_per_day * formData.rental_days;
+    const locationCost = getLocationCost();
+    const driverCost = getDriverCost();
+    return vehicleCost + locationCost + driverCost;
   };
 
   // Render Booking Complete Screen
@@ -1059,6 +942,11 @@ export const BookNowModal: FC<BookNowModalProps> = ({
                   <div>
                     <h4 className="font-bold text-neutral-900 text-lg">With Driver</h4>
                     <p className="text-sm text-neutral-500">We'll assign a professional driver for you</p>
+                    {formData.drive_option === 'with-driver' && (
+                      <p className="text-xs text-primary-600 font-medium mt-1">
+                        ₱{DRIVER_COST.base.toLocaleString()}/day ({DRIVER_COST.baseHours}hrs) • ₱{DRIVER_COST.excessPerHour}/exceeding hr
+                      </p>
+                    )}
                   </div>
                 </div>
                 <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
@@ -1073,11 +961,12 @@ export const BookNowModal: FC<BookNowModalProps> = ({
               {formData.drive_option === 'with-driver' && (
                 <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
                   <div className="flex items-start gap-2">
-                    <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
-                    <p className="text-sm text-amber-900">
-                      <strong>Note:</strong> A professional driver will be assigned by our admin team based on availability. 
-                      Driver rates are additional and will be quoted upon confirmation.
-                    </p>
+                    <Info className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                    <div className="text-sm text-amber-900">
+                      <p><strong>Driver Rate:</strong> ₱{DRIVER_COST.base.toLocaleString()} for {DRIVER_COST.baseHours} hours per day</p>
+                      <p className="mt-1"><strong>Exceeding Hours:</strong> ₱{DRIVER_COST.excessPerHour} per hour beyond {DRIVER_COST.baseHours} hours</p>
+                      <p className="mt-2 text-xs text-amber-700">A professional driver will be assigned by our team based on availability.</p>
+                    </div>
                   </div>
                 </div>
               )}
@@ -1086,193 +975,6 @@ export const BookNowModal: FC<BookNowModalProps> = ({
         );
 
       case 3:
-        return (
-          <div className="space-y-4">
-            <div className="bg-gradient-to-r from-neutral-900 to-neutral-800 rounded-xl p-4 mb-4">
-              <h3 className="text-white font-semibold flex items-center gap-2">
-                <User className="h-5 w-5 text-primary-500" />
-                Account Access
-              </h3>
-              <p className="text-neutral-400 text-sm mt-1">Login or continue as guest to book</p>
-            </div>
-
-            {isLoggedIn ? (
-              <div className="text-center py-8 bg-gradient-to-b from-green-50 to-white rounded-xl border border-green-200">
-                <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg shadow-green-200">
-                  <Check className="h-8 w-8 text-white" />
-                </div>
-                <h3 className="font-bold text-neutral-900 text-lg mb-2">You're logged in!</h3>
-                <p className="text-neutral-500 text-sm">Click continue to proceed with your booking.</p>
-              </div>
-            ) : (
-              <>
-                {/* Auth Mode Selection */}
-                {!formData.auth_mode && (
-                  <div className="grid grid-cols-1 gap-3">
-                    <button
-                      onClick={() => handleAuthModeSelect('login')}
-                      className="p-5 rounded-xl border-2 border-neutral-200 hover:border-primary-600 hover:shadow-md transition-all text-left bg-white"
-                    >
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-xl bg-primary-100 flex items-center justify-center">
-                          <LogIn className="h-6 w-6 text-primary-600" />
-                        </div>
-                        <div>
-                          <h4 className="font-bold text-neutral-900 text-lg">Login</h4>
-                          <p className="text-sm text-neutral-500">I already have an account</p>
-                        </div>
-                      </div>
-                    </button>
-
-                    <button
-                      onClick={() => handleAuthModeSelect('register')}
-                      className="p-5 rounded-xl border-2 border-neutral-200 hover:border-green-500 hover:shadow-md transition-all text-left bg-white"
-                    >
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center">
-                          <User className="h-6 w-6 text-green-600" />
-                        </div>
-                        <div>
-                          <h4 className="font-bold text-neutral-900 text-lg">Create Account</h4>
-                          <p className="text-sm text-neutral-500">I'm a new customer</p>
-                        </div>
-                      </div>
-                    </button>
-                  </div>
-                )}
-
-                {/* Login Form */}
-                {formData.auth_mode === 'login' && (
-                  <div className="space-y-4">
-                    <button
-                      onClick={() => setFormData(prev => ({ ...prev, auth_mode: '' }))}
-                      className="text-sm text-primary-600 hover:underline flex items-center gap-1"
-                    >
-                      <ChevronLeft className="h-4 w-4" /> Back to options
-                    </button>
-                    <Input
-                      label="Phone Number"
-                      name="contact_number"
-                      type="tel"
-                      value={formData.contact_number}
-                      onChange={handleChange}
-                      placeholder="09XX XXX XXXX"
-                      leftIcon={<Phone className="h-4 w-4" />}
-                    />
-                    <div className="relative">
-                      <Input
-                        label="Password"
-                        name="password"
-                        type={showPassword ? "text" : "password"}
-                        value={formData.password}
-                        onChange={handleChange}
-                        placeholder="Enter your password"
-                        leftIcon={<Lock className="h-4 w-4" />}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-[38px] text-neutral-400 hover:text-neutral-600"
-                      >
-                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </button>
-                    </div>
-                    <Button
-                      onClick={handleLogin}
-                      disabled={authLoading}
-                      className="w-full bg-primary-600 hover:bg-primary-700"
-                    >
-                      {authLoading ? (
-                        <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Logging in...</>
-                      ) : (
-                        'Login'
-                      )}
-                    </Button>
-                  </div>
-                )}
-
-                {/* Register Form */}
-                {formData.auth_mode === 'register' && (
-                  <div className="space-y-4">
-                    <button
-                      onClick={() => setFormData(prev => ({ ...prev, auth_mode: '' }))}
-                      className="text-sm text-primary-600 hover:underline flex items-center gap-1"
-                    >
-                      <ChevronLeft className="h-4 w-4" /> Back to options
-                    </button>
-                    <Input
-                      label="Full Name"
-                      name="name"
-                      value={formData.name}
-                      onChange={handleChange}
-                      placeholder="Juan Dela Cruz"
-                      leftIcon={<User className="h-4 w-4" />}
-                    />
-                    <Input
-                      label="Phone Number"
-                      name="contact_number"
-                      type="tel"
-                      value={formData.contact_number}
-                      onChange={handleChange}
-                      placeholder="09XX XXX XXXX"
-                      helperText="Use your phone number to login"
-                      leftIcon={<Phone className="h-4 w-4" />}
-                    />
-                    <div className="relative">
-                      <Input
-                        label="Password"
-                        name="password"
-                        type={showPassword ? "text" : "password"}
-                        value={formData.password}
-                        onChange={handleChange}
-                        placeholder="Min. 6 characters"
-                        leftIcon={<Lock className="h-4 w-4" />}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-[38px] text-neutral-400 hover:text-neutral-600"
-                      >
-                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </button>
-                    </div>
-                    <div className="relative">
-                      <Input
-                        label="Confirm Password"
-                        name="confirm_password"
-                        type={showConfirmPassword ? "text" : "password"}
-                        value={formData.confirm_password}
-                        onChange={handleChange}
-                        placeholder="Confirm your password"
-                        leftIcon={<Lock className="h-4 w-4" />}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        className="absolute right-3 top-[38px] text-neutral-400 hover:text-neutral-600"
-                      >
-                        {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </button>
-                    </div>
-                    <Button
-                      onClick={handleRegister}
-                      disabled={authLoading}
-                      className="w-full bg-primary-600 hover:bg-primary-700"
-                    >
-                      {authLoading ? (
-                        <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Creating account...</>
-                      ) : (
-                        'Create Account & Continue'
-                      )}
-                    </Button>
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-        );
-
-      case 4:
         return (
           <div className="space-y-4">
             <div className="bg-gradient-to-r from-neutral-900 to-neutral-800 rounded-xl p-4 mb-4">
@@ -1293,111 +995,94 @@ export const BookNowModal: FC<BookNowModalProps> = ({
                 leftIcon={<User className="h-4 w-4" />}
               />
 
-            <Input
-              label="Address *"
-              name="address"
-              value={formData.address}
-              onChange={handleChange}
-              placeholder="123 Main Street, Cebu City"
-              leftIcon={<MapPin className="h-4 w-4" />}
-            />
-
-            <Input
-              label="Contact Number *"
-              name="contact_number"
-              value={formData.contact_number}
-              onChange={handleChange}
-              placeholder="09XX XXX XXXX"
-              leftIcon={<Phone className="h-4 w-4" />}
-            />
-
-            <div className="grid grid-cols-2 gap-4">
               <Input
-                label="Rent Start Date *"
-                name="rent_start_date"
-                type="date"
-                value={formData.rent_start_date}
+                label="Email"
+                name="email"
+                type="email"
+                value={formData.email}
                 onChange={handleChange}
-                min={new Date().toISOString().split('T')[0]}
+                placeholder="email@example.com"
+                leftIcon={<MapPin className="h-4 w-4" />}
               />
+
               <Input
-                label="Start Time *"
-                name="rent_start_time"
-                type="time"
-                value={formData.rent_start_time}
+                label="Contact Number *"
+                name="contact_number"
+                value={formData.contact_number}
                 onChange={handleChange}
+                placeholder="09XX XXX XXXX"
+                leftIcon={<Phone className="h-4 w-4" />}
               />
-            </div>
 
-            <Input
-              label="How Many Days? *"
-              name="rental_days"
-              type="number"
-              value={formData.rental_days.toString()}
-              onChange={handleChange}
-              min="1"
-              leftIcon={<Calendar className="h-4 w-4" />}
-            />
+              <div className="grid grid-cols-2 gap-4">
+                <Input
+                  label="Rent Start Date *"
+                  name="rent_start_date"
+                  type="date"
+                  value={formData.rent_start_date}
+                  onChange={handleChange}
+                  min={new Date().toISOString().split('T')[0]}
+                />
+                <Input
+                  label="Start Time *"
+                  name="rent_start_time"
+                  type="time"
+                  value={formData.rent_start_time}
+                  onChange={handleChange}
+                />
+              </div>
 
-            <div className="grid grid-cols-2 gap-4">
               <Input
-                label="Rent End Date"
-                name="rent_end_date"
-                type="date"
-                value={formData.rent_end_date}
+                label="How Many Days? *"
+                name="rental_days"
+                type="number"
+                value={formData.rental_days.toString()}
                 onChange={handleChange}
-                disabled
+                min="1"
+                leftIcon={<Calendar className="h-4 w-4" />}
               />
-              <Input
-                label="End Time *"
-                name="rent_end_time"
-                type="time"
-                value={formData.rent_end_time}
-                onChange={handleChange}
-              />
-            </div>
 
-            <Input
-              label="Delivery Location (Optional)"
-              name="delivery_location"
-              value={formData.delivery_location}
-              onChange={handleChange}
-              placeholder="Where should we deliver the vehicle?"
-              helperText="Additional delivery charges may apply"
-            />
+              {/* Pickup/Delivery Location Dropdown */}
+              <div className="space-y-1.5">
+                <label className="block text-sm font-medium text-neutral-700">
+                  Pickup/Delivery Location *
+                </label>
+                <div className="relative">
+                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
+                  <select
+                    name="pickup_delivery_location"
+                    value={formData.pickup_delivery_location}
+                    onChange={handleChange}
+                    className="w-full pl-10 pr-4 py-2.5 border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white appearance-none cursor-pointer"
+                  >
+                    <option value="">Select location</option>
+                    {Object.entries(LOCATION_COSTS).map(([key, { label, cost }]) => (
+                      <option key={key} value={key}>
+                        {label} - ₱{cost.toLocaleString()}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronRight className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400 rotate-90 pointer-events-none" />
+                </div>
+                <p className="text-xs text-neutral-500">Delivery/pickup charges apply based on location</p>
+              </div>
 
-            <Input
-              label="Pick-up Location (Optional)"
-              name="pickup_location"
-              value={formData.pickup_location}
-              onChange={handleChange}
-              placeholder="Where should we pick up the vehicle?"
-              helperText="Additional pick-up charges may apply"
-            />
-
-            <Input
-              label="Destination"
-              name="destination"
-              value={formData.destination}
-              onChange={handleChange}
-              placeholder="Where are you going?"
-            />
-
-            <Input
-              label="Number of Passengers *"
-              name="number_of_passengers"
-              type="number"
-              value={formData.number_of_passengers.toString()}
-              onChange={handleChange}
-              min="1"
-              max={formData.vehicle?.seats || 15}
-              leftIcon={<Users className="h-4 w-4" />}
-            />
+              {/* Show selected location cost */}
+              {formData.pickup_delivery_location && (
+                <div className="p-3 bg-primary-50 border border-primary-100 rounded-lg">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-neutral-600">Location Fee:</span>
+                    <span className="font-semibold text-primary-600">
+                      ₱{LOCATION_COSTS[formData.pickup_delivery_location]?.cost.toLocaleString() || 0}
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         );
 
-      case 5:
+      case 4:
         return (
           <div className="space-y-4">
             <div className="bg-gradient-to-r from-neutral-900 to-neutral-800 rounded-xl p-4 mb-4">
@@ -1406,11 +1091,6 @@ export const BookNowModal: FC<BookNowModalProps> = ({
                 Terms & Conditions
               </h3>
               <p className="text-neutral-400 text-sm mt-1">Please read and accept the rental agreement</p>
-            </div>
-
-            <div className="flex items-center gap-2 text-amber-600 bg-amber-50 p-3 rounded-lg border border-amber-200">
-              <AlertTriangle className="h-5 w-5 flex-shrink-0" />
-              <p className="text-sm font-medium">Scroll to the bottom to enable the agreement checkbox.</p>
             </div>
 
             <div
@@ -1504,180 +1184,248 @@ export const BookNowModal: FC<BookNowModalProps> = ({
           </div>
         );
 
-      case 6:
+      case 5:
         return (
-          <div className="space-y-4">
-            {/* Step 1: Select Payment Method */}
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-6 h-6 rounded-full bg-primary-600 flex items-center justify-center text-white text-xs font-bold">1</div>
-              <span className="text-sm font-semibold text-neutral-900 uppercase tracking-wide">Select Payment Method</span>
+          <div className="space-y-3">
+            {/* Section 1: Select Payment Method - Collapsible */}
+            <div 
+              onClick={() => !formData.payment_method ? null : setPaymentMethodExpanded(!paymentMethodExpanded)}
+              className={`flex items-center justify-between p-3 rounded-lg cursor-pointer transition-all ${
+                formData.payment_method && !paymentMethodExpanded 
+                  ? 'bg-green-50 border border-green-200 hover:bg-green-100' 
+                  : 'bg-neutral-100'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                  formData.payment_method ? 'bg-green-500 text-white' : 'bg-primary-600 text-white'
+                }`}>
+                  {formData.payment_method ? <Check className="h-3 w-3" /> : '1'}
+                </div>
+                <span className="text-sm font-semibold text-neutral-900 uppercase tracking-wide">Select Payment Method</span>
+                {formData.payment_method && !paymentMethodExpanded && (
+                  <span className="text-xs text-green-600 font-medium ml-2">
+                    ({formData.payment_method === 'pay_now' ? 'GCASH' : 'Pay Later'})
+                  </span>
+                )}
+              </div>
+              {formData.payment_method && (
+                <ChevronRight className={`h-4 w-4 text-neutral-500 transition-transform ${paymentMethodExpanded ? 'rotate-90' : ''}`} />
+              )}
             </div>
 
-            <div className="flex gap-3">
-              <button
-                onClick={() => handlePaymentMethodSelect('pay_now')}
-                className={`flex-1 p-4 rounded-xl border-2 transition-all ${
-                  formData.payment_method === 'pay_now'
-                    ? 'border-primary-600 bg-primary-50'
-                    : 'border-neutral-200 hover:border-neutral-300 bg-white'
-                }`}
-              >
-                <div className="flex flex-col items-center gap-2">
-                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                    formData.payment_method === 'pay_now' ? 'bg-primary-600 text-white' : 'bg-neutral-100 text-neutral-600'
-                  }`}>
-                    <Smartphone className="h-5 w-5" />
+            {paymentMethodExpanded && (
+              <div className="flex gap-3">
+                <button
+                  onClick={() => { handlePaymentMethodSelect('pay_now'); setPaymentMethodExpanded(false); setSendPaymentExpanded(true); }}
+                  className={`flex-1 p-4 rounded-xl border-2 transition-all ${
+                    formData.payment_method === 'pay_now'
+                      ? 'border-primary-600 bg-primary-50'
+                      : 'border-neutral-200 hover:border-neutral-300 bg-white'
+                  }`}
+                >
+                  <div className="flex flex-col items-center gap-2">
+                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                      formData.payment_method === 'pay_now' ? 'bg-primary-600 text-white' : 'bg-neutral-100 text-neutral-600'
+                    }`}>
+                      <Smartphone className="h-5 w-5" />
+                    </div>
+                    <span className="font-semibold text-neutral-900">GCASH</span>
+                    {formData.payment_method === 'pay_now' && <Check className="h-4 w-4 text-primary-600" />}
                   </div>
-                  <span className="font-semibold text-neutral-900">GCASH</span>
-                  {formData.payment_method === 'pay_now' && <Check className="h-4 w-4 text-primary-600" />}
-                </div>
-              </button>
+                </button>
 
-              <button
-                onClick={() => handlePaymentMethodSelect('pay_later')}
-                className={`flex-1 p-4 rounded-xl border-2 transition-all ${
-                  formData.payment_method === 'pay_later'
-                    ? 'border-primary-600 bg-primary-50'
-                    : 'border-neutral-200 hover:border-neutral-300 bg-white'
-                }`}
-              >
-                <div className="flex flex-col items-center gap-2">
-                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                    formData.payment_method === 'pay_later' ? 'bg-primary-600 text-white' : 'bg-neutral-100 text-neutral-600'
-                  }`}>
-                    <Building2 className="h-5 w-5" />
+                <button
+                  onClick={() => { handlePaymentMethodSelect('pay_later'); setPaymentMethodExpanded(false); }}
+                  className={`flex-1 p-4 rounded-xl border-2 transition-all ${
+                    formData.payment_method === 'pay_later'
+                      ? 'border-primary-600 bg-primary-50'
+                      : 'border-neutral-200 hover:border-neutral-300 bg-white'
+                  }`}
+                >
+                  <div className="flex flex-col items-center gap-2">
+                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                      formData.payment_method === 'pay_later' ? 'bg-primary-600 text-white' : 'bg-neutral-100 text-neutral-600'
+                    }`}>
+                      <Building2 className="h-5 w-5" />
+                    </div>
+                    <span className="font-semibold text-neutral-900">Pay Later</span>
+                    {formData.payment_method === 'pay_later' && <Check className="h-4 w-4 text-primary-600" />}
                   </div>
-                  <span className="font-semibold text-neutral-900">Pay Later</span>
-                  {formData.payment_method === 'pay_later' && <Check className="h-4 w-4 text-primary-600" />}
-                </div>
-              </button>
-            </div>
+                </button>
+              </div>
+            )}
 
             {/* GCash Payment Details */}
             {formData.payment_method === 'pay_now' && (
               <>
-                {/* Step 2: Send Payment */}
-                <div className="flex items-center gap-2 mt-6 mb-2">
-                  <div className="w-6 h-6 rounded-full bg-primary-600 flex items-center justify-center text-white text-xs font-bold">2</div>
-                  <span className="text-sm font-semibold text-neutral-900 uppercase tracking-wide">Send Payment To</span>
-                </div>
-
-                <div className="bg-gradient-to-br from-neutral-900 to-neutral-800 rounded-xl p-4 border border-neutral-700">
-                  <div className="flex items-center gap-2 text-primary-400 mb-3">
-                    <Smartphone className="h-4 w-4" />
-                    <span className="text-sm font-medium">GCASH Account Details</span>
-                  </div>
-
-                  {/* QR Code */}
-                  <div className="text-center mb-4">
-                    <p className="text-xs text-neutral-400 mb-2 uppercase tracking-wider">Scan QR Code</p>
-                    <div className="inline-block p-2 bg-white rounded-lg">
-                      <img
-                        src={GCASH_DETAILS.qrCode}
-                        alt="GCash QR Code"
-                        className="w-28 h-28"
-                      />
-                    </div>
-                    <p className="text-xs text-neutral-500 mt-2">or use the account details below</p>
-                  </div>
-
-                  {/* Account Details */}
-                  <div className="space-y-3">
-                    <div>
-                      <p className="text-xs text-neutral-500 uppercase tracking-wider mb-1">Mobile Number</p>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xl font-bold text-white tracking-wider">{GCASH_DETAILS.number}</span>
-                        <button
-                          onClick={() => copyToClipboard(GCASH_DETAILS.number)}
-                          className="p-1.5 rounded-md bg-neutral-700 hover:bg-neutral-600 transition-colors"
-                          title="Copy number"
-                        >
-                          {copiedNumber ? <Check className="h-4 w-4 text-green-400" /> : <Copy className="h-4 w-4 text-neutral-400" />}
-                        </button>
-                      </div>
-                    </div>
-                    <div>
-                      <p className="text-xs text-neutral-500 uppercase tracking-wider mb-1">Account Name</p>
-                      <p className="text-lg font-semibold text-white">{GCASH_DETAILS.name}</p>
-                    </div>
-                    <div className="pt-3 border-t border-neutral-700">
-                      <p className="text-xs text-neutral-500 uppercase tracking-wider mb-1">Amount to Send</p>
-                      <p className="text-2xl font-bold text-primary-400">₱{getTotalAmount().toLocaleString()}</p>
-                    </div>
-                  </div>
-
-                  {/* Info tip */}
-                  <div className="mt-4 flex items-start gap-2 p-3 bg-neutral-800 rounded-lg border border-neutral-700">
-                    <Info className="h-4 w-4 text-primary-400 flex-shrink-0 mt-0.5" />
-                    <p className="text-xs text-neutral-300">
-                      Open your GCASH app, go to Send Money, enter the number above, and complete the transfer.
-                    </p>
-                  </div>
-                </div>
-
-                {/* Step 3: Upload Screenshot */}
-                <div className="flex items-center gap-2 mt-6 mb-2">
-                  <div className="w-6 h-6 rounded-full bg-primary-600 flex items-center justify-center text-white text-xs font-bold">3</div>
-                  <span className="text-sm font-semibold text-neutral-900 uppercase tracking-wide">Upload Payment Screenshot</span>
-                </div>
-
-                <p className="text-xs text-neutral-500 mb-3">Take a screenshot of your payment confirmation and upload it here for verification.</p>
-
+                {/* Section 2: Send Payment - Collapsible */}
                 <div 
-                  onClick={() => fileInputRef.current?.click()}
-                  className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all ${
-                    formData.receipt_preview 
-                      ? 'border-green-300 bg-green-50' 
-                      : 'border-neutral-300 bg-neutral-50 hover:border-primary-400 hover:bg-primary-50'
+                  onClick={() => setSendPaymentExpanded(!sendPaymentExpanded)}
+                  className={`flex items-center justify-between p-3 rounded-lg cursor-pointer transition-all ${
+                    !sendPaymentExpanded 
+                      ? 'bg-green-50 border border-green-200 hover:bg-green-100' 
+                      : 'bg-neutral-100'
                   }`}
                 >
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleFileUpload}
-                    className="hidden"
-                  />
-                  {formData.receipt_preview ? (
-                    <div>
-                      <img
-                        src={formData.receipt_preview}
-                        alt="Receipt"
-                        className="max-h-32 mx-auto rounded-lg mb-3 border border-neutral-200"
-                      />
-                      <p className="text-sm text-green-600 font-medium mb-2">Receipt uploaded!</p>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
-                        className="border-primary-600 text-primary-600"
-                      >
-                        Change Image
-                      </Button>
+                  <div className="flex items-center gap-2">
+                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                      !sendPaymentExpanded ? 'bg-green-500 text-white' : 'bg-primary-600 text-white'
+                    }`}>
+                      {!sendPaymentExpanded ? <Check className="h-3 w-3" /> : '2'}
                     </div>
-                  ) : (
-                    <>
-                      <div className="w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center mx-auto mb-3">
-                        <Upload className="h-6 w-6 text-primary-600" />
+                    <span className="text-sm font-semibold text-neutral-900 uppercase tracking-wide">Send Payment To</span>
+                    {!sendPaymentExpanded && (
+                      <span className="text-xs text-green-600 font-medium ml-2">
+                        (₱{getTotalAmount().toLocaleString()})
+                      </span>
+                    )}
+                  </div>
+                  <ChevronRight className={`h-4 w-4 text-neutral-500 transition-transform ${sendPaymentExpanded ? 'rotate-90' : ''}`} />
+                </div>
+
+                {sendPaymentExpanded && (
+                  <div className="bg-gradient-to-br from-neutral-900 to-neutral-800 rounded-xl p-4 border border-neutral-700">
+                    <div className="flex items-center gap-2 text-primary-400 mb-3">
+                      <Smartphone className="h-4 w-4" />
+                      <span className="text-sm font-medium">GCASH Account Details</span>
+                    </div>
+
+                    {/* Two Column Layout: Details Left, QR Right */}
+                    <div className="flex gap-4">
+                      {/* Left: Account Details */}
+                      <div className="flex-1 space-y-3">
+                        <div>
+                          <p className="text-xs text-neutral-500 uppercase tracking-wider mb-1">Mobile Number</p>
+                          <div className="flex items-center gap-2">
+                            <span className="text-lg font-bold text-white tracking-wider">{GCASH_DETAILS.number}</span>
+                            <button
+                              onClick={() => copyToClipboard(GCASH_DETAILS.number)}
+                              className="p-1.5 rounded-md bg-neutral-700 hover:bg-neutral-600 transition-colors"
+                              title="Copy number"
+                            >
+                              {copiedNumber ? <Check className="h-3 w-3 text-green-400" /> : <Copy className="h-3 w-3 text-neutral-400" />}
+                            </button>
+                          </div>
+                        </div>
+                        <div>
+                          <p className="text-xs text-neutral-500 uppercase tracking-wider mb-1">Account Name</p>
+                          <p className="text-base font-semibold text-white">{GCASH_DETAILS.name}</p>
+                        </div>
+                        <div className="pt-2 border-t border-neutral-700">
+                          <p className="text-xs text-neutral-500 uppercase tracking-wider mb-1">Amount to Send</p>
+                          <p className="text-xl font-bold text-primary-400">₱{getTotalAmount().toLocaleString()}</p>
+                        </div>
                       </div>
-                      <p className="text-sm font-medium text-neutral-700 mb-1">Click to upload screenshot</p>
-                      <p className="text-xs text-neutral-500">JPEG, PNG, GIF, or WebP (max 5MB)</p>
-                    </>
-                  )}
+
+                      {/* Right: QR Code (Bigger) */}
+                      <div className="flex flex-col items-center justify-center">
+                        <p className="text-[10px] text-neutral-400 mb-1.5 uppercase tracking-wider">Scan QR</p>
+                        <div className="p-2 bg-white rounded-lg shadow-lg">
+                          <img
+                            src={GCASH_DETAILS.qrCode}
+                            alt="GCash QR Code"
+                            className="w-40 h-40"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Info tip */}
+                    <div className="mt-3 flex items-start gap-2 p-2.5 bg-neutral-800 rounded-lg border border-neutral-700">
+                      <Info className="h-3.5 w-3.5 text-primary-400 flex-shrink-0 mt-0.5" />
+                      <p className="text-[11px] text-neutral-300">
+                        Open your GCASH app, go to Send Money, enter the number above, and complete the transfer.
+                      </p>
+                    </div>
+
+                    <button
+                      onClick={() => { setSendPaymentExpanded(false); setUploadExpanded(true); }}
+                      className="mt-3 w-full py-2 text-sm font-medium text-primary-400 hover:text-primary-300 transition-colors"
+                    >
+                      I've sent the payment →
+                    </button>
+                  </div>
+                )}
+
+                {/* Section 3: Upload Screenshot - Collapsible */}
+                <div 
+                  onClick={() => setUploadExpanded(!uploadExpanded)}
+                  className={`flex items-center justify-between p-3 rounded-lg cursor-pointer transition-all ${
+                    formData.receipt_preview && !uploadExpanded 
+                      ? 'bg-green-50 border border-green-200 hover:bg-green-100' 
+                      : 'bg-neutral-100'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                      formData.receipt_preview ? 'bg-green-500 text-white' : 'bg-primary-600 text-white'
+                    }`}>
+                      {formData.receipt_preview ? <Check className="h-3 w-3" /> : '3'}
+                    </div>
+                    <span className="text-sm font-semibold text-neutral-900 uppercase tracking-wide">Upload Payment Screenshot</span>
+                    {formData.receipt_preview && !uploadExpanded && (
+                      <span className="text-xs text-green-600 font-medium ml-2">(Uploaded ✓)</span>
+                    )}
+                  </div>
+                  <ChevronRight className={`h-4 w-4 text-neutral-500 transition-transform ${uploadExpanded ? 'rotate-90' : ''}`} />
                 </div>
 
-                {/* Step 4: Submit */}
-                <div className="flex items-center gap-2 mt-6 mb-2">
-                  <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                    formData.payment_receipt ? 'bg-primary-600 text-white' : 'bg-neutral-300 text-neutral-600'
-                  }`}>4</div>
-                  <span className={`text-sm font-semibold uppercase tracking-wide ${
-                    formData.payment_receipt ? 'text-neutral-900' : 'text-neutral-400'
-                  }`}>Submit Payment</span>
-                </div>
+                {uploadExpanded && (
+                  <>
+                    <p className="text-xs text-neutral-500 px-1">Take a screenshot of your payment confirmation and upload it here for verification.</p>
 
-                {!formData.payment_receipt && (
-                  <p className="text-xs text-neutral-500">Please upload your payment screenshot to continue.</p>
+                    <div 
+                      onClick={() => fileInputRef.current?.click()}
+                      className={`border-2 border-dashed rounded-xl p-5 text-center cursor-pointer transition-all ${
+                        formData.receipt_preview 
+                          ? 'border-green-300 bg-green-50' 
+                          : 'border-neutral-300 bg-neutral-50 hover:border-primary-400 hover:bg-primary-50'
+                      }`}
+                    >
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFileUpload}
+                        className="hidden"
+                      />
+                      {formData.receipt_preview ? (
+                        <div>
+                          <img
+                            src={formData.receipt_preview}
+                            alt="Receipt"
+                            className="max-h-28 mx-auto rounded-lg mb-2 border border-neutral-200"
+                          />
+                          <p className="text-sm text-green-600 font-medium mb-2">Receipt uploaded!</p>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
+                            className="border-primary-600 text-primary-600"
+                          >
+                            Change Image
+                          </Button>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center mx-auto mb-2">
+                            <Upload className="h-5 w-5 text-primary-600" />
+                          </div>
+                          <p className="text-sm font-medium text-neutral-700 mb-1">Click to upload screenshot</p>
+                          <p className="text-xs text-neutral-500">JPEG, PNG, GIF, or WebP (max 5MB)</p>
+                        </>
+                      )}
+                    </div>
+                  </>
+                )}
+
+                {/* Ready to Submit Indicator */}
+                {formData.payment_receipt && (
+                  <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg">
+                    <CheckCircle className="h-5 w-5 text-green-500" />
+                    <span className="text-sm font-medium text-green-700">All set! Click "Submit Booking" below.</span>
+                  </div>
                 )}
               </>
             )}
@@ -1722,27 +1470,28 @@ export const BookNowModal: FC<BookNowModalProps> = ({
               const Icon = step.icon;
               const isActive = currentStep === step.id;
               const isCompleted = currentStep > step.id;
-              const isSkipped = step.id === 3 && isLoggedIn && currentStep > 3;
+              // If vehicle was pre-selected, mark step 1 as completed
+              const isPreSelected = step.id === 1 && selectedVehicle && currentStep >= 2;
               return (
                 <div key={step.id} className="flex items-center flex-shrink-0">
                   <div className="flex flex-col items-center">
                     <div
                       className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center transition-all text-xs ${
-                        isCompleted || isSkipped
+                        isCompleted || isPreSelected
                           ? 'bg-green-500 text-white'
                           : isActive
                           ? 'bg-primary-600 text-white'
                           : 'bg-neutral-200 text-neutral-500'
                       }`}
                     >
-                      {isCompleted || isSkipped ? <Check className="h-3 w-3 sm:h-4 sm:w-4" /> : <Icon className="h-3 w-3 sm:h-4 sm:w-4" />}
+                      {isCompleted || isPreSelected ? <Check className="h-3 w-3 sm:h-4 sm:w-4" /> : <Icon className="h-3 w-3 sm:h-4 sm:w-4" />}
                     </div>
                     <span className={`text-[10px] sm:text-xs mt-1 hidden sm:block whitespace-nowrap ${isActive ? 'text-primary-600 font-medium' : 'text-neutral-400'}`}>
                       {step.title}
                     </span>
                   </div>
                   {index < STEPS.length - 1 && (
-                    <div className={`w-4 sm:w-8 lg:w-12 h-0.5 mx-0.5 sm:mx-1 ${currentStep > step.id ? 'bg-green-500' : 'bg-neutral-200'}`} />
+                    <div className={`w-4 sm:w-8 lg:w-12 h-0.5 mx-0.5 sm:mx-1 ${currentStep > step.id || isPreSelected ? 'bg-green-500' : 'bg-neutral-200'}`} />
                   )}
                 </div>
               );
@@ -1767,7 +1516,7 @@ export const BookNowModal: FC<BookNowModalProps> = ({
 
         {/* Navigation */}
         <div className="flex gap-3 pt-4 border-t border-neutral-200">
-          {currentStep > 1 && (
+          {currentStep > 1 && !(currentStep === 2 && selectedVehicle) && (
             <Button type="button" variant="outline" onClick={handleBack} disabled={isLoading} className="flex-1">
               <ChevronLeft className="h-4 w-4 mr-1" /> Back
             </Button>
@@ -1786,7 +1535,7 @@ export const BookNowModal: FC<BookNowModalProps> = ({
               type="button"
               onClick={handleSubmit}
               className="flex-1 bg-green-600 hover:bg-green-700"
-              disabled={isLoading || !validateStep(6)}
+              disabled={isLoading || !validateStep(5)}
             >
               {isLoading ? (
                 <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Submitting...</>

@@ -4,19 +4,26 @@ export interface Vehicle {
   id: string;
   brand: string;
   model: string;
-  year: number;
-  type: string;
+  category_id?: string | null;
+  type?: string;
   transmission: string;
   fuel_type: string;
   seats: number;
+  color?: string | null;
   price_per_day: number;
   status: 'available' | 'rented' | 'maintenance';
-  image_url?: string;
-  features?: string[];
-  description?: string;
-  plate_number?: string;
+  image_url?: string | null;
+  thumbnail?: string | null;
+  features?: string[] | any;
+  description?: string | null;
+  is_featured?: boolean;
   created_at: string;
   updated_at: string;
+  // Joined category data
+  vehicle_categories?: {
+    id: string;
+    name: string;
+  } | null;
 }
 
 export interface VehicleStats {
@@ -31,13 +38,16 @@ export interface VehicleStats {
  */
 export const vehicleService = {
   /**
-   * Get all vehicles
+   * Get all vehicles with category
    */
   async getAll(): Promise<{ data: Vehicle[] | null; error: string | null }> {
     try {
       const { data, error } = await supabase
         .from('vehicles')
-        .select('*')
+        .select(`
+          *,
+          vehicle_categories:category_id (id, name)
+        `)
         .order('created_at', { ascending: false });
 
       if (error) {

@@ -12,6 +12,8 @@ export { AddVehicleModal } from './AddVehicleModal';
 export { EditVehicleModal } from './EditVehicleModal';
 export { AddBookingModal } from './AddBookingModal';
 export { EditBookingModal } from './EditBookingModal';
+export { BookingDetailsModal } from './BookingDetailsModal';
+export { StatusUpdateModal } from './StatusUpdateModal';
 export { AddCustomerModal } from './AddCustomerModal';
 export { EditCustomerModal } from './EditCustomerModal';
 export { AddDriverModal } from './AddDriverModal';

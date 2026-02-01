@@ -4,14 +4,12 @@ import {
   Car,
   LayoutDashboard,
   CalendarDays,
-  Users,
   Settings,
   LogOut,
   Menu,
   X,
   ChevronRight,
   Bell,
-  UserCheck,
 } from 'lucide-react';
 import { cn } from '@utils/helpers';
 import { authService } from '@services/authService';
@@ -26,8 +24,6 @@ const sidebarItems: SidebarItem[] = [
   { label: 'Dashboard', href: '/admin/dashboard', icon: <LayoutDashboard className="h-5 w-5" /> },
   { label: 'Fleet', href: '/admin/fleet', icon: <Car className="h-5 w-5" /> },
   { label: 'Bookings', href: '/admin/bookings', icon: <CalendarDays className="h-5 w-5" /> },
-  { label: 'Customers', href: '/admin/customers', icon: <Users className="h-5 w-5" /> },
-  { label: 'Drivers', href: '/admin/drivers', icon: <UserCheck className="h-5 w-5" /> },
   { label: 'Settings', href: '/admin/settings', icon: <Settings className="h-5 w-5" /> },
 ];
 
@@ -41,7 +37,7 @@ export const AdminLayout: FC = () => {
 
   const handleLogout = async () => {
     await authService.logout();
-    navigate('/login');
+    navigate('/admin/login');
   };
 
   return (

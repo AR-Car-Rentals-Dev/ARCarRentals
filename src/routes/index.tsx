@@ -8,13 +8,9 @@ import {
   PricingPage,
   ResourcesPage,
   LoginPage,
-  RegisterPage,
   AdminDashboardPage,
   AdminFleetPage,
   AdminBookingsPage,
-  AdminCustomersPage,
-  AdminDriversPage,
-  CustomerDashboardPage,
 } from '@pages/index';
 
 /**
@@ -38,19 +34,8 @@ export const routes: RouteObject[] = [
     element: <MainLayout><ResourcesPage /></MainLayout>,
   },
   {
-    path: '/login',
+    path: '/admin/login',
     element: <LoginPage />,
-  },
-  {
-    path: '/register',
-    element: <RegisterPage />,
-  },
-  {
-    path: '/customer',
-    element: <AdminLayout />,
-    children: [
-      { path: 'dashboard', element: <CustomerDashboardPage /> },
-    ],
   },
   {
     path: '/admin',
@@ -59,8 +44,6 @@ export const routes: RouteObject[] = [
       { path: 'dashboard', element: <AdminDashboardPage /> },
       { path: 'fleet', element: <AdminFleetPage /> },
       { path: 'bookings', element: <AdminBookingsPage /> },
-      { path: 'customers', element: <AdminCustomersPage /> },
-      { path: 'drivers', element: <AdminDriversPage /> },
     ],
   },
   {

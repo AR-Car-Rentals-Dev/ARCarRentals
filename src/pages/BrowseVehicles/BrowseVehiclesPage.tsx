@@ -7,7 +7,7 @@ import type { Car } from '@/types';
 // Client's actual car fleet
 const allCars: Car[] = [
   {
-    id: '1',
+    id: 'b1a2c3d4-e5f6-7890-abcd-200000000001',
     name: 'Toyota Vios',
     brand: 'Toyota',
     model: 'Vios',
@@ -26,7 +26,7 @@ const allCars: Car[] = [
     reviewCount: 124,
   },
   {
-    id: '2',
+    id: 'b1a2c3d4-e5f6-7890-abcd-200000000002',
     name: 'Toyota Wigo',
     brand: 'Toyota',
     model: 'Wigo',
@@ -45,7 +45,7 @@ const allCars: Car[] = [
     reviewCount: 98,
   },
   {
-    id: '3',
+    id: 'b1a2c3d4-e5f6-7890-abcd-200000000003',
     name: 'Toyota Innova',
     brand: 'Toyota',
     model: 'Innova',
@@ -64,7 +64,7 @@ const allCars: Car[] = [
     reviewCount: 187,
   },
   {
-    id: '4',
+    id: 'b1a2c3d4-e5f6-7890-abcd-200000000004',
     name: 'Mitsubishi Xpander',
     brand: 'Mitsubishi',
     model: 'Xpander',
@@ -83,7 +83,7 @@ const allCars: Car[] = [
     reviewCount: 156,
   },
   {
-    id: '5',
+    id: 'b1a2c3d4-e5f6-7890-abcd-200000000005',
     name: 'Mitsubishi Montero',
     brand: 'Mitsubishi',
     model: 'Montero Sport',
@@ -102,7 +102,7 @@ const allCars: Car[] = [
     reviewCount: 134,
   },
   {
-    id: '6',
+    id: 'b1a2c3d4-e5f6-7890-abcd-200000000006',
     name: 'Toyota Fortuner',
     brand: 'Toyota',
     model: 'Fortuner',
@@ -121,7 +121,7 @@ const allCars: Car[] = [
     reviewCount: 167,
   },
   {
-    id: '7',
+    id: 'b1a2c3d4-e5f6-7890-abcd-200000000007',
     name: 'Hi-Ace Van Manual',
     brand: 'Toyota',
     model: 'Hi-Ace Highroof',
@@ -140,7 +140,7 @@ const allCars: Car[] = [
     reviewCount: 112,
   },
   {
-    id: '8',
+    id: 'b1a2c3d4-e5f6-7890-abcd-200000000008',
     name: 'Hi-Ace Van Automatic',
     brand: 'Toyota',
     model: 'Hi-Ace Highroof',
@@ -159,7 +159,7 @@ const allCars: Car[] = [
     reviewCount: 98,
   },
   {
-    id: '9',
+    id: 'b1a2c3d4-e5f6-7890-abcd-200000000009',
     name: 'GL Grandia',
     brand: 'Toyota',
     model: 'Grandia GL',
@@ -178,7 +178,7 @@ const allCars: Car[] = [
     reviewCount: 145,
   },
   {
-    id: '10',
+    id: 'b1a2c3d4-e5f6-7890-abcd-200000000010',
     name: 'Changan CS35',
     brand: 'Changan',
     model: 'CS35 Plus',
@@ -214,7 +214,7 @@ const SearchForm: FC<{
   onSearch: () => void;
 }> = ({ searchCriteria, onLocationClick, onSearchChange, onSearch }) => (
   <div className="bg-white border-b border-neutral-200">
-    <div className="px-4 sm:px-6 lg:px-12 xl:px-[360px] py-4">
+    <div className="px-4 sm:px-6 lg:px-12 xl:px-[200px] py-4">
       <div className="flex flex-col lg:flex-row gap-3 items-stretch">
         {/* Location */}
         <div className="flex-1 w-full lg:w-auto">
@@ -332,14 +332,25 @@ const FilterSidebar: FC<{
             {carTypes.map((type) => {
               const isChecked = filters.carTypes.includes(type.value);
               return (
-                <label key={type.value} className="flex items-center gap-3 cursor-pointer">
-                  <button
-                    type="button"
-                    onClick={() => toggleCarType(type.value)}
+                <div 
+                  key={type.value} 
+                  className="flex items-center gap-3 cursor-pointer"
+                  onClick={() => toggleCarType(type.value)}
+                  role="checkbox"
+                  aria-checked={isChecked}
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      toggleCarType(type.value);
+                    }
+                  }}
+                >
+                  <div
                     className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${
                       isChecked 
                         ? 'bg-[#D32F2F] border-[#D32F2F]' 
-                        : 'bg-white border-[#D1D5DB]'
+                        : 'bg-white border-[#D1D5DB] hover:border-[#9CA3AF]'
                     }`}
                   >
                     {isChecked && (
@@ -347,10 +358,10 @@ const FilterSidebar: FC<{
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                       </svg>
                     )}
-                  </button>
-                  <span className="text-neutral-700 text-sm">{type.label}</span>
+                  </div>
+                  <span className="text-neutral-700 text-sm select-none">{type.label}</span>
                   <span className="text-neutral-400 text-xs">({type.count})</span>
-                </label>
+                </div>
               );
             })}
           </div>
@@ -366,14 +377,25 @@ const FilterSidebar: FC<{
             {transmissions.map((trans) => {
               const isChecked = filters.transmissions.includes(trans.value);
               return (
-                <label key={trans.value} className="flex items-center gap-3 cursor-pointer">
-                  <button
-                    type="button"
-                    onClick={() => toggleTransmission(trans.value)}
+                <div 
+                  key={trans.value} 
+                  className="flex items-center gap-3 cursor-pointer"
+                  onClick={() => toggleTransmission(trans.value)}
+                  role="checkbox"
+                  aria-checked={isChecked}
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      toggleTransmission(trans.value);
+                    }
+                  }}
+                >
+                  <div
                     className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${
                       isChecked 
                         ? 'bg-[#D32F2F] border-[#D32F2F]' 
-                        : 'bg-white border-[#D1D5DB]'
+                        : 'bg-white border-[#D1D5DB] hover:border-[#9CA3AF]'
                     }`}
                   >
                     {isChecked && (
@@ -381,9 +403,9 @@ const FilterSidebar: FC<{
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                       </svg>
                     )}
-                  </button>
-                  <span className="text-neutral-700 text-sm">{trans.label}</span>
-                </label>
+                  </div>
+                  <span className="text-neutral-700 text-sm select-none">{trans.label}</span>
+                </div>
               );
             })}
           </div>
@@ -469,10 +491,22 @@ export const BrowseVehiclesPage: FC = () => {
 
   const [sortBy, setSortBy] = useState('recommended');
   const [isBookNowModalOpen, setIsBookNowModalOpen] = useState(false);
+  const [selectedCar, setSelectedCar] = useState<Car | null>(null);
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
   const [isDateModalOpen, setIsDateModalOpen] = useState(false);
   const [visibleCount, setVisibleCount] = useState(6);
   const [bookingData, setBookingData] = useState<BookingData | null>(null);
+
+  // Handle booking a car
+  const handleBookNow = (car: Car) => {
+    setSelectedCar(car);
+    setIsBookNowModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsBookNowModalOpen(false);
+    setSelectedCar(null);
+  };
 
   // Load search parameters from URL on component mount
   useEffect(() => {
@@ -581,7 +615,7 @@ export const BrowseVehiclesPage: FC = () => {
       />
 
       {/* Main Content */}
-      <div className="px-4 sm:px-6 lg:px-12 xl:px-[360px] py-8">
+      <div className="px-4 sm:px-6 lg:px-12 xl:px-[200px] py-8">
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Sidebar - Hidden on mobile */}
           <div className="hidden lg:block w-64 flex-shrink-0">
@@ -643,7 +677,7 @@ export const BrowseVehiclesPage: FC = () => {
                 <CarCard
                   key={car.id}
                   car={car}
-                  onBookNow={() => setIsBookNowModalOpen(true)}
+                  onBookNow={handleBookNow}
                   showAvailability
                 />
               ))}
@@ -686,7 +720,8 @@ export const BrowseVehiclesPage: FC = () => {
       {/* Modals */}
       <BookNowModal
         isOpen={isBookNowModalOpen}
-        onClose={() => setIsBookNowModalOpen(false)}
+        onClose={handleCloseModal}
+        selectedVehicle={selectedCar}
       />
 
       <LocationPickerModal

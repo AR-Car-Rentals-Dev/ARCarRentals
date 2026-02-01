@@ -1,6 +1,6 @@
-import { type FC, useState } from 'react';
+import { type FC, useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Phone, Lock, Eye, EyeOff, Car, ArrowRight } from 'lucide-react';
+import { Phone, Lock, Eye, EyeOff, Car, ArrowRight, Shield } from 'lucide-react';
 import { Button, Input, Container } from '@components/ui';
 import { authService } from '@services/authService';
 
@@ -26,15 +26,26 @@ const normalizePhoneNumber = (phone: string): string => {
 };
 
 /**
- * Login page component - matches landing page design
+ * Admin Login page component - matches landing page design
  */
 export const LoginPage: FC = () => {
   const navigate = useNavigate();
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<{ phone?: string; password?: string; general?: string }>({});
+
+  // Load remembered credentials on mount
+  useEffect(() => {
+    const savedPhone = localStorage.getItem('admin_remembered_phone');
+    const savedRemember = localStorage.getItem('admin_remember_me') === 'true';
+    if (savedPhone && savedRemember) {
+      setPhone(savedPhone);
+      setRememberMe(true);
+    }
+  }, []);
 
   const validateForm = () => {
     const newErrors: { phone?: string; password?: string } = {};
@@ -73,12 +84,24 @@ export const LoginPage: FC = () => {
         return;
       }
 
-      // Redirect based on role
-      if (user.role === 'admin' || user.role === 'staff') {
-        navigate('/admin/dashboard');
-      } else {
-        navigate('/customer/dashboard');
+      // Check if user is admin
+      if (user.role !== 'admin' && user.role !== 'staff') {
+        setErrors({ general: 'Access denied. Admin credentials required.' });
+        await authService.logout();
+        return;
       }
+
+      // Handle Remember Me
+      if (rememberMe) {
+        localStorage.setItem('admin_remembered_phone', phone);
+        localStorage.setItem('admin_remember_me', 'true');
+      } else {
+        localStorage.removeItem('admin_remembered_phone');
+        localStorage.removeItem('admin_remember_me');
+      }
+
+      // Redirect to admin dashboard
+      navigate('/admin/dashboard');
     } catch (error) {
       console.error('Login error:', error);
       setErrors({ general: 'An error occurred during login. Please try again.' });
@@ -113,38 +136,44 @@ export const LoginPage: FC = () => {
             </Link>
             
             <h1 className="text-4xl lg:text-5xl font-bold text-white leading-tight mb-6">
-              Welcome{' '}
-              <span className="text-primary-500">Back!</span>
+              Admin{' '}
+              <span className="text-primary-500">Portal</span>
             </h1>
             
             <p className="text-neutral-400 text-lg mb-8 max-w-md">
-              Sign in to access your bookings, manage your rentals, and explore our premium fleet of vehicles.
+              Manage your fleet, bookings, and business operations from a single dashboard.
             </p>
 
             {/* Features */}
             <div className="space-y-4">
               <div className="flex items-center gap-3 text-neutral-300">
                 <div className="w-10 h-10 rounded-xl bg-primary-600/20 flex items-center justify-center">
+                  <Shield className="h-5 w-5 text-primary-500" />
+                </div>
+                <span>Secure admin access</span>
+              </div>
+              <div className="flex items-center gap-3 text-neutral-300">
+                <div className="w-10 h-10 rounded-xl bg-primary-600/20 flex items-center justify-center">
                   <Car className="h-5 w-5 text-primary-500" />
                 </div>
-                <span>Access your rental history</span>
+                <span>Fleet management</span>
               </div>
               <div className="flex items-center gap-3 text-neutral-300">
                 <div className="w-10 h-10 rounded-xl bg-primary-600/20 flex items-center justify-center">
                   <Lock className="h-5 w-5 text-primary-500" />
                 </div>
-                <span>Secure & fast authentication</span>
+                <span>Protected dashboard</span>
               </div>
             </div>
 
-            {/* Car Image */}
+            {/* Admin Illustration */}
             <div className="mt-12 relative">
               <div className="absolute -top-10 -right-10 w-[400px] h-[250px] bg-gradient-to-br from-primary-600/30 to-transparent rounded-full blur-3xl" />
-              <img
-                src="https://images.unsplash.com/photo-1555215695-3004980ad54e?w=600&q=80"
-                alt="Premium car"
-                className="relative z-10 w-full max-w-md h-auto object-contain drop-shadow-2xl"
-              />
+              <div className="relative z-10 flex items-center justify-center">
+                <div className="w-64 h-64 rounded-full bg-gradient-to-br from-primary-600/20 to-neutral-800 flex items-center justify-center border border-neutral-700">
+                  <Shield className="h-24 w-24 text-primary-500/50" />
+                </div>
+              </div>
             </div>
           </div>
 
@@ -164,12 +193,20 @@ export const LoginPage: FC = () => {
 
             {/* Form Card */}
             <div className="bg-white rounded-3xl shadow-2xl p-8 lg:p-10">
+              {/* Admin Badge */}
+              <div className="flex justify-center mb-6">
+                <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary-50 rounded-full border border-primary-200">
+                  <Shield className="h-4 w-4 text-primary-600" />
+                  <span className="text-sm font-semibold text-primary-600">Admin Access Only</span>
+                </div>
+              </div>
+
               <div className="text-center mb-8">
                 <h2 className="text-2xl lg:text-3xl font-bold text-neutral-900 mb-2">
-                  Sign In
+                  Admin Login
                 </h2>
                 <p className="text-neutral-500">
-                  Enter your phone number to continue
+                  Enter your credentials to continue
                 </p>
               </div>
 
@@ -224,6 +261,8 @@ export const LoginPage: FC = () => {
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
                       type="checkbox"
+                      checked={rememberMe}
+                      onChange={(e) => setRememberMe(e.target.checked)}
                       className="w-4 h-4 rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
                     />
                     <span className="text-neutral-600">Remember me</span>
@@ -245,24 +284,12 @@ export const LoginPage: FC = () => {
                 >
                   {!isLoading && (
                     <>
-                      Sign In
+                      Sign In to Dashboard
                       <ArrowRight className="ml-2 h-5 w-5" />
                     </>
                   )}
                 </Button>
               </form>
-
-              <div className="mt-8 text-center">
-                <p className="text-neutral-500">
-                  Don't have an account?{' '}
-                  <Link
-                    to="/register"
-                    className="text-primary-600 hover:text-primary-700 font-semibold transition-colors"
-                  >
-                    Sign up for free
-                  </Link>
-                </p>
-              </div>
             </div>
 
             {/* Back to Home */}

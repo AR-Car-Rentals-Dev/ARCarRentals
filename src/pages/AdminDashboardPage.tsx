@@ -152,7 +152,7 @@ export const AdminDashboardPage: FC = () => {
             car: booking.vehicles ? `${booking.vehicles.brand} ${booking.vehicles.model}` : 'Unknown',
             status: booking.status as RecentBooking['status'],
             date: new Date(booking.pickup_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-            amount: `₱${booking.total_amount.toLocaleString()}`,
+            amount: `₱${(booking.total_amount || 0).toLocaleString()}`,
           }));
           setRecentBookings(transformed);
         }

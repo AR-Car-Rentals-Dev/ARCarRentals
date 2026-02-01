@@ -9,7 +9,7 @@ import type { Car } from '@/types';
 // Ranked by popularity: Innova, Fortuner, Xpander, Vios, GL Grandia, Montero
 const featuredCars: Car[] = [
   {
-    id: '1',
+    id: 'f1a2b3c4-d5e6-7890-abcd-100000000001',
     name: 'Toyota Innova',
     brand: 'Toyota',
     model: 'Innova',
@@ -28,7 +28,7 @@ const featuredCars: Car[] = [
     reviewCount: 187,
   },
   {
-    id: '2',
+    id: 'f1a2b3c4-d5e6-7890-abcd-100000000002',
     name: 'Toyota Fortuner',
     brand: 'Toyota',
     model: 'Fortuner',
@@ -47,7 +47,7 @@ const featuredCars: Car[] = [
     reviewCount: 167,
   },
   {
-    id: '3',
+    id: 'f1a2b3c4-d5e6-7890-abcd-100000000003',
     name: 'Mitsubishi Xpander',
     brand: 'Mitsubishi',
     model: 'Xpander',
@@ -66,7 +66,7 @@ const featuredCars: Car[] = [
     reviewCount: 156,
   },
   {
-    id: '4',
+    id: 'f1a2b3c4-d5e6-7890-abcd-100000000004',
     name: 'Toyota Vios',
     brand: 'Toyota',
     model: 'Vios',
@@ -85,7 +85,7 @@ const featuredCars: Car[] = [
     reviewCount: 124,
   },
   {
-    id: '5',
+    id: 'f1a2b3c4-d5e6-7890-abcd-100000000005',
     name: 'GL Grandia',
     brand: 'Toyota',
     model: 'Grandia GL',
@@ -104,7 +104,7 @@ const featuredCars: Car[] = [
     reviewCount: 145,
   },
   {
-    id: '6',
+    id: 'f1a2b3c4-d5e6-7890-abcd-100000000006',
     name: 'Mitsubishi Montero',
     brand: 'Mitsubishi',
     model: 'Montero Sport',

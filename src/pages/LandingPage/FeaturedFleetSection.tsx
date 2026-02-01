@@ -128,13 +128,24 @@ const featuredCars: Car[] = [
  */
 export const FeaturedFleetSection: FC = () => {
   const [isBookNowModalOpen, setIsBookNowModalOpen] = useState(false);
+  const [selectedCar, setSelectedCar] = useState<Car | null>(null);
+
+  const handleBookNow = (car: Car) => {
+    setSelectedCar(car);
+    setIsBookNowModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsBookNowModalOpen(false);
+    setSelectedCar(null);
+  };
 
   return (
     <section 
       className="bg-white py-10 sm:py-16"
       style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
     >
-      <div className="px-4 sm:px-6 lg:px-12 xl:px-[360px]">
+      <div className="px-4 sm:px-6 lg:px-12 xl:px-[200px]">
         {/* Section Header */}
         <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-6 sm:mb-10 gap-4">
           <div>
@@ -160,7 +171,7 @@ export const FeaturedFleetSection: FC = () => {
             <CarCard 
               key={car.id} 
               car={car} 
-              onBookNow={() => setIsBookNowModalOpen(true)}
+              onBookNow={handleBookNow}
             />
           ))}
         </div>
@@ -169,7 +180,8 @@ export const FeaturedFleetSection: FC = () => {
       {/* Book Now Modal */}
       <BookNowModal
         isOpen={isBookNowModalOpen}
-        onClose={() => setIsBookNowModalOpen(false)}
+        onClose={handleCloseModal}
+        selectedVehicle={selectedCar}
       />
     </section>
   );
