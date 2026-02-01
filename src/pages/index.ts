@@ -1,5 +1,6 @@
 export { LandingPage } from './LandingPage/LandingPage';
 export { BrowseVehiclesPage } from './BrowseVehicles/BrowseVehiclesPage';
+export { TrackBookingPage } from './TrackBookingPage';
 export { NotFoundPage } from './NotFoundPage';
 export { FeaturesPage } from './FeaturesPage';
 export { PricingPage } from './PricingPage';

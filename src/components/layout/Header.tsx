@@ -25,15 +25,19 @@ const navItems: NavItem[] = [
  */
 const TopBar: FC = () => (
   <div className="relative h-[40px] bg-white overflow-hidden hidden lg:block">
-    {/* Red gradient section - wider width with subtle slant (bottom points outward) */}
+    {/* Red gradient section - extends from left edge, ends at center of Browse Vehicles nav item */}
     <div 
-      className="absolute left-0 top-0 h-full w-[58%]"
+      className="absolute left-0 top-0 h-full lg:w-[54%] xl:w-[48%]"
       style={{
         background: 'linear-gradient(to right, #FB3030 0%, #480E0E 100%)',
         clipPath: 'polygon(0 0, 96% 0, 100% 100%, 0 100%)',
       }}
-    >
-      <div className="flex items-center h-full pl-6 lg:pl-12 xl:pl-[200px] gap-8 text-white text-sm font-medium">
+    />
+    
+    {/* Content container - aligns with navigation */}
+    <div className="relative h-full mx-auto w-full max-w-7xl flex items-center justify-between" style={{ paddingInline: 'clamp(1rem, 5vw, 5rem)' }}>
+      {/* Business hours and location - inside gradient */}
+      <div className="flex items-center gap-8 text-white text-sm font-medium">
         <div className="flex items-center gap-2">
           <Clock className="h-4 w-4 flex-shrink-0" aria-hidden="true" />
           <span className="whitespace-nowrap">{config.contact.businessHours}</span>
@@ -43,37 +47,37 @@ const TopBar: FC = () => (
           <span className="whitespace-nowrap">{config.contact.location}</span>
         </div>
       </div>
-    </div>
-    
-    {/* Social icons on the right - black icons */}
-    <div className="absolute right-6 lg:right-12 xl:right-[200px] top-0 h-full flex items-center gap-4">
-      <a
-        href="https://facebook.com"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="text-black hover:text-[#E22B2B] transition-colors"
-        aria-label="Follow us on Facebook"
-      >
-        <Facebook className="h-4 w-4" />
-      </a>
-      <a
-        href="https://instagram.com"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="text-black hover:text-[#E22B2B] transition-colors"
-        aria-label="Follow us on Instagram"
-      >
-        <Instagram className="h-4 w-4" />
-      </a>
-      <a
-        href="https://twitter.com"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="text-black hover:text-[#E22B2B] transition-colors"
-        aria-label="Follow us on Twitter"
-      >
-        <Twitter className="h-4 w-4" />
-      </a>
+      
+      {/* Social icons on the right - black icons */}
+      <div className="flex items-center gap-4">
+        <a
+          href="https://facebook.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-black hover:text-[#E22B2B] transition-colors"
+          aria-label="Follow us on Facebook"
+        >
+          <Facebook className="h-4 w-4" />
+        </a>
+        <a
+          href="https://instagram.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-black hover:text-[#E22B2B] transition-colors"
+          aria-label="Follow us on Instagram"
+        >
+          <Instagram className="h-4 w-4" />
+        </a>
+        <a
+          href="https://twitter.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-black hover:text-[#E22B2B] transition-colors"
+          aria-label="Follow us on Twitter"
+        >
+          <Twitter className="h-4 w-4" />
+        </a>
+      </div>
     </div>
   </div>
 );
@@ -91,12 +95,21 @@ export const Header: FC = () => {
   // Check if we're on the browse vehicles page
   const isBrowseVehiclesPage = location.pathname === '/browsevehicles';
   
+  // Check if we're on the booking, checkout, or receipt submitted page - disable animations
+  const isBookingPage = location.pathname === '/browsevehicles/booking';
+  const isCheckoutPage = location.pathname === '/browsevehicles/checkout';
+  const isReceiptSubmittedPage = location.pathname === '/browsevehicles/receipt-submitted';
+  const disableHeaderAnimation = isBookingPage || isCheckoutPage || isReceiptSubmittedPage;
+  
   // Animation controls for header visibility
   const controls = useAnimationControls();
   const lastScrollY = useRef(0);
   const isHidden = useRef(false);
 
   useEffect(() => {
+    // Skip scroll animations on booking/checkout pages
+    if (disableHeaderAnimation) return;
+    
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
       const scrollingUp = currentScrollY < lastScrollY.current;
@@ -136,7 +149,7 @@ export const Header: FC = () => {
     return () => {
       window.removeEventListener('scroll', handleScroll);
     };
-  }, [controls]);
+  }, [controls, disableHeaderAnimation]);
 
   const toggleMobileMenu = () => setIsMobileMenuOpen(!isMobileMenuOpen);
   const closeMobileMenu = () => setIsMobileMenuOpen(false);
@@ -159,7 +172,8 @@ export const Header: FC = () => {
     <motion.header 
       className="fixed top-0 left-0 right-0 z-50 bg-[#121212]"
       initial={{ y: 0 }}
-      animate={controls}
+      animate={disableHeaderAnimation ? { y: 0 } : controls}
+      transition={disableHeaderAnimation ? { duration: 0 } : undefined}
     >
       <TopBar />
       <nav
@@ -168,7 +182,7 @@ export const Header: FC = () => {
           isScrolled && 'shadow-md'
         )}
       >
-        <div className="h-full px-4 sm:px-6 lg:px-12 xl:px-[200px]">
+        <div className="h-full mx-auto w-full max-w-7xl" style={{ paddingInline: 'clamp(1rem, 5vw, 5rem)' }}>
           <div className="flex h-full items-center justify-between">
             {/* Logo */}
             <Link
