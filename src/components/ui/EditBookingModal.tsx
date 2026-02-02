@@ -248,6 +248,9 @@ export const EditBookingModal: FC<EditBookingModalProps> = ({
     setError(null);
 
     try {
+      // Check if status is changing from pending to confirmed
+      const isBeingConfirmed = booking.status === 'pending' && formData.status === 'confirmed';
+
       const updateData = {
         user_id: formData.user_id,
         vehicle_id: formData.vehicle_id,
@@ -272,6 +275,46 @@ export const EditBookingModal: FC<EditBookingModalProps> = ({
 
       if (updateError) {
         throw updateError;
+      }
+
+      // Send confirmation email if booking was just confirmed
+      if (isBeingConfirmed && booking.customer_email) {
+        console.log('📧 Booking confirmed! Sending confirmation email...');
+        
+        // Import email service dynamically
+        const { sendMagicLinkEmail } = await import('../../services/emailService');
+        const { getMagicLinkFromBooking } = await import('../../services/bookingSecurityService');
+        
+        try {
+          const magicLink = getMagicLinkFromBooking(booking.booking_number);
+          const vehicleName = vehicles.find(v => v.id === formData.vehicle_id)?.brand + ' ' + 
+                             vehicles.find(v => v.id === formData.vehicle_id)?.model;
+          
+          await sendMagicLinkEmail(
+            booking.customer_email,
+            booking.booking_number,
+            magicLink,
+            {
+              vehicleName,
+              pickupDate: new Date(formData.pickup_date).toLocaleDateString('en-US', { 
+                month: 'long', 
+                day: 'numeric', 
+                year: 'numeric' 
+              }),
+              returnDate: new Date(formData.return_date).toLocaleDateString('en-US', { 
+                month: 'long', 
+                day: 'numeric', 
+                year: 'numeric' 
+              })
+            },
+            'confirmed' // Send confirmed email
+          );
+          
+          console.log('✅ Confirmation email sent successfully!');
+        } catch (emailError) {
+          console.warn('⚠️ Failed to send confirmation email:', emailError);
+          // Don't fail the booking update if email fails
+        }
       }
 
       setCurrentStep(1);

@@ -137,8 +137,8 @@ export const createSecureBooking = async (payload: BookingPayload): Promise<Book
     // Generate magic link
     const magicLink = `${window.location.origin}/browsevehicles/track/${bookingReference}?t=${magicToken}`;
     
-    // Send magic link email via Supabase Edge Function
-    console.log('📧 Sending magic link email via Supabase Edge Function...');
+    // Send pending booking email (awaiting admin confirmation)
+    console.log('📧 Sending pending booking email via Supabase Edge Function...');
     const emailResult = await sendMagicLinkEmail(
       payload.renterInfo.email,
       bookingReference,
@@ -155,11 +155,12 @@ export const createSecureBooking = async (payload: BookingPayload): Promise<Book
           day: 'numeric', 
           year: 'numeric' 
         })
-      }
+      },
+      'pending' // Email type: pending admin approval
     );
     
     if (emailResult.success) {
-      console.log('✅ Magic link email sent successfully');
+      console.log('✅ Pending booking email sent successfully');
     } else {
       console.warn('⚠️ Failed to send email:', emailResult.error);
       console.log('💡 Booking completed successfully. Customer can use magic link from confirmation page.');
@@ -297,4 +298,15 @@ const calculateDays = (startDate: string, endDate: string): number => {
   const diffTime = Math.abs(end.getTime() - start.getTime());
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   return diffDays;
+};
+
+/**
+ * Generate magic link URL for a booking reference
+ * Used when admin confirms booking and needs to send confirmation email
+ */
+export const getMagicLinkFromBooking = (bookingReference: string): string => {
+  // For admin confirmations, we don't have the magic token
+  // The customer can still use their original magic link from pending email
+  // Or they can track booking without magic link (just with booking reference)
+  return `${window.location.origin}/browsevehicles/track/${bookingReference}`;
 };
