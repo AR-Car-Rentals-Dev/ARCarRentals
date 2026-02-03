@@ -44,7 +44,7 @@ export interface Booking {
   updatedAt: string;
 }
 
-export type BookingStatus = 'pending' | 'confirmed' | 'active' | 'completed' | 'cancelled';
+export type BookingStatus = 'pending' | 'confirmed' | 'declined' | 'active' | 'completed' | 'cancelled';
 
 // Search-related types
 export interface SearchParams {

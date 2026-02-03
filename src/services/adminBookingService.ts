@@ -4,50 +4,37 @@ export interface Customer {
   id: string;
   full_name: string;
   email: string;
-  phone: string;
+  contact_number: string;
   address?: string;
-  city?: string;
   created_at: string;
   updated_at: string;
 }
 
 export interface Booking {
   id: string;
-  booking_number: string;
+  booking_reference: string;
   customer_id: string;
   vehicle_id: string;
-  pickup_date: string;
-  return_date: string;
-  pickup_location?: string;
-  return_location?: string;
-  total_days: number;
-  base_price: number;
-  extras_price?: number;
-  discount_amount?: number;
-  total_price: number;
-  deposit_paid?: number;
-  status: 'pending' | 'confirmed' | 'active' | 'completed' | 'cancelled';
-  drive_option?: 'self-drive' | 'with-driver';
+  start_date: string;
   start_time?: string;
-  end_time?: string;
-  payment_method?: 'pay_now' | 'pay_later';
-  payment_receipt_url?: string;
-  location_cost?: number;
-  driver_cost?: number;
-  pickup_delivery_location?: string;
-  extras?: any;
+  rental_days: number;
+  pickup_location?: string;
+  pickup_time?: string;
+  total_amount: number;
+  booking_status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
   created_at: string;
   updated_at: string;
+  magic_token_hash?: string;
+  token_expires_at?: string;
+  agreed_to_terms?: boolean;
   // Joined data
   customers?: Customer | null;
   vehicles?: {
+    id: string;
     brand: string;
     model: string;
-    thumbnail?: string;
     image_url?: string;
   } | null;
-  // Computed for display
-  total_amount?: number;
 }
 
 export interface BookingStats {
@@ -64,30 +51,16 @@ export interface CreateBookingData {
   // Customer info
   customer_name: string;
   customer_email: string;
-  customer_phone: string;
+  customer_contact_number: string;
   customer_address?: string;
-  customer_city?: string;
   // Booking info
   vehicle_id: string;
-  pickup_date: string;
-  return_date: string;
-  pickup_location?: string;
-  return_location?: string;
-  total_days: number;
-  base_price: number;
-  extras_price?: number;
-  discount_amount?: number;
-  total_price: number;
-  deposit_paid?: number;
-  drive_option?: 'self-drive' | 'with-driver';
+  start_date: string;
   start_time?: string;
-  end_time?: string;
-  payment_method?: 'pay_now' | 'pay_later';
-  payment_receipt_url?: string;
-  location_cost?: number;
-  driver_cost?: number;
-  pickup_delivery_location?: string;
-  extras?: any;
+  rental_days: number;
+  pickup_location?: string;
+  pickup_time?: string;
+  total_amount: number;
 }
 
 /**
@@ -103,8 +76,8 @@ export const bookingService = {
         .from('bookings')
         .select(`
           *,
-          customers:customer_id (id, full_name, email, phone, address, city, created_at, updated_at),
-          vehicles:vehicle_id (brand, model, thumbnail, image_url)
+          customers:customer_id (id, full_name, email, contact_number, address, created_at, updated_at),
+          vehicles:vehicle_id (id, brand, model, image_url)
         `)
         .order('created_at', { ascending: false });
 
@@ -135,8 +108,8 @@ export const bookingService = {
         .from('bookings')
         .select(`
           *,
-          customers:customer_id (id, full_name, email, phone, address, city, created_at, updated_at),
-          vehicles:vehicle_id (brand, model, thumbnail, image_url)
+          customers:customer_id (id, full_name, email, contact_number, address, created_at, updated_at),
+          vehicles:vehicle_id (id, brand, model, image_url)
         `)
         .order('created_at', { ascending: false })
         .limit(limit);
@@ -166,7 +139,7 @@ export const bookingService = {
     try {
       const { data, error } = await supabase
         .from('bookings')
-        .select('status, total_price');
+        .select('booking_status, total_amount');
 
       if (error) {
         console.error('Error fetching booking stats:', error);
@@ -175,12 +148,12 @@ export const bookingService = {
 
       const stats: BookingStats = {
         total: data?.length || 0,
-        pending: data?.filter((b) => b.status === 'pending').length || 0,
-        confirmed: data?.filter((b) => b.status === 'confirmed').length || 0,
-        active: data?.filter((b) => b.status === 'active').length || 0,
-        completed: data?.filter((b) => b.status === 'completed').length || 0,
-        cancelled: data?.filter((b) => b.status === 'cancelled').length || 0,
-        totalRevenue: data?.reduce((sum, b) => sum + (b.total_price || 0), 0) || 0,
+        pending: data?.filter((b) => b.booking_status === 'pending').length || 0,
+        confirmed: data?.filter((b) => b.booking_status === 'confirmed').length || 0,
+        active: 0, // Not used in current schema
+        completed: data?.filter((b) => b.booking_status === 'completed').length || 0,
+        cancelled: data?.filter((b) => b.booking_status === 'cancelled').length || 0,
+        totalRevenue: data?.reduce((sum, b) => sum + (b.total_amount || 0), 0) || 0,
       };
 
       return { data: stats, error: null };
@@ -199,16 +172,16 @@ export const bookingService = {
         .from('bookings')
         .select(`
           *,
-          customers:customer_id (id, full_name, email, phone, address, city, created_at, updated_at),
-          vehicles:vehicle_id (brand, model, thumbnail, image_url)
+          customers:customer_id (id, full_name, email, contact_number, address, created_at, updated_at),
+          vehicles:vehicle_id (id, brand, model, image_url)
         `);
 
       if (status && status !== 'all') {
-        queryBuilder = queryBuilder.eq('status', status);
+        queryBuilder = queryBuilder.eq('booking_status', status);
       }
 
       if (query) {
-        queryBuilder = queryBuilder.or(`booking_number.ilike.%${query}%`);
+        queryBuilder = queryBuilder.or(`booking_reference.ilike.%${query}%`);
       }
 
       const { data, error } = await queryBuilder.order('created_at', { ascending: false });
@@ -241,7 +214,7 @@ export const bookingService = {
       const { data: existingCustomer } = await supabase
         .from('customers')
         .select('id')
-        .or(`email.eq.${bookingData.customer_email},phone.eq.${bookingData.customer_phone}`)
+        .or(`email.eq.${bookingData.customer_email},contact_number.eq.${bookingData.customer_contact_number}`)
         .limit(1)
         .single();
 
@@ -254,9 +227,8 @@ export const bookingService = {
           .update({
             full_name: bookingData.customer_name,
             email: bookingData.customer_email,
-            phone: bookingData.customer_phone,
+            contact_number: bookingData.customer_contact_number,
             address: bookingData.customer_address,
-            city: bookingData.customer_city,
             updated_at: new Date().toISOString(),
           })
           .eq('id', existingCustomer.id)
@@ -276,9 +248,8 @@ export const bookingService = {
           .insert({
             full_name: bookingData.customer_name,
             email: bookingData.customer_email,
-            phone: bookingData.customer_phone,
+            contact_number: bookingData.customer_contact_number,
             address: bookingData.customer_address,
-            city: bookingData.customer_city,
           })
           .select('id')
           .single();
@@ -291,41 +262,28 @@ export const bookingService = {
         customerId = newCustomer!.id;
       }
 
-      // Step 2: Generate booking number
-      const bookingNumber = `BK${Date.now()}`;
+      // Step 2: Generate booking reference
+      const bookingReference = `BK${Date.now()}`;
 
       // Step 3: Create booking
       const { data: booking, error: bookingError } = await supabase
         .from('bookings')
         .insert({
-          booking_number: bookingNumber,
+          booking_reference: bookingReference,
           customer_id: customerId,
           vehicle_id: bookingData.vehicle_id,
-          pickup_date: bookingData.pickup_date,
-          return_date: bookingData.return_date,
-          pickup_location: bookingData.pickup_location,
-          return_location: bookingData.return_location,
-          total_days: bookingData.total_days,
-          base_price: bookingData.base_price,
-          extras_price: bookingData.extras_price || 0,
-          discount_amount: bookingData.discount_amount || 0,
-          total_price: bookingData.total_price,
-          deposit_paid: bookingData.deposit_paid || 0,
-          drive_option: bookingData.drive_option,
+          start_date: bookingData.start_date,
           start_time: bookingData.start_time,
-          end_time: bookingData.end_time,
-          payment_method: bookingData.payment_method,
-          payment_receipt_url: bookingData.payment_receipt_url,
-          location_cost: bookingData.location_cost || 0,
-          driver_cost: bookingData.driver_cost || 0,
-          pickup_delivery_location: bookingData.pickup_delivery_location,
-          extras: bookingData.extras,
-          status: 'pending',
+          rental_days: bookingData.rental_days,
+          pickup_location: bookingData.pickup_location,
+          pickup_time: bookingData.pickup_time,
+          total_amount: bookingData.total_amount,
+          booking_status: 'pending',
         })
         .select(`
           *,
-          customers:customer_id (id, full_name, email, phone, address, city, created_at, updated_at),
-          vehicles:vehicle_id (brand, model, thumbnail, image_url)
+          customers:customer_id (id, full_name, email, contact_number, address, created_at, updated_at),
+          vehicles:vehicle_id (id, brand, model, image_url)
         `)
         .single();
 
@@ -344,16 +302,16 @@ export const bookingService = {
   /**
    * Update booking status
    */
-  async updateStatus(id: string, status: Booking['status']): Promise<{ data: Booking | null; error: string | null }> {
+  async updateStatus(id: string, status: Booking['booking_status']): Promise<{ data: Booking | null; error: string | null }> {
     try {
       const { data, error } = await supabase
         .from('bookings')
-        .update({ status, updated_at: new Date().toISOString() })
+        .update({ booking_status: status, updated_at: new Date().toISOString() })
         .eq('id', id)
         .select(`
           *,
-          customers:customer_id (id, full_name, email, phone, address, city, created_at, updated_at),
-          vehicles:vehicle_id (brand, model, thumbnail, image_url)
+          customers:customer_id (id, full_name, email, contact_number, address, created_at, updated_at),
+          vehicles:vehicle_id (id, brand, model, image_url)
         `)
         .single();
 

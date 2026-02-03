@@ -10,11 +10,15 @@ interface EmailRequest {
   email: string
   bookingReference: string
   magicLink: string
-  emailType?: 'pending' | 'confirmed'  // Type of email to send
+  emailType?: 'pending' | 'confirmed' | 'declined'  // Type of email to send
+  customerName?: string
+  declineReason?: string
+  customMessage?: string
   bookingDetails?: {
     vehicleName?: string
     pickupDate?: string
     returnDate?: string
+    totalPrice?: number
   }
 }
 
@@ -341,6 +345,163 @@ const getConfirmedEmailHTML = (
   `
 }
 
+// Email HTML template for declined/cancelled bookings
+const getDeclinedEmailHTML = (
+  bookingReference: string,
+  customerName: string,
+  declineReason: string,
+  customMessage?: string,
+  vehicleName?: string,
+  totalPrice?: number
+) => {
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Booking Cancelled</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f5f5f5;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f5f5; padding: 40px 20px;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+          
+          <!-- Header -->
+          <tr>
+            <td style="background-color: #991B1B; padding: 40px; text-align: center;">
+              <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 700;">
+                ❌ Booking Cancelled
+              </h1>
+              <p style="margin: 10px 0 0; color: #ffffff; font-size: 14px; opacity: 0.9;">
+                AR Car Rentals - Booking Update
+              </p>
+            </td>
+          </tr>
+
+          <!-- Content -->
+          <tr>
+            <td style="padding: 40px;">
+              
+              <p style="margin: 0 0 20px; color: #262626; font-size: 16px; line-height: 1.5;">
+                Dear ${customerName},
+              </p>
+
+              <p style="margin: 0 0 20px; color: #262626; font-size: 16px; line-height: 1.5;">
+                We regret to inform you that your booking request has been cancelled by our team.
+              </p>
+
+              <!-- Booking Reference -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #FEF2F2; border-radius: 8px; padding: 20px; margin: 20px 0;">
+                <tr>
+                  <td>
+                    <p style="margin: 0 0 8px; color: #7f1d1d; font-size: 12px; font-weight: 600; text-transform: uppercase;">
+                      Booking Reference
+                    </p>
+                    <p style="margin: 0; color: #991B1B; font-size: 24px; font-weight: 700; letter-spacing: 1px;">
+                      ${bookingReference}
+                    </p>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Decline Reason -->
+              <div style="background-color: #FEF3C7; border-left: 4px solid #F59E0B; padding: 16px; margin: 20px 0; border-radius: 4px;">
+                <p style="margin: 0 0 8px; color: #92400E; font-size: 14px; font-weight: 600;">
+                  Reason for Cancellation:
+                </p>
+                <p style="margin: 0; color: #78350F; font-size: 14px; line-height: 1.6;">
+                  ${declineReason}
+                </p>
+              </div>
+
+              ${customMessage ? `
+              <!-- Additional Message -->
+              <div style="margin: 20px 0; padding: 20px; background-color: #fafafa; border-radius: 8px;">
+                <p style="margin: 0 0 8px; color: #262626; font-size: 14px; font-weight: 600;">
+                  Additional Information:
+                </p>
+                <p style="margin: 0; color: #525252; font-size: 14px; line-height: 1.6;">
+                  ${customMessage}
+                </p>
+              </div>
+              ` : ''}
+
+              ${vehicleName ? `
+              <!-- Booking Details -->
+              <div style="margin: 20px 0; padding: 20px; background-color: #fafafa; border-radius: 8px;">
+                <h3 style="margin: 0 0 15px; color: #262626; font-size: 16px; font-weight: 600;">
+                  Cancelled Booking Details
+                </h3>
+                <div style="margin-bottom: 12px;">
+                  <p style="margin: 0; color: #737373; font-size: 13px;">Vehicle</p>
+                  <p style="margin: 4px 0 0; color: #262626; font-size: 15px; font-weight: 500;">
+                    ${vehicleName}
+                  </p>
+                </div>
+                ${totalPrice ? `
+                <div>
+                  <p style="margin: 0; color: #737373; font-size: 13px;">Amount</p>
+                  <p style="margin: 4px 0 0; color: #262626; font-size: 15px; font-weight: 500;">
+                    ₱${totalPrice.toLocaleString()}
+                  </p>
+                </div>
+                ` : ''}
+              </div>
+              ` : ''}
+
+              <!-- Refund Information -->
+              <div style="background-color: #DBEAFE; border-left: 4px solid #3B82F6; padding: 16px; margin: 20px 0; border-radius: 4px;">
+                <p style="margin: 0 0 8px; color: #1E40AF; font-size: 14px; font-weight: 600;">
+                  💰 Refund Information
+                </p>
+                <p style="margin: 0; color: #1E3A8A; font-size: 14px; line-height: 1.6;">
+                  If you have already made a payment, please contact our support team to process your refund. Refunds are typically processed within 5-7 business days.
+                </p>
+              </div>
+
+              <!-- Contact Information -->
+              <div style="margin: 30px 0; padding: 20px; background-color: #F3F4F6; border-radius: 8px;">
+                <h3 style="margin: 0 0 12px; color: #262626; font-size: 16px; font-weight: 600;">
+                  Need Help?
+                </h3>
+                <p style="margin: 0 0 12px; color: #525252; font-size: 14px; line-height: 1.6;">
+                  If you have any questions or would like to make a new booking, please contact us:
+                </p>
+                <p style="margin: 0; color: #525252; font-size: 14px; line-height: 1.8;">
+                  📞 <strong>Phone:</strong> +63 123 456 7890<br>
+                  📧 <strong>Email:</strong> info@arcarrentals.com<br>
+                  ⏰ <strong>Hours:</strong> Monday - Saturday, 10:00am - 5:30pm
+                </p>
+              </div>
+
+              <p style="margin: 20px 0 0; color: #737373; font-size: 14px; line-height: 1.6;">
+                We apologize for any inconvenience this may cause. We hope to serve you in the future.
+              </p>
+
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background-color: #fafafa; padding: 30px; text-align: center; border-top: 1px solid #e5e5e5;">
+              <p style="margin: 0; color: #737373; font-size: 12px; line-height: 1.6;">
+                © 2026 AR Car Rentals. All rights reserved.
+                <br>Cebu City, Philippines
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  `
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -383,27 +544,42 @@ serve(async (req) => {
     console.log('📝 Booking Reference:', bookingReference)
     console.log('📋 Email Type:', emailType)
 
-    // Choose the appropriate email template and subject
-    const isPending = emailType === 'pending'
-    const emailHTML = isPending 
-      ? getPendingEmailHTML(
-          bookingReference,
-          magicLink,
-          bookingDetails?.vehicleName,
-          bookingDetails?.pickupDate,
-          bookingDetails?.returnDate
-        )
-      : getConfirmedEmailHTML(
-          bookingReference,
-          magicLink,
-          bookingDetails?.vehicleName,
-          bookingDetails?.pickupDate,
-          bookingDetails?.returnDate
-        )
+    // Choose the appropriate email template and subject based on emailType
+    let emailHTML: string
+    let subject: string
 
-    const subject = isPending
-      ? `Booking Received - ${bookingReference} (Awaiting Confirmation) | AR Car Rentals`
-      : `Booking Confirmed - ${bookingReference} | AR Car Rentals`
+    if (emailType === 'declined') {
+      // Declined/Cancelled booking email
+      emailHTML = getDeclinedEmailHTML(
+        bookingReference,
+        bookingDetails?.customerName || 'Valued Customer',
+        bookingDetails?.declineReason || 'Your booking request could not be accommodated at this time.',
+        bookingDetails?.customMessage,
+        bookingDetails?.vehicleName,
+        bookingDetails?.totalPrice
+      )
+      subject = `Booking Cancelled - ${bookingReference} | AR Car Rentals`
+    } else if (emailType === 'confirmed') {
+      // Confirmed booking email
+      emailHTML = getConfirmedEmailHTML(
+        bookingReference,
+        magicLink,
+        bookingDetails?.vehicleName,
+        bookingDetails?.pickupDate,
+        bookingDetails?.returnDate
+      )
+      subject = `Booking Confirmed - ${bookingReference} | AR Car Rentals`
+    } else {
+      // Pending booking email (default)
+      emailHTML = getPendingEmailHTML(
+        bookingReference,
+        magicLink,
+        bookingDetails?.vehicleName,
+        bookingDetails?.pickupDate,
+        bookingDetails?.returnDate
+      )
+      subject = `Booking Received - ${bookingReference} (Awaiting Confirmation) | AR Car Rentals`
+    }
 
     // Send email via Resend API
     const response = await fetch('https://api.resend.com/emails', {

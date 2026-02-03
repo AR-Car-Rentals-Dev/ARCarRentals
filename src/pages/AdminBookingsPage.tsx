@@ -19,6 +19,7 @@ import {
 import { Button, Input, ConfirmDialog } from '@components/ui';
 import { supabase } from '@services/supabase';
 import { AdminPageSkeleton } from '@components/ui/AdminPageSkeleton';
+import { BookingDetailsViewModal } from '@components/ui/BookingDetailsViewModal';
 
 // Types
 interface Customer {
@@ -69,7 +70,7 @@ interface BookingWithDetails {
   pickup_location: string;
   pickup_time?: string;
   total_amount: number;
-  booking_status: 'pending' | 'accepted' | 'rejected' | 'cancelled' | 'completed';
+  booking_status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
   created_at: string;
   customers?: Customer;
   vehicles?: Vehicle;
@@ -114,6 +115,7 @@ export const AdminBookingsPage: FC = () => {
   const [stats, setStats] = useState<BookingStats>({ total: 0, pending: 0, accepted: 0, rejected: 0, cancelled: 0, completed: 0 });
   const [isLoading, setIsLoading] = useState(true);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<BookingWithDetails | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   
@@ -236,6 +238,11 @@ export const AdminBookingsPage: FC = () => {
   const handleDeleteClick = (booking: BookingWithDetails) => {
     setSelectedBooking(booking);
     setIsDeleteDialogOpen(true);
+  };
+
+  const handleViewClick = (booking: BookingWithDetails) => {
+    setSelectedBooking(booking);
+    setIsViewModalOpen(true);
   };
 
   const handleDeleteConfirm = async () => {
@@ -477,6 +484,16 @@ export const AdminBookingsPage: FC = () => {
                             <button 
                               onClick={(e) => {
                                 e.stopPropagation();
+                                handleViewClick(booking);
+                              }}
+                              className="p-2 hover:bg-blue-50 rounded-lg transition-colors text-blue-600"
+                              title="View booking details"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </button>
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
                                 handleDeleteClick(booking);
                               }}
                               className="p-2 hover:bg-red-50 rounded-lg transition-colors text-red-600"
@@ -539,6 +556,16 @@ export const AdminBookingsPage: FC = () => {
         confirmText="Delete"
         variant="danger"
         isLoading={isDeleting}
+      />
+
+      <BookingDetailsViewModal
+        isOpen={isViewModalOpen}
+        onClose={() => {
+          setIsViewModalOpen(false);
+          setSelectedBooking(null);
+        }}
+        booking={selectedBooking}
+        onStatusUpdate={fetchBookings}
       />
       </div>
 
