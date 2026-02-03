@@ -18,7 +18,6 @@ import {
 } from 'lucide-react';
 import { Button, Input, ConfirmDialog } from '@components/ui';
 import { supabase } from '@services/supabase';
-import { AdminPageSkeleton } from '@components/ui/AdminPageSkeleton';
 
 // Types
 interface Customer {
@@ -103,6 +102,320 @@ const StatusBadge: FC<{ status: keyof typeof STATUS_CONFIG }> = ({ status }) => 
   );
 };
 
+// Booking Details Modal Component
+interface BookingDetailsModalProps {
+  booking: BookingWithDetails;
+  onClose: () => void;
+  onStatusUpdate: () => void;
+}
+
+const BookingDetailsModalComponent: FC<BookingDetailsModalProps> = ({ booking, onClose, onStatusUpdate }) => {
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  const [showImageModal, setShowImageModal] = useState(false);
+
+  const latestPayment = booking.payments && booking.payments.length > 0 
+    ? booking.payments.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0]
+    : null;
+
+  const receiptUrl = latestPayment?.receipt_url || latestPayment?.payment_proof_url;
+
+  const endDate = new Date(booking.start_date);
+  endDate.setDate(endDate.getDate() + booking.rental_days);
+
+  const handleStatusChange = async (newStatus: typeof booking.booking_status) => {
+    setIsUpdatingStatus(true);
+    try {
+      const { error } = await supabase
+        .from('bookings')
+        .update({ booking_status: newStatus })
+        .eq('id', booking.id);
+
+      if (error) throw error;
+
+      onStatusUpdate();
+      onClose();
+    } catch (error) {
+      console.error('Error updating status:', error);
+      alert('Failed to update booking status');
+    } finally {
+      setIsUpdatingStatus(false);
+    }
+  };
+
+  const getAvailableStatusTransitions = (currentStatus: typeof booking.booking_status) => {
+    const transitions: Record<typeof booking.booking_status, typeof booking.booking_status[]> = {
+      pending: ['accepted', 'rejected', 'cancelled'],
+      accepted: ['completed', 'cancelled'],
+      rejected: [],
+      cancelled: [],
+      completed: [],
+    };
+    return transitions[currentStatus] || [];
+  };
+
+  const availableStatuses = getAvailableStatusTransitions(booking.booking_status);
+
+  return (
+    <div className="fixed inset-0 z-50 overflow-y-auto">
+      <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
+        {/* Backdrop */}
+        <div className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75" onClick={onClose}></div>
+
+        {/* Modal */}
+        <div className="inline-block w-full max-w-4xl my-8 overflow-hidden text-left align-middle transition-all transform bg-white shadow-xl rounded-2xl">
+          <div className="max-h-[90vh] overflow-y-auto">
+            {/* Header */}
+            <div className="sticky top-0 bg-white border-b border-neutral-200 px-6 py-4 flex items-center justify-between z-10">
+              <div>
+                <h3 className="text-xl font-bold text-neutral-900">Booking Details</h3>
+                <p className="text-sm text-primary-600 font-medium">{booking.booking_reference}</p>
+              </div>
+              <div className="flex items-center gap-3">
+                <StatusBadge status={booking.booking_status} />
+                <button
+                  onClick={onClose}
+                  className="text-neutral-400 hover:text-neutral-600 transition-colors"
+                >
+                  <XCircle className="h-6 w-6" />
+                </button>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="px-6 py-6 space-y-6">
+              {/* Customer Information */}
+              <div className="bg-neutral-50 rounded-xl p-5">
+                <h4 className="text-sm font-semibold text-neutral-900 mb-4 flex items-center gap-2">
+                  <User className="h-4 w-4 text-neutral-600" />
+                  Customer Information
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-xs text-neutral-500 mb-1">Full Name</p>
+                    <p className="text-sm font-medium text-neutral-900">{booking.customers?.full_name || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-neutral-500 mb-1">Email</p>
+                    <p className="text-sm font-medium text-neutral-900">{booking.customers?.email || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-neutral-500 mb-1">Contact Number</p>
+                    <p className="text-sm font-medium text-neutral-900">{booking.customers?.contact_number || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-neutral-500 mb-1">Address</p>
+                    <p className="text-sm font-medium text-neutral-900">{booking.customers?.address || 'N/A'}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Booking Information */}
+              <div className="bg-neutral-50 rounded-xl p-5">
+                <h4 className="text-sm font-semibold text-neutral-900 mb-4 flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-neutral-600" />
+                  Booking Information
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-xs text-neutral-500 mb-1">Pickup Location</p>
+                    <p className="text-sm font-medium text-neutral-900">{booking.pickup_location || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-neutral-500 mb-1">Pickup Time</p>
+                    <p className="text-sm font-medium text-neutral-900">{booking.pickup_time || booking.start_time || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-neutral-500 mb-1">Start Date</p>
+                    <p className="text-sm font-medium text-neutral-900">{new Date(booking.start_date).toLocaleDateString()}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-neutral-500 mb-1">End Date</p>
+                    <p className="text-sm font-medium text-neutral-900">{endDate.toLocaleDateString()}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-neutral-500 mb-1">Rental Days</p>
+                    <p className="text-sm font-medium text-neutral-900">{booking.rental_days} day{booking.rental_days > 1 ? 's' : ''}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-neutral-500 mb-1">Total Amount</p>
+                    <p className="text-lg font-bold text-primary-600">₱{booking.total_amount.toLocaleString()}</p>
+                  </div>
+                  <div className="col-span-2">
+                    <p className="text-xs text-neutral-500 mb-1">Created At</p>
+                    <p className="text-sm font-medium text-neutral-900">{new Date(booking.created_at).toLocaleString()}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Vehicle Information */}
+              {booking.vehicles && (
+                <div className="bg-neutral-50 rounded-xl p-5">
+                  <h4 className="text-sm font-semibold text-neutral-900 mb-4 flex items-center gap-2">
+                    <Car className="h-4 w-4 text-neutral-600" />
+                    Vehicle Information
+                  </h4>
+                  {booking.vehicles.image_url && (
+                    <div className="mb-4 rounded-lg overflow-hidden">
+                      <img
+                        src={booking.vehicles.image_url}
+                        alt={`${booking.vehicles.brand} ${booking.vehicles.model}`}
+                        className="w-full h-48 object-cover"
+                      />
+                    </div>
+                  )}
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    <div>
+                      <p className="text-xs text-neutral-500 mb-1">Category</p>
+                      <p className="text-sm font-medium text-neutral-900">{booking.vehicles.vehicle_categories?.name || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-neutral-500 mb-1">Brand & Model</p>
+                      <p className="text-sm font-medium text-neutral-900">{booking.vehicles.brand} {booking.vehicles.model}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-neutral-500 mb-1">Transmission</p>
+                      <p className="text-sm font-medium text-neutral-900">{booking.vehicles.transmission}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-neutral-500 mb-1">Fuel Type</p>
+                      <p className="text-sm font-medium text-neutral-900">{booking.vehicles.fuel_type}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-neutral-500 mb-1">Seats</p>
+                      <p className="text-sm font-medium text-neutral-900">{booking.vehicles.seats}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-neutral-500 mb-1">Price per Day</p>
+                      <p className="text-sm font-medium text-neutral-900">₱{booking.vehicles.price_per_day.toLocaleString()}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Payment Information */}
+              {latestPayment && (
+                <div className="bg-neutral-50 rounded-xl p-5">
+                  <h4 className="text-sm font-semibold text-neutral-900 mb-4 flex items-center gap-2">
+                    <User className="h-4 w-4 text-neutral-600" />
+                    Payment Information
+                  </h4>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
+                    <div>
+                      <p className="text-xs text-neutral-500 mb-1">Payment Status</p>
+                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                        latestPayment.payment_status === 'paid' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+                      }`}>
+                        {latestPayment.payment_status}
+                      </span>
+                    </div>
+                    <div>
+                      <p className="text-xs text-neutral-500 mb-1">Payment Method</p>
+                      <p className="text-sm font-medium text-neutral-900">{latestPayment.payment_method || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-neutral-500 mb-1">Amount</p>
+                      <p className="text-sm font-medium text-neutral-900">₱{latestPayment.amount.toLocaleString()}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-neutral-500 mb-1">Transaction Reference</p>
+                      <p className="text-sm font-medium text-neutral-900">{latestPayment.transaction_reference || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-neutral-500 mb-1">Paid At</p>
+                      <p className="text-sm font-medium text-neutral-900">
+                        {latestPayment.paid_at ? new Date(latestPayment.paid_at).toLocaleString() : 'N/A'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Receipt Image */}
+                  {receiptUrl ? (
+                    <div className="mt-4">
+                      <p className="text-xs text-neutral-500 mb-2">Payment Receipt</p>
+                      <div className="relative group">
+                        <img
+                          src={receiptUrl}
+                          alt="Payment Receipt"
+                          className="w-full h-64 object-contain rounded-lg border-2 border-green-200 bg-white cursor-pointer"
+                          onClick={() => setShowImageModal(true)}
+                        />
+                        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all rounded-lg flex items-center justify-center">
+                          <button
+                            onClick={() => setShowImageModal(true)}
+                            className="opacity-0 group-hover:opacity-100 transition-opacity bg-white px-4 py-2 rounded-lg text-sm font-medium text-neutral-900 shadow-lg"
+                          >
+                            View Full Size
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="mt-4 p-6 border-2 border-dashed border-neutral-300 rounded-lg text-center">
+                      <p className="text-sm text-neutral-500">No receipt uploaded</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Status Update Actions */}
+              {availableStatuses.length > 0 && (
+                <div className="bg-blue-50 rounded-xl p-5 border border-blue-200">
+                  <h4 className="text-sm font-semibold text-neutral-900 mb-3">Update Booking Status</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {availableStatuses.map(status => (
+                      <Button
+                        key={status}
+                        onClick={() => handleStatusChange(status)}
+                        disabled={isUpdatingStatus}
+                        className={`${STATUS_CONFIG[status].bg} ${STATUS_CONFIG[status].text} hover:opacity-80`}
+                      >
+                        {isUpdatingStatus ? (
+                          <>
+                            <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                            Updating...
+                          </>
+                        ) : (
+                          <>Update to {STATUS_CONFIG[status].label}</>
+                        )}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="bg-white border-t border-neutral-200 px-6 py-4 flex justify-end flex-shrink-0">
+              <Button variant="outline" onClick={onClose}>
+                Close
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Full Image Modal */}
+      {showImageModal && receiptUrl && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-90 p-4" onClick={() => setShowImageModal(false)}>
+          <div className="relative max-w-6xl max-h-full">
+            <img
+              src={receiptUrl}
+              alt="Payment Receipt Full Size"
+              className="max-w-full max-h-[90vh] object-contain"
+            />
+            <button
+              onClick={() => setShowImageModal(false)}
+              className="absolute top-4 right-4 bg-white text-neutral-900 rounded-full p-2 hover:bg-neutral-200 transition-colors"
+            >
+              <XCircle className="h-6 w-6" />
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 /**
  * Admin Bookings Management Page
  */
@@ -114,6 +427,7 @@ export const AdminBookingsPage: FC = () => {
   const [stats, setStats] = useState<BookingStats>({ total: 0, pending: 0, accepted: 0, rejected: 0, cancelled: 0, completed: 0 });
   const [isLoading, setIsLoading] = useState(true);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<BookingWithDetails | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   
@@ -233,6 +547,11 @@ export const AdminBookingsPage: FC = () => {
     currentPage * itemsPerPage
   );
 
+  const handleViewDetails = (booking: BookingWithDetails) => {
+    setSelectedBooking(booking);
+    setIsDetailsModalOpen(true);
+  };
+
   const handleDeleteClick = (booking: BookingWithDetails) => {
     setSelectedBooking(booking);
     setIsDeleteDialogOpen(true);
@@ -260,10 +579,6 @@ export const AdminBookingsPage: FC = () => {
       setIsDeleting(false);
     }
   };
-
-  if (isLoading) {
-    return <AdminPageSkeleton />;
-  }
 
   return (
     <>
@@ -475,6 +790,13 @@ export const AdminBookingsPage: FC = () => {
                         <td className="py-4 px-6">
                           <div className="flex items-center justify-center gap-2">
                             <button 
+                              onClick={() => handleViewDetails(booking)}
+                              className="p-2 hover:bg-blue-50 rounded-lg transition-colors text-blue-600"
+                              title="View details"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </button>
+                            <button 
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleDeleteClick(booking);
@@ -525,6 +847,17 @@ export const AdminBookingsPage: FC = () => {
           </>
         )}
       </div>
+
+      {/* Booking Details Modal */}
+      {isDetailsModalOpen && selectedBooking && (
+        <BookingDetailsModalComponent
+          booking={selectedBooking}
+          onClose={() => {
+            setIsDetailsModalOpen(false);
+            setSelectedBooking(null);
+          }}
+        />
+      )}
 
       {/* Delete Confirmation Dialog */}
       <ConfirmDialog

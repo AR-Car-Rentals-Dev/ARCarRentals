@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { Card, Button, Input, AddVehicleModal, EditVehicleModal, ConfirmDialog } from '@components/ui';
 import { vehicleService, type Vehicle as VehicleType, type VehicleStats } from '@services/vehicleService';
+import { AdminPageSkeleton } from '@components/ui/AdminPageSkeleton';
 
 const StatusBadge: FC<{ status: VehicleType['status'] }> = ({ status }) => {
   const styles = {
@@ -128,26 +129,41 @@ export const AdminFleetPage: FC = () => {
     }
   };
 
+  if (isLoading) {
+    return <AdminPageSkeleton />;
+  }
+
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-neutral-900">Fleet Management</h1>
-          <p className="text-neutral-500">Manage your vehicle inventory</p>
+    <>
+      <div className="fleet-container">
+        {/* Page Header */}
+        <div className="page-header">
+          <div>
+            <h1 className="page-title">Fleet Management</h1>
+          </div>
+          <div className="header-actions">
+            <Button 
+              className="bg-primary-600 hover:bg-primary-700 shadow-lg shadow-primary-600/30"
+              onClick={() => setIsAddModalOpen(true)}
+            >
+              <Plus className="h-5 w-5 mr-2" />
+              Add Vehicle
+            </Button>
+            <div className="user-info-section">
+              <div className="user-details">
+                <div className="user-name">Admin User</div>
+                <div className="user-role">Administrator</div>
+              </div>
+              <div className="user-avatar">
+                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Admin" alt="Admin" />
+              </div>
+            </div>
+          </div>
         </div>
-        <Button 
-          className="bg-primary-600 hover:bg-primary-700 shadow-lg shadow-primary-600/30"
-          onClick={() => setIsAddModalOpen(true)}
-        >
-          <Plus className="h-5 w-5 mr-2" />
-          Add Vehicle
-        </Button>
-      </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="p-4">
+      <div className="stats-grid">
+        <div className="stat-card">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-neutral-100 flex items-center justify-center">
               <Car className="h-5 w-5 text-neutral-600" />
@@ -158,11 +174,11 @@ export const AdminFleetPage: FC = () => {
               ) : (
                 <p className="text-2xl font-bold text-neutral-900">{stats?.total || 0}</p>
               )}
-              <p className="text-sm text-neutral-500">Total Vehicles</p>
+              <p className="stat-label">Total Vehicles</p>
             </div>
           </div>
-        </Card>
-        <Card className="p-4">
+        </div>
+        <div className="stat-card">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
               <Car className="h-5 w-5 text-green-600" />
@@ -173,11 +189,11 @@ export const AdminFleetPage: FC = () => {
               ) : (
                 <p className="text-2xl font-bold text-green-600">{stats?.available || 0}</p>
               )}
-              <p className="text-sm text-neutral-500">Available</p>
+              <p className="stat-label">Available</p>
             </div>
           </div>
-        </Card>
-        <Card className="p-4">
+        </div>
+        <div className="stat-card">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
               <Car className="h-5 w-5 text-blue-600" />
@@ -188,11 +204,11 @@ export const AdminFleetPage: FC = () => {
               ) : (
                 <p className="text-2xl font-bold text-blue-600">{stats?.rented || 0}</p>
               )}
-              <p className="text-sm text-neutral-500">Rented</p>
+              <p className="stat-label">Rented</p>
             </div>
           </div>
-        </Card>
-        <Card className="p-4">
+        </div>
+        <div className="stat-card">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-yellow-100 flex items-center justify-center">
               <Settings2 className="h-5 w-5 text-yellow-600" />
@@ -203,14 +219,14 @@ export const AdminFleetPage: FC = () => {
               ) : (
                 <p className="text-2xl font-bold text-yellow-600">{stats?.maintenance || 0}</p>
               )}
-              <p className="text-sm text-neutral-500">Maintenance</p>
+              <p className="stat-label">Maintenance</p>
             </div>
           </div>
-        </Card>
+        </div>
       </div>
 
       {/* Search and Filter */}
-      <Card className="p-4">
+      <div className="search-card">
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="flex-1">
             <Input
@@ -237,7 +253,7 @@ export const AdminFleetPage: FC = () => {
             </Button>
           </div>
         </div>
-      </Card>
+      </div>
 
       {/* Vehicle Grid */}
       {isLoading ? (
@@ -360,7 +376,133 @@ export const AdminFleetPage: FC = () => {
         variant="danger"
         isLoading={isDeleting}
       />
-    </div>
+      </div>
+
+      <style>{`
+        .fleet-container {
+          display: flex;
+          flex-direction: column;
+          gap: 20px;
+        }
+
+        .page-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 4px;
+        }
+
+        .page-title {
+          font-size: 32px;
+          font-weight: 700;
+          color: #1a1a1a;
+          margin: 0;
+          line-height: 1;
+        }
+
+        .header-actions {
+          display: flex;
+          align-items: center;
+          gap: 16px;
+        }
+
+        .user-info-section {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+
+        .user-details {
+          text-align: right;
+        }
+
+        .user-name {
+          font-size: 14px;
+          font-weight: 600;
+          color: #1a1a1a;
+          line-height: 1.2;
+        }
+
+        .user-role {
+          font-size: 12px;
+          color: #9ca3af;
+          line-height: 1.2;
+        }
+
+        .user-avatar {
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
+          overflow: hidden;
+          background: #f3f4f6;
+        }
+
+        .user-avatar img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+
+        .stats-grid {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 20px;
+        }
+
+        .stat-card {
+          background: white;
+          border: 1px solid #e5e7eb;
+          border-radius: 16px;
+          padding: 24px;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+          transition: all 0.2s ease;
+        }
+
+        .stat-card:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        .stat-label {
+          font-size: 13px;
+          color: #9ca3af;
+        }
+
+        .search-card {
+          background: white;
+          border: 1px solid #e5e7eb;
+          border-radius: 16px;
+          padding: 20px;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+        }
+
+        @media (max-width: 1024px) {
+          .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+          }
+        }
+
+        @media (max-width: 640px) {
+          .page-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 16px;
+          }
+
+          .user-info-section {
+            align-self: flex-end;
+          }
+
+          .page-title {
+            font-size: 24px;
+          }
+
+          .stats-grid {
+            grid-template-columns: 1fr;
+          }
+        }
+      `}</style>
+    </>
   );
 };
 

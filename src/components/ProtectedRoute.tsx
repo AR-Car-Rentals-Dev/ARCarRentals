@@ -36,7 +36,7 @@ export const ProtectedRoute: FC<ProtectedRouteProps> = ({ children, requireAdmin
 
   // Not authenticated - redirect to login
   if (!user) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to={requireAdmin ? "/admin/login" : "/login"} replace />;
   }
 
   // Requires admin but user is not admin/staff - redirect to customer dashboard

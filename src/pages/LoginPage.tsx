@@ -1,11 +1,10 @@
 import { type FC, useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Mail, Lock, Eye, EyeOff, Car, ArrowRight, Shield } from 'lucide-react';
-import { Button, Input, Container } from '@components/ui';
+import { Eye, EyeOff } from 'lucide-react';
 import { authService } from '@services/authService';
 
 /**
- * Admin Login page component - matches landing page design
+ * Admin Login page component - Premium split-screen design
  */
 export const LoginPage: FC = () => {
   const navigate = useNavigate();
@@ -88,201 +87,179 @@ export const LoginPage: FC = () => {
   };
 
   return (
-    <section className="min-h-screen bg-gradient-to-br from-neutral-900 via-neutral-800 to-neutral-900 overflow-hidden">
-      {/* Background Pattern */}
-      <div className="absolute inset-0 opacity-10">
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4xIj48Y2lyY2xlIGN4PSIzIiBjeT0iMyIgcj0iMyIvPjwvZz48L2c+PC9zdmc+')]" />
-      </div>
+    <div className="min-h-screen bg-neutral-50 flex">
+      {/* Left Column - Visual/Branding */}
+      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden">
+        {/* Premium Car Background Image */}
+        <div 
+          className="absolute inset-0 bg-cover bg-center"
+          style={{
+            backgroundImage: `url('https://images.unsplash.com/photo-1605559424843-9e4c228bf1c2?q=80&w=2564&auto=format&fit=crop')`,
+          }}
+        >
+          {/* Dark gradient overlay */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-black/30" />
+        </div>
 
-      {/* Red Accents */}
-      <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-primary-600/20 to-transparent" />
-      <div className="absolute bottom-0 left-0 w-1/3 h-1/2 bg-gradient-to-tr from-primary-600/10 to-transparent" />
-
-      <Container className="relative z-10 min-h-screen flex items-center justify-center py-12 px-4">
-        <div className="w-full max-w-5xl grid lg:grid-cols-2 gap-12 items-center">
-          
-          {/* Left Side - Branding */}
-          <div className="hidden lg:block text-center lg:text-left">
-            <Link to="/" className="inline-flex items-center gap-3 mb-8">
-              <div className="flex items-center justify-center h-16 w-16 rounded-2xl bg-primary-600 shadow-lg shadow-primary-600/30">
-                <Car className="h-9 w-9 text-white" />
-              </div>
-              <span className="font-bold text-2xl text-white tracking-wide">
-                AR CAR RENTAL SERVICES
-              </span>
-            </Link>
-            
-            <h1 className="text-4xl lg:text-5xl font-bold text-white leading-tight mb-6">
-              Admin{' '}
-              <span className="text-primary-500">Portal</span>
-            </h1>
-            
-            <p className="text-neutral-400 text-lg mb-8 max-w-md">
-              Manage your fleet, bookings, and business operations from a single dashboard.
-            </p>
-
-            {/* Features */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-3 text-neutral-300">
-                <div className="w-10 h-10 rounded-xl bg-primary-600/20 flex items-center justify-center">
-                  <Shield className="h-5 w-5 text-primary-500" />
-                </div>
-                <span>Secure admin access</span>
-              </div>
-              <div className="flex items-center gap-3 text-neutral-300">
-                <div className="w-10 h-10 rounded-xl bg-primary-600/20 flex items-center justify-center">
-                  <Car className="h-5 w-5 text-primary-500" />
-                </div>
-                <span>Fleet management</span>
-              </div>
-              <div className="flex items-center gap-3 text-neutral-300">
-                <div className="w-10 h-10 rounded-xl bg-primary-600/20 flex items-center justify-center">
-                  <Lock className="h-5 w-5 text-primary-500" />
-                </div>
-                <span>Protected dashboard</span>
-              </div>
-            </div>
-
-            {/* Admin Illustration */}
-            <div className="mt-12 relative">
-              <div className="absolute -top-10 -right-10 w-[400px] h-[250px] bg-gradient-to-br from-primary-600/30 to-transparent rounded-full blur-3xl" />
-              <div className="relative z-10 flex items-center justify-center">
-                <div className="w-64 h-64 rounded-full bg-gradient-to-br from-primary-600/20 to-neutral-800 flex items-center justify-center border border-neutral-700">
-                  <Shield className="h-24 w-24 text-primary-500/50" />
-                </div>
-              </div>
-            </div>
+        {/* Content over image */}
+        <div className="relative z-10 flex flex-col justify-between p-12 text-white w-full">
+          {/* Logo */}
+          <div className="flex items-center gap-3">
+            <img 
+              src="/ARCarRentals.png" 
+              alt="AR Car Rentals" 
+              className="h-16 w-auto"
+            />
           </div>
 
-          {/* Right Side - Login Form */}
-          <div className="w-full max-w-md mx-auto lg:mx-0">
-            {/* Mobile Logo */}
-            <div className="lg:hidden text-center mb-8">
-              <Link to="/" className="inline-flex items-center gap-3">
-                <div className="flex items-center justify-center h-14 w-14 rounded-xl bg-primary-600 shadow-lg">
-                  <Car className="h-8 w-8 text-white" />
-                </div>
-                <span className="font-bold text-xl text-white tracking-wide">
-                  AR CAR RENTAL SERVICES
-                </span>
-              </Link>
-            </div>
-
-            {/* Form Card */}
-            <div className="bg-white rounded-3xl shadow-2xl p-8 lg:p-10">
-              {/* Admin Badge */}
-              <div className="flex justify-center mb-6">
-                <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary-50 rounded-full border border-primary-200">
-                  <Shield className="h-4 w-4 text-primary-600" />
-                  <span className="text-sm font-semibold text-primary-600">Admin Access Only</span>
-                </div>
-              </div>
-
-              <div className="text-center mb-8">
-                <h2 className="text-2xl lg:text-3xl font-bold text-neutral-900 mb-2">
-                  Admin Login
-                </h2>
-                <p className="text-neutral-500">
-                  Enter your credentials to continue
-                </p>
-              </div>
-
-              {errors.general && (
-                <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-red-500 flex-shrink-0" />
-                  {errors.general}
-                </div>
-              )}
-
-              <form onSubmit={handleSubmit} className="space-y-5">
-                <div>
-                  <label className="block text-sm font-semibold text-neutral-700 mb-2">
-                    Email Address
-                  </label>
-                  <Input
-                    type="email"
-                    placeholder="admin@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    leftIcon={<Mail className="h-5 w-5 text-neutral-400" />}
-                    error={errors.email}
-                    className="h-12"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-neutral-700 mb-2">
-                    Password
-                  </label>
-                  <div className="relative">
-                    <Input
-                      type={showPassword ? 'text' : 'password'}
-                      placeholder="Enter your password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      leftIcon={<Lock className="h-5 w-5 text-neutral-400" />}
-                      error={errors.password}
-                      className="h-12 pr-12"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 transition-colors"
-                    >
-                      {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                    </button>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between text-sm">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={rememberMe}
-                      onChange={(e) => setRememberMe(e.target.checked)}
-                      className="w-4 h-4 rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
-                    />
-                    <span className="text-neutral-600">Remember me</span>
-                  </label>
-                  <Link
-                    to="/forgot-password"
-                    className="text-primary-600 hover:text-primary-700 font-medium transition-colors"
-                  >
-                    Forgot password?
-                  </Link>
-                </div>
-
-                <Button
-                  type="submit"
-                  fullWidth
-                  size="lg"
-                  className="h-12 text-base font-semibold bg-primary-600 hover:bg-primary-700 shadow-lg shadow-primary-600/30"
-                  isLoading={isLoading}
-                >
-                  {!isLoading && (
-                    <>
-                      Sign In to Dashboard
-                      <ArrowRight className="ml-2 h-5 w-5" />
-                    </>
-                  )}
-                </Button>
-              </form>
-            </div>
-
-            {/* Back to Home */}
-            <div className="mt-6 text-center">
-              <Link
-                to="/"
-                className="text-neutral-400 hover:text-white transition-colors text-sm inline-flex items-center gap-2"
-              >
-                <ArrowRight className="h-4 w-4 rotate-180" />
-                Back to Home
-              </Link>
-            </div>
+          {/* Admin Text */}
+          <div className="max-w-md">
+            <h1 className="text-5xl font-bold leading-tight mb-6">
+              Admin<br />
+              Dashboard<br />
+            </h1>
+            <p className="text-lg text-white/90 leading-relaxed mb-4">
+              Mag-login para makita ang inyong vehicles, bookings, at customers.
+            </p>
+            <p className="text-base text-white/80">
+              Secure at protektado ang lahat ng admin data.
+            </p>
           </div>
         </div>
-      </Container>
-    </section>
+      </div>
+
+      {/* Right Column - Login Form */}
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-6">
+        <div className="w-full max-w-[32rem] px-4">
+          {/* Logo - Centered */}
+          <div className="flex justify-center mb-8">
+            <img 
+              src="/ARCarRentals.png" 
+              alt="AR Car Rentals" 
+              className="h-40 w-auto"
+            />
+          </div>
+
+          {/* Welcome Back Header */}
+          <div className="mb-8">
+            <h2 className="text-3xl font-bold text-gray-900 mb-2">WELCOME BACK!</h2>
+            <p className="text-gray-600 text-base">Please enter your details.</p>
+          </div>
+
+          {/* Error Message */}
+          {errors.general && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-600 text-base">
+              {errors.general}
+            </div>
+          )}
+
+          {/* Login Form */}
+          <form onSubmit={handleSubmit} className="space-y-5">
+            {/* Email Field */}
+            <div>
+              <label htmlFor="email" className="block text-base font-medium text-gray-700 mb-2">
+                Email
+              </label>
+              <input
+                id="email"
+                type="email"
+                placeholder="Enter your email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-colors text-base ${
+                  errors.email 
+                    ? 'border-red-300 focus:border-red-500 focus:ring-red-500/20' 
+                    : 'border-gray-300 focus:border-[#EF4444] focus:ring-[#EF4444]/20'
+                }`}
+              />
+              {errors.email && (
+                <p className="mt-1.5 text-sm text-red-600">{errors.email}</p>
+              )}
+            </div>
+
+            {/* Password Field */}
+            <div>
+              <label htmlFor="password" className="block text-base font-medium text-gray-700 mb-2">
+                Password
+              </label>
+              <div className="relative">
+                <input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoComplete="current-password"
+                  className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-colors pr-12 text-base [&::-ms-reveal]:hidden [&::-ms-clear]:hidden ${
+                    errors.password 
+                      ? 'border-red-300 focus:border-red-500 focus:ring-red-500/20' 
+                      : 'border-gray-300 focus:border-[#EF4444] focus:ring-[#EF4444]/20'
+                  }`}
+                  style={{ WebkitTextSecurity: showPassword ? 'none' : 'disc' } as React.CSSProperties}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                </button>
+              </div>
+              {errors.password && (
+                <p className="mt-1.5 text-sm text-red-600">{errors.password}</p>
+              )}
+            </div>
+
+            {/* Remember Me & Forgot Password */}
+            <div className="flex items-center justify-between text-sm">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="w-4 h-4 rounded border-gray-300 text-[#EF4444] focus:ring-[#EF4444] focus:ring-offset-0"
+                />
+                <span className="text-gray-600">Remember me</span>
+              </label>
+              <button
+                type="button"
+                className="text-[#EF4444] hover:text-[#DC2626] font-medium transition-colors"
+              >
+                Forgot password
+              </button>
+            </div>
+
+            {/* Sign In Button */}
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full bg-[#EF4444] hover:bg-[#DC2626] text-white font-semibold py-3 px-4 rounded-lg transition-all duration-200 shadow-lg shadow-red-500/25 hover:shadow-xl hover:shadow-red-500/30 disabled:opacity-50 disabled:cursor-not-allowed text-base mt-2"
+            >
+              {isLoading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  Signing in...
+                </span>
+              ) : (
+                'Sign in'
+              )}
+            </button>
+          </form>
+
+          
+
+          {/* Back to Home - Mobile */}
+          <div className="mt-6 text-center lg:hidden">
+            <Link to="/" className="text-sm text-gray-500 hover:text-gray-700 transition-colors">
+              ← Back to Home
+            </Link>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };
 

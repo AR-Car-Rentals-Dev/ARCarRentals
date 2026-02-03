@@ -11,6 +11,7 @@ export { AdminFleetPage } from './AdminFleetPage';
 export { AdminBookingsPage } from './AdminBookingsPage';
 export { AdminCustomersPage } from './AdminCustomersPage';
 export { AdminDriversPage } from './AdminDriversPage';
+export { default as SidebarDemoPage } from './SidebarDemoPage';
 
 // Landing page sections (re-exported for convenience)
 export {

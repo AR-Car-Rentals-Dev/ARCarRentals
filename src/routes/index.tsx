@@ -4,17 +4,18 @@ import {
   LandingPage,
   BrowseVehiclesPage,
   NotFoundPage,
-  FeaturesPage,
   PricingPage,
   ResourcesPage,
   LoginPage,
   AdminDashboardPage,
   AdminFleetPage,
   AdminBookingsPage,
+  SidebarDemoPage,
 } from '@pages/index';
 import { BookingPage, CheckoutPage, ReceiptSubmittedPage } from '@pages/BrowseVehicles';
 import { TrackBookingPage } from '@pages/TrackBookingPage';
 import { BookingRouteGuard } from '@components/BookingRouteGuard';
+import { ProtectedRoute } from '@components/ProtectedRoute';
 
 /**
  * Route configuration
@@ -71,12 +72,20 @@ export const routes: RouteObject[] = [
     element: <MainLayout><ResourcesPage /></MainLayout>,
   },
   {
+    path: '/sidebar-demo',
+    element: <SidebarDemoPage />,
+  },
+  {
     path: '/admin/login',
     element: <LoginPage />,
   },
   {
     path: '/admin',
-    element: <AdminLayout />,
+    element: (
+      <ProtectedRoute requireAdmin={true}>
+        <AdminLayout />
+      </ProtectedRoute>
+    ),
     children: [
       { path: 'dashboard', element: <AdminDashboardPage /> },
       { path: 'fleet', element: <AdminFleetPage /> },
