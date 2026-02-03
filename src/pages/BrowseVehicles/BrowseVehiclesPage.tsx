@@ -1,9 +1,9 @@
 import { type FC, useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { Search, MapPin, ChevronDown, AlertCircle, Calendar } from 'lucide-react';
-import { Button, CarCard, LocationPickerModal, BookingDateModal, type BookingData } from '@/components/ui';
+import { ChevronDown } from 'lucide-react';
+import { Button, CarCard } from '@/components/ui';
 import type { Car } from '@/types';
-import { initSession, updateSearchCriteria, updateVehicle, getSession } from '@/utils/sessionManager';
+import { initSession, updateVehicle, getSession } from '@/utils/sessionManager';
 import { vehicleService } from '@/services/vehicleService';
 
 /**
@@ -12,125 +12,9 @@ import { vehicleService } from '@/services/vehicleService';
 interface FilterState {
   carTypes: string[];
   transmissions: string[];
+  seats: string[];
   priceRange: { min: number; max: number };
 }
-
-interface SearchFormProps {
-  searchCriteria: {
-    location: string;
-    pickupDate: string;
-    returnDate: string;
-  };
-  onLocationClick: () => void;
-  onDateClick: () => void;
-  onSearchChange: (params: { location: string; pickupDate: string; returnDate: string }) => void;
-  onSearch: () => void;
-  errors: {
-    location: boolean;
-    pickupDate: boolean;
-    returnDate: boolean;
-  };
-}
-
-/**
- * Search Form Component
- */
-const SearchForm: FC<SearchFormProps> = ({ 
-  searchCriteria, 
-  onLocationClick, 
-  onDateClick, 
-  onSearch, 
-  errors 
-}) => {
-  // Format date for display
-  const formatDateDisplay = (dateString: string) => {
-    if (!dateString) return '';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-  };
-
-  return (
-    <div className="bg-white border-b border-neutral-200">
-      <div className="mx-auto w-full max-w-7xl py-4" style={{ paddingInline: 'clamp(1rem, 5vw, 5rem)' }}>
-        <div className="flex flex-col lg:flex-row gap-3 items-stretch">
-          {/* Location */}
-          <div className="flex-1 w-full lg:w-auto">
-            <button
-              onClick={onLocationClick}
-              className={`w-full h-10 px-3 text-left border rounded-lg bg-white hover:border-neutral-300 focus:outline-none focus:ring-2 focus:ring-[#E22B2B]/20 text-sm flex items-center gap-2 ${
-                errors.location ? 'border-[#E22B2B] ring-2 ring-[#E22B2B]/20' : 'border-neutral-200'
-              }`}
-            >
-              <MapPin className={`h-4 w-4 ${errors.location ? 'text-[#E22B2B]' : 'text-neutral-400'}`} />
-              <span className={`${searchCriteria.location ? 'text-neutral-900' : 'text-neutral-500'}`}>
-                {searchCriteria.location || 'City, Airport, or Address'}
-              </span>
-            </button>
-            {errors.location && (
-              <div className="flex items-center gap-1 mt-1 text-xs text-[#E22B2B]">
-                <AlertCircle className="h-3 w-3" />
-                <span>Please select a location</span>
-              </div>
-            )}
-          </div>
-
-          {/* Pickup Date */}
-          <div className="flex-1 w-full lg:w-auto">
-            <button
-              type="button"
-              onClick={onDateClick}
-              className={`w-full h-10 px-3 text-left border rounded-lg bg-white hover:border-neutral-300 focus:outline-none focus:ring-2 focus:ring-[#E22B2B]/20 text-sm flex items-center gap-2 ${
-                errors.pickupDate ? 'border-[#E22B2B] ring-2 ring-[#E22B2B]/20' : 'border-neutral-200'
-              }`}
-            >
-              <Calendar className={`h-4 w-4 ${errors.pickupDate ? 'text-[#E22B2B]' : 'text-neutral-400'}`} />
-              <span className={`${searchCriteria.pickupDate ? 'text-neutral-900' : 'text-neutral-500'}`}>
-                {searchCriteria.pickupDate ? formatDateDisplay(searchCriteria.pickupDate) : 'Select Date'}
-              </span>
-            </button>
-            {errors.pickupDate && (
-              <div className="flex items-center gap-1 mt-1 text-xs text-[#E22B2B]">
-                <AlertCircle className="h-3 w-3" />
-                <span>Please select pickup date</span>
-              </div>
-            )}
-          </div>
-
-          {/* Return Date */}
-          <div className="flex-1 w-full lg:w-auto">
-            <button
-              type="button"
-              onClick={onDateClick}
-              className={`w-full h-10 px-3 text-left border rounded-lg bg-white hover:border-neutral-300 focus:outline-none focus:ring-2 focus:ring-[#E22B2B]/20 text-sm flex items-center gap-2 ${
-                errors.returnDate ? 'border-[#E22B2B] ring-2 ring-[#E22B2B]/20' : 'border-neutral-200'
-              }`}
-            >
-              <Calendar className={`h-4 w-4 ${errors.returnDate ? 'text-[#E22B2B]' : 'text-neutral-400'}`} />
-              <span className={`${searchCriteria.returnDate ? 'text-neutral-900' : 'text-neutral-500'}`}>
-                {searchCriteria.returnDate ? formatDateDisplay(searchCriteria.returnDate) : 'Select Date'}
-              </span>
-            </button>
-            {errors.returnDate && (
-              <div className="flex items-center gap-1 mt-1 text-xs text-[#E22B2B]">
-                <AlertCircle className="h-3 w-3" />
-                <span>Please select return date</span>
-              </div>
-            )}
-          </div>
-
-          {/* Search Button - Just icon with red background */}
-          <button
-            onClick={onSearch}
-            className="w-full lg:w-12 h-10 bg-[#E22B2B] hover:bg-[#c92525] text-white rounded-lg flex items-center justify-center transition-colors"
-            aria-label="Search"
-          >
-            <Search className="h-5 w-5" />
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
 
 /**
  * Filter Sidebar Component
@@ -150,24 +34,71 @@ const FilterSidebar: FC<{
     { value: 'manual', label: 'Manual' },
   ];
 
+  const seatOptions = [
+    { value: '2-5', label: '2 - 5 Seats' },
+    { value: '6-8', label: '6 - 8 Seats' },
+    { value: '9+', label: '9+ Seats' },
+  ];
+
   const toggleCarType = (type: string) => {
-    const newTypes = filters.carTypes.includes(type)
-      ? filters.carTypes.filter(t => t !== type)
-      : [...filters.carTypes, type];
-    onFilterChange({ ...filters, carTypes: newTypes });
+    const currentTypes = [...filters.carTypes];
+    const index = currentTypes.indexOf(type);
+    
+    if (index > -1) {
+      currentTypes.splice(index, 1);
+    } else {
+      currentTypes.push(type);
+    }
+    
+    onFilterChange({ 
+      carTypes: currentTypes,
+      transmissions: [...filters.transmissions],
+      seats: [...filters.seats],
+      priceRange: { ...filters.priceRange }
+    });
   };
 
   const toggleTransmission = (trans: string) => {
-    const newTrans = filters.transmissions.includes(trans)
-      ? filters.transmissions.filter(t => t !== trans)
-      : [...filters.transmissions, trans];
-    onFilterChange({ ...filters, transmissions: newTrans });
+    const currentTrans = [...filters.transmissions];
+    const index = currentTrans.indexOf(trans);
+    
+    if (index > -1) {
+      currentTrans.splice(index, 1);
+    } else {
+      currentTrans.push(trans);
+    }
+    
+    onFilterChange({ 
+      carTypes: [...filters.carTypes],
+      transmissions: currentTrans,
+      seats: [...filters.seats],
+      priceRange: { ...filters.priceRange }
+    });
+  };
+
+  const toggleSeats = (seatRange: string) => {
+    const currentSeats = [...filters.seats];
+    const index = currentSeats.indexOf(seatRange);
+    
+    if (index > -1) {
+      currentSeats.splice(index, 1);
+    } else {
+      currentSeats.push(seatRange);
+    }
+    
+    onFilterChange({ 
+      carTypes: [...filters.carTypes],
+      transmissions: [...filters.transmissions],
+      seats: currentSeats,
+      priceRange: { ...filters.priceRange }
+    });
   };
 
   const resetFilters = () => {
     onFilterChange({
       carTypes: [],
       transmissions: [],
+      seats: [],
       priceRange: { min: 1000, max: 5000 },
     });
   };
@@ -284,6 +215,50 @@ const FilterSidebar: FC<{
         {/* Divider 3 */}
         <div className="border-t border-neutral-200 mb-4"></div>
 
+        {/* Number of Seats */}
+        <div className="pb-4">
+          <h4 className="font-semibold text-neutral-900 text-sm mb-3">Number of Seats</h4>
+          <div className="space-y-2">
+            {seatOptions.map((seatOpt) => {
+              const isChecked = filters.seats.includes(seatOpt.value);
+              return (
+                <div 
+                  key={seatOpt.value} 
+                  className="flex items-center gap-3 cursor-pointer"
+                  onClick={() => toggleSeats(seatOpt.value)}
+                  role="checkbox"
+                  aria-checked={isChecked}
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      toggleSeats(seatOpt.value);
+                    }
+                  }}
+                >
+                  <div
+                    className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${
+                      isChecked 
+                        ? 'bg-[#D32F2F] border-[#D32F2F]' 
+                        : 'bg-white border-[#D1D5DB] hover:border-[#9CA3AF]'
+                    }`}
+                  >
+                    {isChecked && (
+                      <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                      </svg>
+                    )}
+                  </div>
+                  <span className="text-neutral-700 text-sm select-none">{seatOpt.label}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Divider 4 */}
+        <div className="border-t border-neutral-200 mb-4"></div>
+
         {/* Daily Price */}
         <div>
           <h4 className="font-semibold text-neutral-900 text-sm mb-3">Daily Price</h4>
@@ -350,31 +325,16 @@ export const BrowseVehiclesPage: FC = () => {
   // Vehicle state
   const [allCars, setAllCars] = useState<Car[]>([]);
   const [isLoadingVehicles, setIsLoadingVehicles] = useState(true);
-  
-  const [searchCriteria, setSearchCriteria] = useState({
-    location: '',
-    pickupDate: '',
-    returnDate: '',
-    startTime: '',
-    deliveryMethod: '',
-  });
 
   const [filters, setFilters] = useState<FilterState>({
     carTypes: [],
     transmissions: [],
+    seats: [],
     priceRange: { min: 1000, max: 5000 },
   });
 
   const [sortBy, setSortBy] = useState('recommended');
-  const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
-  const [isDateModalOpen, setIsDateModalOpen] = useState(false);
   const [visibleCount, setVisibleCount] = useState(6);
-  const [bookingData, setBookingData] = useState<BookingData | null>(null);
-  const [validationErrors, setValidationErrors] = useState({
-    location: false,
-    pickupDate: false,
-    returnDate: false,
-  });
 
   // Fetch vehicles from database on mount
   useEffect(() => {
@@ -398,39 +358,14 @@ export const BrowseVehiclesPage: FC = () => {
 
   // Handle booking a car - navigate to booking page
   const handleBookNow = async (car: Car) => {
-    // Validate that search form is filled
-    const errors = {
-      location: !searchCriteria.location,
-      pickupDate: !searchCriteria.pickupDate,
-      returnDate: !searchCriteria.returnDate,
-    };
-
-    // Check if any field has errors
-    if (errors.location || errors.pickupDate || errors.returnDate) {
-      setValidationErrors(errors);
-      // Scroll to search form
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      return;
-    }
-
-    // Clear any previous errors
-    setValidationErrors({ location: false, pickupDate: false, returnDate: false });
-
-    // Save to session before navigating
-    await updateSearchCriteria({
-      pickupLocation: searchCriteria.location,
-      pickupDate: searchCriteria.pickupDate,
-      returnDate: searchCriteria.returnDate,
-      startTime: searchCriteria.startTime,
-      deliveryMethod: 'pickup'
-    });
-    
+    // No validation needed - customer will provide details on booking page
+    // Save vehicle to session
     await updateVehicle(car);
 
+    // Navigate to booking page with vehicle data
     navigate('/browsevehicles/booking', {
       state: {
         vehicle: car,
-        searchCriteria,
       },
     });
   };
@@ -445,61 +380,36 @@ export const BrowseVehiclesPage: FC = () => {
 
   // Load search parameters from URL on component mount
   useEffect(() => {
-    const location = searchParams.get('location') || '';
-    const startDate = searchParams.get('startDate') || '';
-    const endDate = searchParams.get('endDate') || '';
-    const startTime = searchParams.get('startTime') || '';
-    const deliveryMethod = searchParams.get('deliveryMethod') || '';
+    // Read preference filters from URL (from landing page)
+    const carType = searchParams.get('carType');
+    const transmission = searchParams.get('transmission');
+    const seats = searchParams.get('seats');
 
-    setSearchCriteria({
-      location,
-      pickupDate: startDate,
-      returnDate: endDate,
-      startTime,
-      deliveryMethod,
-    });
+    // Apply preference filters if they exist
+    const newFilters: FilterState = {
+      carTypes: [],
+      transmissions: [],
+      seats: [],
+      priceRange: { min: 1000, max: 5000 },
+    };
 
-    // Set booking data for date modal
-    if (startDate && endDate) {
-      setBookingData({
-        startDate: new Date(startDate),
-        endDate: new Date(endDate),
-        startTime,
-        endTime: startTime, // Same as start time
-        deliveryMethod,
-      });
+    // Apply car type filter from URL
+    if (carType && (carType === 'sedan' || carType === 'suv' || carType === 'van')) {
+      newFilters.carTypes = [carType];
     }
+
+    // Apply transmission filter from URL
+    if (transmission && (transmission === 'automatic' || transmission === 'manual')) {
+      newFilters.transmissions = [transmission];
+    }
+
+    // Apply seats filter from URL
+    if (seats && (seats === '2-5' || seats === '6-8' || seats === '9+')) {
+      newFilters.seats = [seats];
+    }
+
+    setFilters(newFilters);
   }, [searchParams]);
-
-  const handleSearchChange = (params: { location: string; pickupDate: string; returnDate: string }) => {
-    setSearchCriteria(prev => ({
-      ...prev,
-      ...params
-    }));
-    // Clear validation errors when user starts filling the form
-    setValidationErrors(prev => ({
-      location: params.location ? false : prev.location,
-      pickupDate: params.pickupDate ? false : prev.pickupDate,
-      returnDate: params.returnDate ? false : prev.returnDate,
-    }));
-  };
-
-  const handleLocationConfirm = (location: string) => {
-    setSearchCriteria(prev => ({ ...prev, location }));
-    // Clear location error
-    setValidationErrors(prev => ({ ...prev, location: false }));
-  };
-
-  const handleDateConfirm = (data: BookingData) => {
-    setBookingData(data);
-    setSearchCriteria(prev => ({
-      ...prev,
-      pickupDate: data.startDate?.toISOString().split('T')[0] || '',
-      returnDate: data.endDate?.toISOString().split('T')[0] || '',
-      startTime: data.startTime,
-      deliveryMethod: data.deliveryMethod,
-    }));
-  };
 
   // Filter cars based on selected filters
   const filteredCars = allCars.filter((car) => {
@@ -511,6 +421,34 @@ export const BrowseVehiclesPage: FC = () => {
     // Filter by transmission
     if (filters.transmissions.length > 0 && !filters.transmissions.includes(car.transmission)) {
       return false;
+    }
+
+    // Filter by seats (from URL parameter or sidebar filter)
+    const seatsParam = searchParams.get('seats');
+    const seatsFilter = seatsParam || (filters.seats.length > 0 ? filters.seats : null);
+    
+    if (seatsFilter) {
+      const seatRanges = Array.isArray(seatsFilter) ? seatsFilter : [seatsFilter];
+      let matchesSeats = false;
+      
+      for (const range of seatRanges) {
+        if (range === '2-5' && car.seats >= 2 && car.seats <= 5) {
+          matchesSeats = true;
+          break;
+        }
+        if (range === '6-8' && car.seats >= 6 && car.seats <= 8) {
+          matchesSeats = true;
+          break;
+        }
+        if (range === '9+' && car.seats >= 9) {
+          matchesSeats = true;
+          break;
+        }
+      }
+      
+      if (!matchesSeats) {
+        return false;
+      }
     }
 
     // Filter by price range
@@ -542,23 +480,8 @@ export const BrowseVehiclesPage: FC = () => {
     setVisibleCount((prev) => prev + 6);
   };
 
-  const handleSearch = () => {
-    // Implement search logic
-    console.log('Search:', searchParams);
-  };
-
   return (
     <div className="min-h-screen bg-[#F5F5F5]" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
-      {/* Search Form */}
-      <SearchForm
-        searchCriteria={searchCriteria}
-        onLocationClick={() => setIsLocationModalOpen(true)}
-        onDateClick={() => setIsDateModalOpen(true)}
-        onSearchChange={handleSearchChange}
-        onSearch={handleSearch}
-        errors={validationErrors}
-      />
-
       {/* Main Content */}
       <div className="mx-auto w-full max-w-7xl py-8" style={{ paddingInline: 'clamp(1rem, 5vw, 5rem)' }}>
         <div className="flex flex-col lg:flex-row gap-8">
@@ -649,13 +572,14 @@ export const BrowseVehiclesPage: FC = () => {
             )}
 
             {/* No Results */}
-            {filteredCars.length === 0 && (
+            {filteredCars.length === 0 && !isLoadingVehicles && (
               <div className="text-center py-16">
                 <p className="text-neutral-500 text-lg">No vehicles match your filters.</p>
                 <button
                   onClick={() => setFilters({
                     carTypes: [],
                     transmissions: [],
+                    seats: [],
                     priceRange: { min: 1000, max: 5000 },
                   })}
                   className="mt-4 text-[#E22B2B] font-medium hover:text-[#c92525]"
@@ -667,21 +591,6 @@ export const BrowseVehiclesPage: FC = () => {
           </div>
         </div>
       </div>
-
-      {/* Modals */}
-      <LocationPickerModal
-        isOpen={isLocationModalOpen}
-        onClose={() => setIsLocationModalOpen(false)}
-        onConfirm={handleLocationConfirm}
-        initialLocation={searchCriteria.location}
-      />
-
-      <BookingDateModal
-        isOpen={isDateModalOpen}
-        onClose={() => setIsDateModalOpen(false)}
-        onConfirm={handleDateConfirm}
-        initialData={bookingData || undefined}
-      />
     </div>
   );
 };

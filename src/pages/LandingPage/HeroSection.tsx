@@ -1,7 +1,8 @@
 import { type FC, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, MapPin, Calendar } from 'lucide-react';
-import { Button, BookingDateModal, LocationPickerModal, type BookingData } from '@/components/ui';
+import { Search, Car as CarIcon, Cog, Users } from 'lucide-react';
+import { Button } from '@/components/ui';
+import type { CarCategory, TransmissionType } from '@/types';
 
 /**
  * Hero section with layered design
@@ -13,87 +14,30 @@ import { Button, BookingDateModal, LocationPickerModal, type BookingData } from 
  */
 export const HeroSection: FC = () => {
   const navigate = useNavigate();
-  const [pickupLocation, setPickupLocation] = useState('');
-  const [isDateModalOpen, setIsDateModalOpen] = useState(false);
-  const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
-  const [bookingData, setBookingData] = useState<BookingData | null>(null);
-  const [shouldOpenDateModalNext, setShouldOpenDateModalNext] = useState(false);
+  const [carType, setCarType] = useState<CarCategory | ''>('');
+  const [transmission, setTransmission] = useState<TransmissionType | ''>('');
+  const [seats, setSeats] = useState<string>('');
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Check if required data is missing and trigger modal sequence
-    if (!pickupLocation || !bookingData?.startDate || !bookingData?.endDate) {
-      setShouldOpenDateModalNext(true);
-      setIsLocationModalOpen(true);
-      return;
-    }
-    
-    // Build URL parameters from search data
+    // Build URL parameters from preference filters
     const params = new URLSearchParams();
     
-    if (pickupLocation) {
-      params.append('location', pickupLocation);
+    if (carType) {
+      params.append('carType', carType);
     }
     
-    if (bookingData?.startDate) {
-      params.append('startDate', bookingData.startDate.toISOString().split('T')[0]);
+    if (transmission) {
+      params.append('transmission', transmission);
     }
     
-    if (bookingData?.endDate) {
-      params.append('endDate', bookingData.endDate.toISOString().split('T')[0]);
+    if (seats) {
+      params.append('seats', seats);
     }
     
-    if (bookingData?.startTime) {
-      params.append('startTime', bookingData.startTime);
-    }
-    
-    if (bookingData?.deliveryMethod) {
-      params.append('deliveryMethod', bookingData.deliveryMethod);
-    }
-    
-    // Navigate to browse vehicles page with search parameters
+    // Navigate to browse vehicles page with filter parameters
     navigate(`/browsevehicles?${params.toString()}`);
-  };
-
-  const handleDateConfirm = (data: BookingData) => {
-    setBookingData(data);
-    setIsDateModalOpen(false);
-    setShouldOpenDateModalNext(false); // Complete the sequence
-  };
-
-  const handleLocationConfirm = (location: string) => {
-    setPickupLocation(location);
-    setIsLocationModalOpen(false);
-    
-    // If we're in a sequence, automatically open date modal
-    if (shouldOpenDateModalNext) {
-      setIsDateModalOpen(true);
-    }
-  };
-
-  const handleLocationClose = () => {
-    setIsLocationModalOpen(false);
-    setShouldOpenDateModalNext(false); // Stop the flow if location modal is cancelled
-  };
-
-  const handleDateClose = () => {
-    setIsDateModalOpen(false);
-    // If user cancels date modal during sequence, go back to location modal
-    if (shouldOpenDateModalNext) {
-      setIsLocationModalOpen(true);
-    }
-  };
-
-  // Handler for any form field click - starts the sequential modal flow
-  const handleFieldClick = () => {
-    setShouldOpenDateModalNext(true);
-    setIsLocationModalOpen(true);
-  };
-
-  const formatDateDisplay = (date: Date | null) => {
-    if (!date) return '';
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
   return (
@@ -172,59 +116,63 @@ export const HeroSection: FC = () => {
           <form onSubmit={handleSearch}>
             <div className="bg-white rounded-2xl shadow-xl p-4 md:p-6">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                {/* Location */}
+                {/* Car Type */}
                 <div className="md:col-span-1">
                   <label className="block text-sm font-medium text-neutral-500 mb-2">
-                    PICK-UP PLACE
+                    CAR TYPE
                   </label>
-                  <button
-                    type="button"
-                    onClick={handleFieldClick}
-                    className="w-full flex items-center gap-3 px-4 py-3 border border-neutral-200 rounded-lg text-left hover:border-[#E22B2B] transition-colors"
-                  >
-                    <MapPin className="h-5 w-5 text-neutral-400" />
-                    <span className={pickupLocation ? 'text-neutral-900 truncate' : 'text-neutral-400'}>
-                      {pickupLocation || 'City, Airport, or Address'}
-                    </span>
-                  </button>
+                  <div className="relative">
+                    <CarIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-neutral-400 pointer-events-none" />
+                    <select
+                      value={carType}
+                      onChange={(e) => setCarType(e.target.value as CarCategory | '')}
+                      className="w-full pl-11 pr-4 py-3 border border-neutral-200 rounded-lg appearance-none bg-white hover:border-[#E22B2B] focus:border-[#E22B2B] focus:outline-none focus:ring-2 focus:ring-[#E22B2B]/20 transition-colors text-neutral-900"
+                    >
+                      <option value="">All Types</option>
+                      <option value="sedan">Sedan</option>
+                      <option value="suv">SUV</option>
+                      <option value="van">Van</option>
+                    </select>
+                  </div>
                 </div>
 
-                {/* Start Date */}
+                {/* Transmission */}
                 <div className="md:col-span-1">
                   <label className="block text-sm font-medium text-neutral-500 mb-2">
-                    START DATE
+                    TRANSMISSION
                   </label>
-                  <button
-                    type="button"
-                    onClick={handleFieldClick}
-                    className="w-full flex items-center gap-3 px-4 py-3 border border-neutral-200 rounded-lg text-left hover:border-[#E22B2B] transition-colors"
-                  >
-                    <Calendar className="h-5 w-5 text-neutral-400" />
-                    <span className={bookingData?.startDate ? 'text-neutral-900' : 'text-neutral-400'}>
-                      {bookingData?.startDate 
-                        ? formatDateDisplay(bookingData.startDate)
-                        : 'Select Date'}
-                    </span>
-                  </button>
+                  <div className="relative">
+                    <Cog className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-neutral-400 pointer-events-none" />
+                    <select
+                      value={transmission}
+                      onChange={(e) => setTransmission(e.target.value as TransmissionType | '')}
+                      className="w-full pl-11 pr-4 py-3 border border-neutral-200 rounded-lg appearance-none bg-white hover:border-[#E22B2B] focus:border-[#E22B2B] focus:outline-none focus:ring-2 focus:ring-[#E22B2B]/20 transition-colors text-neutral-900"
+                    >
+                      <option value="">Any</option>
+                      <option value="automatic">Automatic</option>
+                      <option value="manual">Manual</option>
+                    </select>
+                  </div>
                 </div>
 
-                {/* Return Date */}
+                {/* Number of Seats */}
                 <div className="md:col-span-1">
                   <label className="block text-sm font-medium text-neutral-500 mb-2">
-                    RETURN DATE
+                    NUMBER OF SEATS
                   </label>
-                  <button
-                    type="button"
-                    onClick={handleFieldClick}
-                    className="w-full flex items-center gap-3 px-4 py-3 border border-neutral-200 rounded-lg text-left hover:border-[#E22B2B] transition-colors"
-                  >
-                    <Calendar className="h-5 w-5 text-neutral-400" />
-                    <span className={bookingData?.endDate ? 'text-neutral-900' : 'text-neutral-400'}>
-                      {bookingData?.endDate 
-                        ? formatDateDisplay(bookingData.endDate)
-                        : 'Select Date'}
-                    </span>
-                  </button>
+                  <div className="relative">
+                    <Users className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-neutral-400 pointer-events-none" />
+                    <select
+                      value={seats}
+                      onChange={(e) => setSeats(e.target.value)}
+                      className="w-full pl-11 pr-4 py-3 border border-neutral-200 rounded-lg appearance-none bg-white hover:border-[#E22B2B] focus:border-[#E22B2B] focus:outline-none focus:ring-2 focus:ring-[#E22B2B]/20 transition-colors text-neutral-900"
+                    >
+                      <option value="">Any</option>
+                      <option value="2-5">2 - 5 Seats</option>
+                      <option value="6-8">6 - 8 Seats</option>
+                      <option value="9+">9+ Seats</option>
+                    </select>
+                  </div>
                 </div>
 
                 {/* Search Button */}
@@ -236,7 +184,7 @@ export const HeroSection: FC = () => {
                     fullWidth
                     leftIcon={<Search className="h-5 w-5" />}
                   >
-                    Find Car
+                    Find Available Cars
                   </Button>
                 </div>
               </div>
@@ -244,22 +192,6 @@ export const HeroSection: FC = () => {
           </form>
         </div>
       </div>
-
-      {/* Booking Date Modal */}
-      <BookingDateModal
-        isOpen={isDateModalOpen}
-        onClose={handleDateClose}
-        onConfirm={handleDateConfirm}
-        initialData={bookingData || undefined}
-      />
-
-      {/* Location Picker Modal */}
-      <LocationPickerModal
-        isOpen={isLocationModalOpen}
-        onClose={handleLocationClose}
-        onConfirm={handleLocationConfirm}
-        initialLocation={pickupLocation}
-      />
     </section>
   );
 };

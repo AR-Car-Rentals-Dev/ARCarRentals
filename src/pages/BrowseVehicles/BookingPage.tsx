@@ -3,17 +3,10 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { User, Check, ChevronRight, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui';
 import type { Car } from '@/types';
-import { updateRenterInfo, updateDriveOption, agreeToTerms } from '@/utils/sessionManager';
+import { updateRenterInfo, updateSearchCriteria, updateDriveOption, agreeToTerms } from '@/utils/sessionManager';
 
 interface BookingState {
   vehicle: Car;
-  searchCriteria: {
-    location: string;
-    pickupDate: string;
-    returnDate: string;
-    startTime: string;
-    deliveryMethod: string;
-  };
 }
 
 type DriveOption = 'self-drive' | 'with-driver' | '';
@@ -39,13 +32,18 @@ export const BookingPage: FC = () => {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('+63 ');
-  const [driversLicense, setDriversLicense] = useState('');
+  const [pickupLocation, setPickupLocation] = useState('');
+  const [pickupDate, setPickupDate] = useState('');
+  const [returnDate, setReturnDate] = useState('');
+  const [pickupTime, setPickupTime] = useState('10:00');
   const [driveOption, setDriveOption] = useState<DriveOption>('');
   const [formErrors, setFormErrors] = useState({
     fullName: false,
     email: false,
     phoneNumber: false,
-    driversLicense: false,
+    pickupLocation: false,
+    pickupDate: false,
+    returnDate: false,
     driveOption: false,
   });
 
@@ -60,13 +58,13 @@ export const BookingPage: FC = () => {
     return null;
   }
 
-  const { vehicle, searchCriteria } = state;
+  const { vehicle } = state;
 
   // Calculate rental duration
   const calculateDays = () => {
-    if (!searchCriteria.pickupDate || !searchCriteria.returnDate) return 1;
-    const start = new Date(searchCriteria.pickupDate);
-    const end = new Date(searchCriteria.returnDate);
+    if (!pickupDate || !returnDate) return 1;
+    const start = new Date(pickupDate);
+    const end = new Date(returnDate);
     const diffTime = Math.abs(end.getTime() - start.getTime());
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return diffDays || 1;
@@ -113,7 +111,9 @@ export const BookingPage: FC = () => {
       fullName: !fullName.trim(),
       email: !email.trim(),
       phoneNumber: !phoneNumber.trim() || phoneNumber.trim() === '+63',
-      driversLicense: !driversLicense.trim(),
+      pickupLocation: !pickupLocation.trim(),
+      pickupDate: !pickupDate,
+      returnDate: !returnDate,
       driveOption: !driveOption,
     };
 
@@ -130,7 +130,9 @@ export const BookingPage: FC = () => {
       fullName: false,
       email: false,
       phoneNumber: false,
-      driversLicense: false,
+      pickupLocation: false,
+      pickupDate: false,
+      returnDate: false,
       driveOption: false,
     });
 
@@ -139,7 +141,16 @@ export const BookingPage: FC = () => {
       fullName,
       email,
       phoneNumber,
-      driversLicense,
+      driversLicense: '', // Not collected anymore - verified at pickup
+    });
+    
+    // Save search criteria
+    await updateSearchCriteria({
+      pickupLocation,
+      pickupDate,
+      returnDate,
+      startTime: pickupTime,
+      deliveryMethod: 'pickup'
     });
     
     await updateDriveOption(driveOption as 'self-drive' | 'with-driver');
@@ -154,12 +165,18 @@ export const BookingPage: FC = () => {
     navigate('/browsevehicles/checkout', {
       state: {
         vehicle,
-        searchCriteria,
+        searchCriteria: {
+          location: pickupLocation,
+          pickupDate,
+          returnDate,
+          startTime: pickupTime,
+          deliveryMethod: 'pickup',
+        },
         renterInfo: {
           fullName,
           email,
           phoneNumber,
-          driversLicense,
+          driversLicense: '', // Not collected - verified at pickup
         },
         driveOption,
         pricing: {
@@ -305,31 +322,94 @@ export const BookingPage: FC = () => {
                   </div>
                 </div>
 
-                {/* Driver's License */}
+                {/* Pickup Location, Pickup Date, Return Date */}
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 mb-1.5">
-                    Driver's License Number
+                    Pickup Location
                   </label>
                   <input
                     type="text"
-                    value={driversLicense}
+                    value={pickupLocation}
                     onChange={(e) => {
-                      setDriversLicense(e.target.value);
-                      if (e.target.value.trim()) setFormErrors(prev => ({ ...prev, driversLicense: false }));
+                      setPickupLocation(e.target.value);
+                      if (e.target.value.trim()) setFormErrors(prev => ({ ...prev, pickupLocation: false }));
                     }}
-                    placeholder="E.G. N01-12-345678"
+                    placeholder="e.g. Mactan-Cebu Airport, SM Seaside, Hotel Address"
                     className={`w-full px-4 py-3 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#E22B2B]/20 focus:border-[#E22B2B] ${
-                      formErrors.driversLicense ? 'border-[#E22B2B] ring-2 ring-[#E22B2B]/20' : 'border-neutral-200'
+                      formErrors.pickupLocation ? 'border-[#E22B2B] ring-2 ring-[#E22B2B]/20' : 'border-neutral-200'
                     }`}
                   />
-                  {formErrors.driversLicense && (
+                  {formErrors.pickupLocation && (
                     <div className="flex items-center gap-1 mt-1 text-xs text-[#E22B2B]">
                       <AlertCircle className="h-3 w-3" />
-                      <span>Please enter your driver's license number</span>
+                      <span>Please enter pickup location</span>
                     </div>
                   )}
+                </div>
+
+                {/* Pickup and Return Dates - Side by side */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-neutral-700 mb-1.5">
+                      Pickup Date
+                    </label>
+                    <input
+                      type="date"
+                      value={pickupDate}
+                      onChange={(e) => {
+                        setPickupDate(e.target.value);
+                        if (e.target.value) setFormErrors(prev => ({ ...prev, pickupDate: false }));
+                      }}
+                      min={new Date().toISOString().split('T')[0]}
+                      className={`w-full px-4 py-3 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#E22B2B]/20 focus:border-[#E22B2B] ${
+                        formErrors.pickupDate ? 'border-[#E22B2B] ring-2 ring-[#E22B2B]/20' : 'border-neutral-200'
+                      }`}
+                    />
+                    {formErrors.pickupDate && (
+                      <div className="flex items-center gap-1 mt-1 text-xs text-[#E22B2B]">
+                        <AlertCircle className="h-3 w-3" />
+                        <span>Please select pickup date</span>
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-neutral-700 mb-1.5">
+                      Return Date
+                    </label>
+                    <input
+                      type="date"
+                      value={returnDate}
+                      onChange={(e) => {
+                        setReturnDate(e.target.value);
+                        if (e.target.value) setFormErrors(prev => ({ ...prev, returnDate: false }));
+                      }}
+                      min={pickupDate || new Date().toISOString().split('T')[0]}
+                      className={`w-full px-4 py-3 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#E22B2B]/20 focus:border-[#E22B2B] ${
+                        formErrors.returnDate ? 'border-[#E22B2B] ring-2 ring-[#E22B2B]/20' : 'border-neutral-200'
+                      }`}
+                    />
+                    {formErrors.returnDate && (
+                      <div className="flex items-center gap-1 mt-1 text-xs text-[#E22B2B]">
+                        <AlertCircle className="h-3 w-3" />
+                        <span>Please select return date</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Pickup Time */}
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-1.5">
+                    Pickup Time
+                  </label>
+                  <input
+                    type="time"
+                    value={pickupTime}
+                    onChange={(e) => setPickupTime(e.target.value)}
+                    className="w-full px-4 py-3 border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#E22B2B]/20 focus:border-[#E22B2B]"
+                  />
                   <p className="mt-1.5 text-xs text-neutral-400">
-                    Please ensure your license is valid for the rental period.
+                    Office hours: Mon-Sat, 10:00 AM - 5:30 PM
                   </p>
                 </div>
               </div>
@@ -443,9 +523,9 @@ export const BookingPage: FC = () => {
                   <div className="w-2 h-2 rounded-full bg-[#E22B2B] mt-1.5" />
                   <div>
                     <p className="text-xs text-neutral-400 uppercase tracking-wide">PICK-UP</p>
-                    <p className="font-medium text-neutral-900">{searchCriteria.location || 'Mactan-Ceburini Airport'}</p>
+                    <p className="font-medium text-neutral-900">{pickupLocation || 'Not selected yet'}</p>
                     <p className="text-sm text-neutral-500">
-                      {formatDateForSummary(searchCriteria.pickupDate)} at {formatTime(searchCriteria.startTime)}
+                      {pickupDate ? formatDateForSummary(pickupDate) : 'Select date'} at {formatTime(pickupTime)}
                     </p>
                   </div>
                 </div>
@@ -455,9 +535,9 @@ export const BookingPage: FC = () => {
                   <div className="w-2 h-2 rounded-full bg-neutral-400 mt-1.5" />
                   <div>
                     <p className="text-xs text-neutral-400 uppercase tracking-wide">DROP-OFF</p>
-                    <p className="font-medium text-neutral-900">{searchCriteria.location || 'Mactan-Ceburini Airport'}</p>
+                    <p className="font-medium text-neutral-900">{pickupLocation || 'Not selected yet'}</p>
                     <p className="text-sm text-neutral-500">
-                      {formatDateForSummary(searchCriteria.returnDate)} at {formatTime(searchCriteria.startTime)}
+                      {returnDate ? formatDateForSummary(returnDate) : 'Select date'} at {formatTime(pickupTime)}
                     </p>
                   </div>
                 </div>
