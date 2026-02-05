@@ -289,6 +289,20 @@ export const EditBookingModal: FC<EditBookingModalProps> = ({
           const magicLink = getMagicLinkFromBooking(booking.booking_number);
           const vehicle = vehicles.find(v => v.id === formData.vehicle_id);
           const vehicleName = vehicle ? `${vehicle.brand} ${vehicle.model}` : 'Unknown Vehicle';
+          const pickupDate = formData.pickup_date 
+            ? new Date(formData.pickup_date).toLocaleDateString('en-US', { 
+                month: 'long', 
+                day: 'numeric',
+                year: 'numeric'
+              })
+            : undefined;
+          const returnDate = formData.return_date
+            ? new Date(formData.return_date).toLocaleDateString('en-US', {
+                month: 'long',
+                day: 'numeric', 
+                year: 'numeric'
+              })
+            : undefined;
           
           await sendMagicLinkEmail(
             booking.customer_email,
@@ -296,7 +310,9 @@ export const EditBookingModal: FC<EditBookingModalProps> = ({
             magicLink,
             {
               vehicleName,
-              pickupDate: new Date(formData.pickup_date).toLocaleDateString('en-US', { 
+              pickupDate,
+              returnDate
+            }, 
                 month: 'long', 
                 day: 'numeric', 
                 year: 'numeric' 

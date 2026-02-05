@@ -586,7 +586,7 @@ export const AdminBookingsPage: FC = () => {
           setIsViewModalOpen(false);
           setSelectedBooking(null);
         }}
-        booking={selectedBooking}
+        booking={selectedBooking as any}
         onStatusUpdate={fetchBookings}
       />
 
