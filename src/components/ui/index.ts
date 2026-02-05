@@ -26,4 +26,4 @@ export { CarCard } from './CarCard';
 export { AdminPageSkeleton } from './AdminPageSkeleton';
 export { LogoutModal } from './LogoutModal';
 export { BookingDetailsViewModal } from './BookingDetailsViewModal';
-export { DeclineReasonModal } from './DeclineReasonModal';
+export { SmartDeclineModal } from './SmartDeclineModal';

@@ -1,17 +1,17 @@
 import { useEffect, useState } from 'react';
-import { useParams, useSearchParams, Link } from 'react-router-dom';
-import { verifyMagicToken, getBookingById } from '../services/bookingSecurityService';
+import { useParams, Link } from 'react-router-dom';
+import { supabase } from '../services/supabase';
 import { Container } from '../components/ui/Container';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 
-type BookingStatus = 'pending' | 'confirmed' | 'cancelled' | 'completed';
+type BookingStatus = 'pending' | 'confirmed' | 'cancelled' | 'completed' | 'refunded';
 
 interface Booking {
   id: string;
   booking_reference: string;
-  status: BookingStatus;
+  booking_status: BookingStatus;
   pickup_date: string;
   return_date: string;
   pickup_location: string;
@@ -44,57 +44,57 @@ interface Booking {
 
 export const TrackBookingPage = () => {
   const { reference } = useParams<{ reference: string }>();
-  const [searchParams] = useSearchParams();
-  const token = searchParams.get('t');
   
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [booking, setBooking] = useState<Booking | null>(null);
   
   useEffect(() => {
-    const verifyAndLoadBooking = async () => {
-      if (!reference || !token) {
-        setError('Invalid tracking link');
+    const loadBooking = async () => {
+      if (!reference) {
+        setError('Invalid tracking link - no booking reference provided');
         setLoading(false);
         return;
       }
-      
+
       try {
-        // Verify token
-        const verification = await verifyMagicToken(reference, token);
-        
-        if (!verification.valid) {
-          setError(verification.error || 'Invalid or expired tracking link');
+        // Fetch booking by reference
+        const { data: bookingData, error: bookingError } = await supabase
+          .from('bookings')
+          .select(`
+            *,
+            customer:customers(*),
+            vehicle:vehicles(*),
+            payment:payments(*)
+          `)
+          .eq('booking_reference', reference)
+          .single();
+
+        if (bookingError) throw bookingError;
+        if (!bookingData) {
+          setError('Booking not found');
           setLoading(false);
           return;
         }
-        
-        // Load booking details
-        const result = await getBookingById(verification.bookingId!);
-        
-        if (!result.success) {
-          setError(result.error || 'Failed to load booking details');
-          setLoading(false);
-          return;
-        }
-        
-        setBooking(result.booking);
+
+        setBooking(bookingData);
       } catch (err) {
-        setError('An unexpected error occurred');
+        console.error('Error loading booking:', err);
+        setError(err instanceof Error ? err.message : 'Failed to load booking');
       } finally {
         setLoading(false);
       }
     };
-    
-    verifyAndLoadBooking();
-  }, [reference, token]);
+
+    loadBooking();
+  }, [reference]);
   
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-[#E22B2B] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Verifying your tracking link...</p>
+          <p className="text-gray-600">Loading your booking...</p>
         </div>
       </div>
     );
@@ -152,14 +152,14 @@ export const TrackBookingPage = () => {
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-1">Booking Status</h3>
-                <Badge variant={getStatusColor(booking.status)}>
-                  {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
+                <Badge variant={getStatusColor(booking.booking_status)}>
+                  {booking.booking_status.charAt(0).toUpperCase() + booking.booking_status.slice(1)}
                 </Badge>
               </div>
               <div className="text-right">
                 <p className="text-sm text-gray-600">Payment Status</p>
                 <Badge variant={payment.payment_status === 'confirmed' ? 'success' : 'warning'}>
-                  {payment.payment_status.charAt(0).toUpperCase() + payment.payment_status.slice(1)}
+                  {payment.payment_status?.charAt(0).toUpperCase() + payment.payment_status.slice(1)}
                 </Badge>
               </div>
             </div>

@@ -4,8 +4,8 @@ import {
   LandingPage,
   BrowseVehiclesPage,
   NotFoundPage,
-  PricingPage,
-  ResourcesPage,
+  HowToRentPage,
+  AboutUsPage,
   LoginPage,
   AdminDashboardPage,
   AdminFleetPage,
@@ -64,12 +64,16 @@ export const routes: RouteObject[] = [
     element: <MainLayout><TrackBookingPage /></MainLayout>,
   },
   {
-    path: '/pricing',
-    element: <MainLayout><PricingPage /></MainLayout>,
+    path: '/track/:reference',
+    element: <MainLayout><TrackBookingPage /></MainLayout>,
   },
   {
-    path: '/resources',
-    element: <MainLayout><ResourcesPage /></MainLayout>,
+    path: '/how-to-rent',
+    element: <MainLayout><HowToRentPage /></MainLayout>,
+  },
+  {
+    path: '/aboutus',
+    element: <MainLayout><AboutUsPage /></MainLayout>,
   },
   {
     path: '/sidebar-demo',

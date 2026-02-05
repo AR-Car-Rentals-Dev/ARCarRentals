@@ -34,7 +34,7 @@ export const PopularToursSection: FC = () => {
         fontFamily: "'Plus Jakarta Sans', sans-serif" 
       }}
     >
-      <div className="mx-auto w-full max-w-7xl" style={{ paddingInline: 'clamp(1rem, 5vw, 5rem)' }}>
+      <div className="mx-auto w-full max-w-[1600px]" style={{ paddingInline: 'clamp(1.5rem, 3vw, 3rem)' }}>
         {/* Section Header */}
         <h2 className="text-xl sm:text-2xl font-bold text-neutral-900 mb-6 sm:mb-8">
           Popular Tours

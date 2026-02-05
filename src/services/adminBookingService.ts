@@ -21,12 +21,17 @@ export interface Booking {
   pickup_location?: string;
   pickup_time?: string;
   total_amount: number;
-  booking_status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
+  booking_status: 'pending' | 'confirmed' | 'cancelled' | 'completed' | 'refund_pending' | 'refunded';
   created_at: string;
   updated_at: string;
   magic_token_hash?: string;
   token_expires_at?: string;
   agreed_to_terms?: boolean;
+  // Refund workflow fields
+  cancellation_reason?: string;
+  refund_status?: 'none' | 'pending' | 'completed';
+  refund_reference_id?: string;
+  refund_proof_url?: string;
   // Joined data
   customers?: Customer | null;
   vehicles?: {
@@ -346,6 +351,160 @@ export const bookingService = {
     } catch (error: any) {
       console.error('Error deleting booking:', error);
       return { error: error.message || 'Failed to delete booking' };
+    }
+  },
+
+  /**
+   * Decline booking with cancellation (for fake/invalid payment)
+   * Sets status to 'cancelled' with reason
+   */
+  async declineWithCancellation(
+    id: string, 
+    reason: string
+  ): Promise<{ data: Booking | null; error: string | null }> {
+    try {
+      const { data, error } = await supabase
+        .from('bookings')
+        .update({ 
+          booking_status: 'cancelled',
+          cancellation_reason: reason,
+          refund_status: 'none',
+          updated_at: new Date().toISOString() 
+        })
+        .eq('id', id)
+        .select(`
+          *,
+          customers:customer_id (id, full_name, email, contact_number, address, created_at, updated_at),
+          vehicles:vehicle_id (id, brand, model, image_url)
+        `)
+        .single();
+
+      if (error) {
+        console.error('Error declining booking:', error);
+        return { data: null, error: error.message };
+      }
+
+      return { data: data as Booking, error: null };
+    } catch (error: any) {
+      console.error('Error declining booking:', error);
+      return { data: null, error: error.message || 'Failed to decline booking' };
+    }
+  },
+
+  /**
+   * Decline booking with refund pending (for valid payment but unavailable car)
+   * Sets status to 'refund_pending' with reason
+   */
+  async declineWithRefundPending(
+    id: string, 
+    reason: string
+  ): Promise<{ data: Booking | null; error: string | null }> {
+    try {
+      const { data, error } = await supabase
+        .from('bookings')
+        .update({ 
+          booking_status: 'refund_pending',
+          cancellation_reason: reason,
+          refund_status: 'pending',
+          updated_at: new Date().toISOString() 
+        })
+        .eq('id', id)
+        .select(`
+          *,
+          customers:customer_id (id, full_name, email, contact_number, address, created_at, updated_at),
+          vehicles:vehicle_id (id, brand, model, image_url)
+        `)
+        .single();
+
+      if (error) {
+        console.error('Error setting refund pending:', error);
+        return { data: null, error: error.message };
+      }
+
+      return { data: data as Booking, error: null };
+    } catch (error: any) {
+      console.error('Error setting refund pending:', error);
+      return { data: null, error: error.message || 'Failed to set refund pending' };
+    }
+  },
+
+  /**
+   * Complete refund and mark booking as refunded
+   * Requires refund reference and proof URL
+   */
+  async completeRefund(
+    id: string,
+    refundReferenceId: string,
+    refundProofUrl: string
+  ): Promise<{ data: Booking | null; error: string | null }> {
+    try {
+      const { data, error } = await supabase
+        .from('bookings')
+        .update({ 
+          booking_status: 'refunded',
+          refund_status: 'completed',
+          refund_reference_id: refundReferenceId,
+          refund_proof_url: refundProofUrl,
+          updated_at: new Date().toISOString() 
+        })
+        .eq('id', id)
+        .select(`
+          *,
+          customers:customer_id (id, full_name, email, contact_number, address, created_at, updated_at),
+          vehicles:vehicle_id (id, brand, model, image_url)
+        `)
+        .single();
+
+      if (error) {
+        console.error('Error completing refund:', error);
+        return { data: null, error: error.message };
+      }
+
+      return { data: data as Booking, error: null };
+    } catch (error: any) {
+      console.error('Error completing refund:', error);
+      return { data: null, error: error.message || 'Failed to complete refund' };
+    }
+  },
+
+  /**
+   * Decline booking with immediate refund (one-step process)
+   * For valid payment, car unavailable, and immediate refund proof provided
+   */
+  async declineWithRefund(
+    id: string,
+    reason: string,
+    refundReferenceId: string,
+    refundProofUrl: string
+  ): Promise<{ data: Booking | null; error: string | null }> {
+    try {
+      const { data, error } = await supabase
+        .from('bookings')
+        .update({ 
+          booking_status: 'refunded',
+          cancellation_reason: reason,
+          refund_status: 'completed',
+          refund_reference_id: refundReferenceId,
+          refund_proof_url: refundProofUrl,
+          updated_at: new Date().toISOString() 
+        })
+        .eq('id', id)
+        .select(`
+          *,
+          customers:customer_id (id, full_name, email, contact_number, address, created_at, updated_at),
+          vehicles:vehicle_id (id, brand, model, image_url)
+        `)
+        .single();
+
+      if (error) {
+        console.error('Error declining with refund:', error);
+        return { data: null, error: error.message };
+      }
+
+      return { data: data as Booking, error: null };
+    } catch (error: any) {
+      console.error('Error declining with refund:', error);
+      return { data: null, error: error.message || 'Failed to decline with refund' };
     }
   },
 };

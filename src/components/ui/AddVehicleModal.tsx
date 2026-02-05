@@ -1,14 +1,10 @@
 import { type FC, useState, useRef, useEffect } from 'react';
 import {
-  Car,
-  DollarSign,
-  Settings2,
   Loader2,
-  ChevronRight,
-  ChevronLeft,
-  Check,
   Upload,
   X,
+  Image as ImageIcon,
+  Car,
 } from 'lucide-react';
 import { Modal } from './Modal';
 import { Input } from './Input';
@@ -55,21 +51,14 @@ const initialFormData: VehicleFormData = {
   status: 'available',
 };
 
-const STEPS = [
-  { id: 1, title: 'Basic Info', icon: Car },
-  { id: 2, title: 'Specifications', icon: Settings2 },
-  { id: 3, title: 'Image & Pricing', icon: DollarSign },
-];
-
 /**
- * Add Vehicle Modal with Step-by-Step Wizard
+ * Add Vehicle Modal - Single View Two Column Layout
  */
 export const AddVehicleModal: FC<AddVehicleModalProps> = ({
   isOpen,
   onClose,
   onSuccess,
 }) => {
-  const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<VehicleFormData>(initialFormData);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -173,49 +162,30 @@ export const AddVehicleModal: FC<AddVehicleModalProps> = ({
     }
   };
 
-  const validateStep = (step: number): boolean => {
+  const validateForm = (): boolean => {
     setError(null);
     
-    switch (step) {
-      case 1:
-        if (!formData.brand.trim()) {
-          setError('Brand is required');
-          return false;
-        }
-        if (!formData.model.trim()) {
-          setError('Model is required');
-          return false;
-        }
-        if (!formData.category_id) {
-          setError('Vehicle category is required');
-          return false;
-        }
-        return true;
-      case 2:
-        return true;
-      case 3:
-        if (!formData.price_per_day || parseFloat(formData.price_per_day) <= 0) {
-          setError('Valid price per day is required');
-          return false;
-        }
-        return true;
-      default:
-        return true;
+    if (!formData.brand.trim()) {
+      setError('Brand is required');
+      return false;
     }
-  };
-
-  const handleNext = () => {
-    if (validateStep(currentStep)) {
-      setCurrentStep((prev) => Math.min(prev + 1, STEPS.length));
+    if (!formData.model.trim()) {
+      setError('Model is required');
+      return false;
     }
-  };
-
-  const handleBack = () => {
-    setCurrentStep((prev) => Math.max(prev - 1, 1));
+    if (!formData.category_id) {
+      setError('Vehicle category is required');
+      return false;
+    }
+    if (!formData.price_per_day || parseFloat(formData.price_per_day) <= 0) {
+      setError('Valid price per day is required');
+      return false;
+    }
+    return true;
   };
 
   const handleSubmit = async () => {
-    if (!validateStep(currentStep)) return;
+    if (!validateForm()) return;
 
     setIsLoading(true);
     setError(null);
@@ -236,7 +206,7 @@ export const AddVehicleModal: FC<AddVehicleModalProps> = ({
         color: formData.color || null,
         transmission: formData.transmission,
         fuel_type: formData.fuel_type,
-        seats: parseInt(formData.seats) || 5,
+        seats: formData.seats.includes('-') ? formData.seats : (parseInt(formData.seats) || 5),
         features: featuresArray,
         image_url: imageUrl,
         price_per_day: parseFloat(formData.price_per_day),
@@ -246,7 +216,6 @@ export const AddVehicleModal: FC<AddVehicleModalProps> = ({
       if (insertError) throw insertError;
 
       setFormData(initialFormData);
-      setCurrentStep(1);
       setImageFile(null);
       setImagePreview('');
       onSuccess?.();
@@ -261,196 +230,219 @@ export const AddVehicleModal: FC<AddVehicleModalProps> = ({
 
   const handleClose = () => {
     setFormData(initialFormData);
-    setCurrentStep(1);
     setError(null);
     setImageFile(null);
     setImagePreview('');
     onClose();
   };
 
-  const progress = (currentStep / STEPS.length) * 100;
+  return (
+    <Modal isOpen={isOpen} onClose={handleClose} title="Add New Vehicle" size="2xl">
+      <p className="text-sm text-neutral-500 mb-6">
+        Fill in the details below to add a vehicle to your fleet.
+      </p>
 
-  const renderStepContent = () => {
-    switch (currentStep) {
-      case 1:
-        return (
-          <div className="space-y-4">
-            <p className="text-neutral-500 text-sm mb-6">
-              Enter the basic details of the vehicle you want to add to your fleet.
-            </p>
-            <Input
-              label="Brand *"
-              name="brand"
-              value={formData.brand}
-              onChange={handleChange}
-              placeholder="e.g., Toyota, Honda, Mitsubishi"
-            />
-            <Input
-              label="Model *"
-              name="model"
-              value={formData.model}
-              onChange={handleChange}
-              placeholder="e.g., Vios, Fortuner, Xpander"
-            />
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="mb-2 block text-sm font-medium text-neutral-700">
-                  Vehicle Category *
-                </label>
-                {loadingCategories ? (
-                  <div className="w-full rounded-lg border border-neutral-300 bg-neutral-50 px-4 py-3 text-neutral-500">
-                    Loading categories...
-                  </div>
-                ) : (
+      {/* Error Message */}
+      {error && (
+        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm flex items-start gap-2">
+          <X className="h-5 w-5 flex-shrink-0 mt-0.5" />
+          <span>{error}</span>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+        {/* LEFT COLUMN - Vehicle Details */}
+        <div className="space-y-6">
+          {/* Basic Info Section */}
+          <div className="bg-white border border-neutral-200 rounded-xl p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <Car className="h-5 w-5 text-primary-600" />
+              <h3 className="text-base font-semibold text-neutral-900">Basic Info</h3>
+            </div>
+            <div className="space-y-4">
+              <Input
+                label="Brand"
+                name="brand"
+                value={formData.brand}
+                onChange={handleChange}
+                placeholder="e.g. Toyota"
+                required
+              />
+              <Input
+                label="Model"
+                name="model"
+                value={formData.model}
+                onChange={handleChange}
+                placeholder="e.g. Vios"
+                required
+              />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-neutral-700">
+                    Vehicle Category <span className="text-red-500">*</span>
+                  </label>
+                  {loadingCategories ? (
+                    <div className="w-full rounded-lg border border-neutral-300 bg-neutral-50 px-4 py-3 text-neutral-500 text-sm">
+                      Loading...
+                    </div>
+                  ) : (
+                    <select
+                      name="category_id"
+                      value={formData.category_id}
+                      onChange={handleChange}
+                      className="w-full rounded-lg border border-neutral-300 bg-white px-4 py-3 text-neutral-900 text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-colors"
+                    >
+                      <option value="">Select Category</option>
+                      {categories.map((cat) => (
+                        <option key={cat.id} value={cat.id}>
+                          {cat.name}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+                <Input
+                  label="Color"
+                  name="color"
+                  value={formData.color}
+                  onChange={handleChange}
+                  placeholder="e.g., White"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Specifications Section */}
+          <div className="bg-white border border-neutral-200 rounded-xl p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <ImageIcon className="h-5 w-5 text-primary-600" />
+              <h3 className="text-base font-semibold text-neutral-900">Specifications</h3>
+            </div>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-neutral-700">
+                    Transmission <span className="text-red-500">*</span>
+                  </label>
                   <select
-                    name="category_id"
-                    value={formData.category_id}
+                    name="transmission"
+                    value={formData.transmission}
                     onChange={handleChange}
-                    className="w-full rounded-lg border border-neutral-300 bg-white px-4 py-3 text-neutral-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+                    className="w-full rounded-lg border border-neutral-300 bg-white px-4 py-3 text-neutral-900 text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-colors"
                   >
-                    <option value="">Select Category</option>
-                    {categories.map((cat) => (
-                      <option key={cat.id} value={cat.id}>
-                        {cat.name}
-                      </option>
-                    ))}
+                    <option value="automatic">Automatic</option>
+                    <option value="manual">Manual</option>
                   </select>
-                )}
+                </div>
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-neutral-700">
+                    Fuel Type <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    name="fuel_type"
+                    value={formData.fuel_type}
+                    onChange={handleChange}
+                    className="w-full rounded-lg border border-neutral-300 bg-white px-4 py-3 text-neutral-900 text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-colors"
+                  >
+                    <option value="gasoline">Gasoline</option>
+                    <option value="diesel">Diesel</option>
+                    <option value="hybrid">Hybrid</option>
+                    <option value="electric">Electric</option>
+                  </select>
+                </div>
               </div>
-              <Input
-                label="Color"
-                name="color"
-                value={formData.color}
-                onChange={handleChange}
-                placeholder="e.g., White, Black, Silver"
-              />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Input
+                    label="Seats"
+                    name="seats"
+                    type="text"
+                    value={formData.seats}
+                    onChange={handleChange}
+                    placeholder="e.g. 5 or 7-8"
+                    required
+                  />
+                  <p className="text-xs text-neutral-500 mt-1">
+                    Enter a single number (e.g., 5) or a range (e.g., 7-8, 13-15)
+                  </p>
+                </div>
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-neutral-700">
+                    Status <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    name="status"
+                    value={formData.status}
+                    onChange={handleChange}
+                    className="w-full rounded-lg border border-neutral-300 bg-white px-4 py-3 text-neutral-900 text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-colors"
+                  >
+                    <option value="available">Available</option>
+                    <option value="rented">Rented</option>
+                    <option value="maintenance">Maintenance</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="mb-2 block text-sm font-medium text-neutral-700">
+                  Features (comma-separated)
+                </label>
+                <textarea
+                  name="features"
+                  value={formData.features}
+                  onChange={handleChange}
+                  placeholder="e.g., GPS, Bluetooth, Backup Camera, Leather Seats"
+                  rows={3}
+                  className="w-full rounded-lg border border-neutral-300 bg-white px-4 py-3 text-neutral-900 text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 resize-none transition-colors"
+                />
+              </div>
             </div>
           </div>
-        );
+        </div>
 
-      case 2:
-        return (
-          <div className="space-y-4">
-            <p className="text-neutral-500 text-sm mb-6">
-              Select the vehicle specifications.
-            </p>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="mb-2 block text-sm font-medium text-neutral-700">
-                  Transmission *
-                </label>
-                <select
-                  name="transmission"
-                  value={formData.transmission}
-                  onChange={handleChange}
-                  className="w-full rounded-lg border border-neutral-300 bg-white px-4 py-3 text-neutral-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
-                >
-                  <option value="automatic">Automatic</option>
-                  <option value="manual">Manual</option>
-                </select>
-              </div>
-              <div>
-                <label className="mb-2 block text-sm font-medium text-neutral-700">
-                  Fuel Type *
-                </label>
-                <select
-                  name="fuel_type"
-                  value={formData.fuel_type}
-                  onChange={handleChange}
-                  className="w-full rounded-lg border border-neutral-300 bg-white px-4 py-3 text-neutral-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
-                >
-                  <option value="gasoline">Gasoline</option>
-                  <option value="diesel">Diesel</option>
-                  <option value="hybrid">Hybrid</option>
-                  <option value="electric">Electric</option>
-                </select>
-              </div>
+        {/* RIGHT COLUMN - Image & Pricing */}
+        <div className="space-y-6">
+          <div className="bg-white border border-neutral-200 rounded-xl p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <Upload className="h-5 w-5 text-primary-600" />
+              <h3 className="text-base font-semibold text-neutral-900">Vehicle Image & Pricing</h3>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <Input
-                label="Seats *"
-                name="seats"
-                type="number"
-                value={formData.seats}
-                onChange={handleChange}
-                placeholder="5"
-                min="1"
-                max="20"
-              />
-              <div>
-                <label className="mb-2 block text-sm font-medium text-neutral-700">
-                  Status *
-                </label>
-                <select
-                  name="status"
-                  value={formData.status}
-                  onChange={handleChange}
-                  className="w-full rounded-lg border border-neutral-300 bg-white px-4 py-3 text-neutral-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
-                >
-                  <option value="available">Available</option>
-                  <option value="rented">Rented</option>
-                  <option value="maintenance">Maintenance</option>
-                </select>
-              </div>
-            </div>
-            <div>
-              <label className="mb-2 block text-sm font-medium text-neutral-700">
-                Features (comma-separated)
-              </label>
-              <textarea
-                name="features"
-                value={formData.features}
-                onChange={handleChange}
-                placeholder="e.g., GPS, Bluetooth, Backup Camera, Leather Seats"
-                rows={2}
-                className="w-full rounded-lg border border-neutral-300 bg-white px-4 py-3 text-neutral-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 resize-none"
-              />
-            </div>
-          </div>
-        );
 
-      case 3:
-        return (
-          <div className="space-y-6">
-            <p className="text-neutral-500 text-sm">
-              Upload vehicle image and set the daily rental price.
-            </p>
-
-            {/* Image Upload */}
-            <div>
-              <label className="mb-2 block text-sm font-medium text-neutral-700">
-                Vehicle Image
-              </label>
+            {/* Image Upload Zone */}
+            <div className="mb-6">
               {imagePreview || formData.image_url ? (
-                <div className="relative rounded-lg overflow-hidden border border-neutral-200">
+                <div className="relative rounded-xl overflow-hidden border-2 border-neutral-200 group">
                   <img
                     src={imagePreview || formData.image_url}
                     alt="Vehicle preview"
-                    className="w-full h-48 object-cover"
+                    className="w-full h-64 object-cover"
                   />
-                  <button
-                    type="button"
-                    onClick={removeImage}
-                    className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="absolute bottom-2 right-2 px-3 py-1.5 bg-white text-neutral-700 rounded-lg text-sm font-medium hover:bg-neutral-100 transition-colors border"
-                  >
-                    Change Image
-                  </button>
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="px-4 py-2 bg-white text-neutral-900 rounded-lg text-sm font-medium hover:bg-neutral-100 transition-colors"
+                    >
+                      Change
+                    </button>
+                    <button
+                      type="button"
+                      onClick={removeImage}
+                      className="px-4 py-2 bg-red-500 text-white rounded-lg text-sm font-medium hover:bg-red-600 transition-colors"
+                    >
+                      Remove
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <div
                   onClick={() => fileInputRef.current?.click()}
-                  className="border-2 border-dashed border-neutral-300 rounded-lg p-8 text-center cursor-pointer hover:border-primary-500 hover:bg-primary-50/50 transition-colors"
+                  className="border-2 border-dashed border-neutral-300 rounded-xl p-12 text-center cursor-pointer hover:border-primary-500 hover:bg-primary-50/30 transition-all group"
                 >
-                  <Upload className="h-10 w-10 text-neutral-400 mx-auto mb-3" />
-                  <p className="text-neutral-600 font-medium">Click to upload image</p>
-                  <p className="text-neutral-400 text-sm mt-1">PNG, JPG up to 5MB</p>
+                  <div className="w-16 h-16 rounded-full bg-primary-50 flex items-center justify-center mx-auto mb-4 group-hover:bg-primary-100 transition-colors">
+                    <Upload className="h-8 w-8 text-primary-600" />
+                  </div>
+                  <p className="text-neutral-700 font-medium mb-1">Click or drag file to upload</p>
+                  <p className="text-neutral-500 text-sm">PNG, JPG up to 5MB</p>
                 </div>
               )}
               <input
@@ -462,146 +454,89 @@ export const AddVehicleModal: FC<AddVehicleModalProps> = ({
               />
             </div>
 
-            {/* Or paste URL */}
-            <div className="relative">
+            {/* OR Divider */}
+            <div className="relative mb-6">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-neutral-200"></div>
               </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-neutral-500">or paste image URL</span>
+              <div className="relative flex justify-center text-xs">
+                <span className="px-3 bg-white text-neutral-500 uppercase tracking-wide">OR USE URL</span>
               </div>
             </div>
 
-            <Input
-              label="Image URL"
-              name="image_url"
-              value={formData.image_url}
-              onChange={(e) => {
-                handleChange(e);
-                if (e.target.value) {
-                  setImagePreview(e.target.value);
-                  setImageFile(null);
-                }
-              }}
-              placeholder="https://example.com/car-image.jpg"
-            />
-
-            {/* Price */}
-            <Input
-              label="Price per Day (₱) *"
-              name="price_per_day"
-              type="number"
-              value={formData.price_per_day}
-              onChange={handleChange}
-              placeholder="2500"
-              min="0"
-              step="100"
-            />
-          </div>
-        );
-
-      default:
-        return null;
-    }
-  };
-
-  return (
-    <Modal isOpen={isOpen} onClose={handleClose} title="" size="lg">
-      <div className="relative">
-        {/* Progress Bar */}
-        <div className="absolute top-0 left-0 right-0 h-1 bg-neutral-200 rounded-full overflow-hidden">
-          <div
-            className="h-full bg-primary-600 transition-all duration-300"
-            style={{ width: `${progress}%` }}
-          />
-        </div>
-
-        {/* Step Indicators */}
-        <div className="flex justify-between mb-8 pt-6">
-          {STEPS.map((step, index) => {
-            const Icon = step.icon;
-            const isActive = currentStep === step.id;
-            const isCompleted = currentStep > step.id;
-
-            return (
-              <div key={step.id} className="flex flex-col items-center flex-1">
-                <div
-                  className={`
-                    w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300
-                    ${isCompleted ? 'bg-green-500 text-white' : ''}
-                    ${isActive ? 'bg-primary-600 text-white ring-4 ring-primary-100' : ''}
-                    ${!isActive && !isCompleted ? 'bg-neutral-100 text-neutral-400' : ''}
-                  `}
-                >
-                  {isCompleted ? <Check className="h-6 w-6" /> : <Icon className="h-6 w-6" />}
+            {/* URL Input */}
+            <div className="mb-6">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 rounded-lg bg-neutral-100 flex items-center justify-center flex-shrink-0">
+                  <ImageIcon className="h-4 w-4 text-neutral-600" />
                 </div>
-                <span
-                  className={`mt-2 text-sm font-medium ${
-                    isActive ? 'text-primary-600' : 'text-neutral-500'
-                  }`}
-                >
-                  {step.title}
-                </span>
-                {index < STEPS.length - 1 && (
-                  <div className="hidden sm:block absolute top-[42px] left-1/2 w-full h-0.5 bg-neutral-200 -z-10" />
-                )}
+                <Input
+                  name="image_url"
+                  value={formData.image_url}
+                  onChange={(e) => {
+                    handleChange(e);
+                    if (e.target.value) {
+                      setImagePreview(e.target.value);
+                      setImageFile(null);
+                    }
+                  }}
+                  placeholder="https://example.com/car-image.jpg"
+                  className="flex-1"
+                />
               </div>
-            );
-          })}
-        </div>
+            </div>
 
-        {/* Error Message */}
-        {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
-            {error}
+            {/* Price Card */}
+            <div className="bg-neutral-50 border border-neutral-200 rounded-xl p-6">
+              <label className="block text-sm font-medium text-neutral-700 mb-3">
+                Price per Day (₱) <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500 text-lg font-medium">₱</span>
+                <input
+                  type="number"
+                  name="price_per_day"
+                  value={formData.price_per_day}
+                  onChange={handleChange}
+                  placeholder="0.00"
+                  min="0"
+                  step="100"
+                  className="w-full pl-10 pr-16 py-4 text-2xl font-bold text-neutral-900 bg-white border-2 border-neutral-300 rounded-xl focus:border-primary-500 focus:outline-none focus:ring-4 focus:ring-primary-500/20 transition-all"
+                />
+                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400 text-sm font-medium">/day</span>
+              </div>
+            </div>
           </div>
-        )}
-
-        {/* Step Content */}
-        <div className="min-h-[300px]">{renderStepContent()}</div>
-
-        {/* Navigation Buttons */}
-        <div className="flex justify-between mt-8 pt-6 border-t border-neutral-200">
-          <Button
-            variant="outline"
-            onClick={currentStep === 1 ? handleClose : handleBack}
-            disabled={isLoading}
-          >
-            {currentStep === 1 ? (
-              'Cancel'
-            ) : (
-              <>
-                <ChevronLeft className="h-4 w-4 mr-1" />
-                Back
-              </>
-            )}
-          </Button>
-
-          {currentStep === STEPS.length ? (
-            <Button
-              onClick={handleSubmit}
-              disabled={isLoading || uploadingImage}
-              className="bg-primary-600 hover:bg-primary-700"
-            >
-              {isLoading || uploadingImage ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  {uploadingImage ? 'Uploading...' : 'Adding...'}
-                </>
-              ) : (
-                <>
-                  <Check className="h-4 w-4 mr-2" />
-                  Add Vehicle
-                </>
-              )}
-            </Button>
-          ) : (
-            <Button onClick={handleNext} className="bg-primary-600 hover:bg-primary-700">
-              Next
-              <ChevronRight className="h-4 w-4 ml-1" />
-            </Button>
-          )}
         </div>
+      </div>
+
+      {/* Footer Actions */}
+      <div className="flex justify-end gap-3 mt-8 pt-6 border-t border-neutral-200">
+        <Button
+          variant="outline"
+          onClick={handleClose}
+          disabled={isLoading}
+          className="px-6"
+        >
+          Cancel
+        </Button>
+        <Button
+          onClick={handleSubmit}
+          disabled={isLoading || uploadingImage}
+          className="bg-primary-600 hover:bg-primary-700 px-8"
+        >
+          {isLoading || uploadingImage ? (
+            <>
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              {uploadingImage ? 'Uploading...' : 'Adding...'}
+            </>
+          ) : (
+            <>
+              <Car className="h-4 w-4 mr-2" />
+              Add Vehicle
+            </>
+          )}
+        </Button>
       </div>
     </Modal>
   );

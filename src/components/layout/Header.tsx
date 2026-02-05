@@ -15,8 +15,8 @@ interface NavItem {
 const navItems: NavItem[] = [
   { label: 'Home', href: '/' },
   { label: 'Browse Vehicles', href: '/browsevehicles' },
-  { label: 'How to Rent', href: '/pricing' },
-  { label: 'About Us', href: '/resources' },
+  { label: 'How to Rent', href: '/how-to-rent' },
+  { label: 'About Us', href: '/aboutus' },
 ];
 
 /**
@@ -35,7 +35,7 @@ const TopBar: FC = () => (
     />
     
     {/* Content container - aligns with navigation */}
-    <div className="relative h-full mx-auto w-full max-w-7xl flex items-center justify-between" style={{ paddingInline: 'clamp(1rem, 5vw, 5rem)' }}>
+    <div className="relative h-full mx-auto w-full max-w-[1600px] flex items-center justify-between" style={{ paddingInline: 'clamp(1.5rem, 3vw, 3rem)' }}>
       {/* Business hours and location - inside gradient */}
       <div className="flex items-center gap-8 text-white text-sm font-medium">
         <div className="flex items-center gap-2">
@@ -182,7 +182,7 @@ export const Header: FC = () => {
           isScrolled && 'shadow-md'
         )}
       >
-        <div className="h-full mx-auto w-full max-w-7xl" style={{ paddingInline: 'clamp(1rem, 5vw, 5rem)' }}>
+        <div className="h-full mx-auto w-full max-w-[1600px]" style={{ paddingInline: 'clamp(1.5rem, 3vw, 3rem)' }}>
           <div className="flex h-full items-center justify-between">
             {/* Logo */}
             <Link

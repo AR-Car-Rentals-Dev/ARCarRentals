@@ -111,8 +111,8 @@ export const HeroSection: FC = () => {
       </div>
 
       {/* Search Form - Below Hero */}
-      <div className="relative z-30 -mt-8 sm:-mt-12 pb-8 sm:pb-16 mx-auto w-full max-w-7xl" style={{ paddingInline: 'clamp(1rem, 5vw, 5rem)' }}>
-        <div className="max-w-6xl mx-auto">
+      <div className="relative z-30 -mt-8 sm:-mt-12 pb-8 sm:pb-16 mx-auto w-full max-w-[1600px]" style={{ paddingInline: 'clamp(1.5rem, 3vw, 3rem)' }}>
+        <div className="max-w-[1400px] mx-auto">
           <form onSubmit={handleSearch}>
             <div className="bg-white rounded-2xl shadow-xl p-4 md:p-6">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

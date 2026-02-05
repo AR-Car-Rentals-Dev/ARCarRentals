@@ -145,7 +145,7 @@ export const FeaturedFleetSection: FC = () => {
       className="bg-white py-10 sm:py-16"
       style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
     >
-      <div className="mx-auto w-full max-w-7xl" style={{ paddingInline: 'clamp(1rem, 5vw, 5rem)' }}>
+      <div className="mx-auto w-full max-w-[1600px]" style={{ paddingInline: 'clamp(1.5rem, 3vw, 3rem)' }}>
         {/* Section Header */}
         <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-6 sm:mb-10 gap-4">
           <div>

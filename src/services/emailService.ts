@@ -144,16 +144,16 @@ export const sendBookingDeclinedEmail = async (
       console.warn('⚠️ Supabase not configured. Decline email not sent.');
       console.log('📧 Email would be sent to:', email);
       console.log('📝 Booking Reference:', bookingReference);
-      console.log('❌ Decline Reason:', declineReason);
-      return { 
-        success: false, 
-        error: 'Email service not configured' 
-      };
-    }
+      console.log('❌ Decline Reason:', declineReason); 
+      return {  
+        success: false,   
+        error: 'Email service not configured'   
+      };  
+    } 
 
-    console.log('📧 Sending booking declined email to:', email);
-    console.log('📝 Booking Reference:', bookingReference);
-    console.log('❌ Decline Reason:', declineReason);
+    console.log('📧 Sending booking declined email to:', email);  
+    console.log('📝 Booking Reference:', bookingReference); 
+    console.log('❌ Decline Reason:', declineReason); 
 
     // For declined emails, create a tracking link (magic link for tracking purposes)
     const magicLink = `${window.location.origin}/track/${bookingReference}`;
@@ -196,3 +196,149 @@ export const sendBookingDeclinedEmail = async (
     };
   }
 };
+
+/**
+ * Send refund pending email to customer
+ * Notifies customer that their booking was cancelled and refund is being processed
+ */
+export const sendRefundPendingEmail = async (
+  email: string,
+  bookingReference: string,
+  cancellationReason: string,
+  bookingDetails: {
+    vehicleName: string;
+    totalPrice: number;
+  }
+): Promise<EmailResponse> => {
+  try {
+    if (!SUPABASE_ANON_KEY) {
+      console.warn('⚠️ Supabase not configured. Refund pending email not sent.');
+      console.log('📧 Email would be sent to:', email);
+      console.log('📝 Booking Reference:', bookingReference);
+      console.log('💰 Amount to refund: ₱', bookingDetails.totalPrice);
+      return { 
+        success: false, 
+        error: 'Email service not configured' 
+      };
+    }
+
+    console.log('📧 Sending refund pending email to:', email);
+    console.log('📝 Booking Reference:', bookingReference);
+    console.log('💰 Amount to refund: ₱', bookingDetails.totalPrice);
+    console.log('📋 Cancellation Reason:', cancellationReason);
+
+    const magicLink = `${window.location.origin}/track/${bookingReference}`;
+
+    const response = await fetch(SUPABASE_FUNCTION_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'apikey': SUPABASE_ANON_KEY,
+      },
+      body: JSON.stringify({
+        email,
+        bookingReference,
+        magicLink,
+        emailType: 'refund_pending',
+        refundDetails: {
+          vehicleName: bookingDetails.vehicleName,
+          totalPrice: bookingDetails.totalPrice,
+          cancellationReason
+        }
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      console.error('❌ Failed to send refund pending email:', error);
+      return { success: false, error: error.error || 'Failed to send refund pending email' };
+    }
+
+    const data = await response.json();
+    console.log('✅ Refund pending email sent successfully. Message ID:', data.messageId);
+    return { success: true, messageId: data.messageId };
+
+  } catch (error) {
+    console.error('❌ Error sending refund pending email:', error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unknown error occurred' 
+    };
+  }
+};
+
+/**
+ * Send refund completed email to customer
+ * Confirms that refund has been processed with proof
+ */
+export const sendRefundCompletedEmail = async (
+  email: string,
+  bookingReference: string,
+  refundDetails: {
+    vehicleName: string;
+    totalPrice: number;
+    refundReferenceId: string;
+    refundProofUrl?: string;
+  },
+  cancellationReason?: string
+): Promise<EmailResponse> => {
+  try {
+    if (!SUPABASE_ANON_KEY) {
+      console.warn('⚠️ Supabase not configured. Refund completed email not sent.');
+      console.log('📧 Email would be sent to:', email);
+      console.log('📝 Booking Reference:', bookingReference);
+      console.log('💰 Refund Amount: ₱', refundDetails.totalPrice);
+      console.log('🔢 Refund Ref:', refundDetails.refundReferenceId);
+      return { 
+        success: false, 
+        error: 'Email service not configured' 
+      };
+    }
+
+    console.log('📧 Sending refund completed email to:', email);
+    console.log('📝 Booking Reference:', bookingReference);
+    console.log('💰 Refund Amount: ₱', refundDetails.totalPrice);
+    console.log('🔢 Refund Ref:', refundDetails.refundReferenceId);
+    console.log('📋 Cancellation Reason:', cancellationReason);
+
+    const magicLink = `${window.location.origin}/track/${bookingReference}`;
+
+    const response = await fetch(SUPABASE_FUNCTION_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'apikey': SUPABASE_ANON_KEY,
+      },
+      body: JSON.stringify({
+        email,
+        bookingReference,
+        magicLink,
+        emailType: 'refund_completed',
+        refundDetails: {
+          ...refundDetails,
+          cancellationReason: cancellationReason || 'other'
+        }
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      console.error('❌ Failed to send refund completed email:', error);
+      return { success: false, error: error.error || 'Failed to send refund completed email' };
+    }
+
+    const data = await response.json();
+    console.log('✅ Refund completed email sent successfully. Message ID:', data.messageId);
+    return { success: true, messageId: data.messageId };
+
+  } catch (error) {
+    console.error('❌ Error sending refund completed email:', error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unknown error occurred' 
+    };
+  }
+};
+

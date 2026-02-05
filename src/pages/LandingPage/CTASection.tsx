@@ -1,41 +1,39 @@
 import type { FC } from 'react';
 import { ArrowRight } from 'lucide-react';
-import { Container, Button } from '@/components/ui';
+import { Button } from '@/components/ui';
 
 /**
  * Call to Action section
  */
 export const CTASection: FC = () => {
   return (
-    <section className="py-16 lg:py-24 bg-primary-600">
-      <Container>
-        <div className="text-center">
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-            Ready to Hit the Road?
-          </h2>
-          <p className="text-primary-100 text-lg max-w-2xl mx-auto mb-8">
-            Book your perfect ride today and explore Cebu City in comfort and style. 
-            Special rates available for long-term rentals!
-          </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+    <section className="py-20 px-6 bg-neutral-50">
+      <div className="max-w-[1400px] mx-auto bg-neutral-900 rounded-2xl shadow-2xl overflow-hidden relative">
+        {/* Background Image */}
+        <div className="absolute inset-0 bg-[url('/CCLEXOverlay.png')] bg-cover bg-center opacity-40"></div>
+        <div className="absolute inset-0 bg-gradient-to-r from-black via-black/80 to-transparent"></div>
+
+        {/* Content */}
+        <div className="flex flex-col md:flex-row items-center justify-between p-12 md:p-16 relative z-10 gap-10">
+          <div className="md:max-w-xl">
+            <h2 className="text-3xl md:text-5xl font-bold text-white mb-6">Discover Your Perfect Ride</h2>
+            <p className="text-neutral-300 text-lg leading-relaxed">
+              From compact sedans to spacious SUVs, find the ideal vehicle for your Cebu adventure. Browse our premium fleet and hit the road today.
+            </p>
+          </div>
+          <div className="flex-shrink-0">
             <Button
-              variant="secondary"
+              variant="primary"
               size="lg"
-              className="bg-white text-primary-600 hover:bg-neutral-100"
-              rightIcon={<ArrowRight className="h-5 w-5" />}
+              onClick={() => (window.location.href = '/browsevehicles')}
+              className="inline-flex items-center gap-3 bg-[#E22B2B] hover:bg-white hover:text-black text-white px-10 py-5 rounded-lg font-bold uppercase tracking-widest text-sm transition-all duration-300 shadow-xl"
             >
-              Book Now
-            </Button>
-            <Button
-              variant="outline"
-              size="lg"
-              className="border-white text-white hover:bg-white hover:text-primary-600"
-            >
-              Contact Us
+              View Fleet
+              <ArrowRight className="h-5 w-5" />
             </Button>
           </div>
         </div>
-      </Container>
+      </div>
     </section>
   );
 };

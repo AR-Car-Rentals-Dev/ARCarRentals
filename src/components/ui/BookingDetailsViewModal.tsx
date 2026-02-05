@@ -4,9 +4,9 @@ import {
   X, User, Car, Calendar, MapPin, CreditCard, FileText, Phone, Mail, 
   CheckCircle, XCircle, Clock, AlertCircle, Receipt 
 } from 'lucide-react';
-import { DeclineReasonModal } from './DeclineReasonModal';
+import { SmartDeclineModal } from './SmartDeclineModal';
 import { bookingService } from '@/services/adminBookingService';
-import { sendBookingConfirmedEmail, sendBookingDeclinedEmail } from '@/services/emailService';
+import { sendBookingConfirmedEmail } from '@/services/emailService';
 
 interface Customer {
   id: string;
@@ -75,7 +75,6 @@ export const BookingDetailsViewModal: FC<BookingDetailsViewModalProps> = ({
   onStatusUpdate,
 }) => {
   const [isAccepting, setIsAccepting] = useState(false);
-  const [isDeclining, setIsDeclining] = useState(false);
   const [showDeclineModal, setShowDeclineModal] = useState(false);
   const [receiptError, setReceiptError] = useState(false);
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
@@ -139,61 +138,8 @@ export const BookingDetailsViewModal: FC<BookingDetailsViewModalProps> = ({
     }
   };
 
-  const handleDeclineSubmit = async (reason: string, customMessage?: string) => {
-    if (!customer) {
-      setActionError('Customer information is missing');
-      return;
-    }
-
-    setIsDeclining(true);
-    setActionError(null);
-    setActionSuccess(null);
-
-    try {
-      // Update booking status to cancelled
-      const { error: updateError } = await bookingService.updateStatus(booking.id, 'cancelled');
-      
-      if (updateError) {
-        throw new Error(updateError);
-      }
-
-      // Send decline email
-      const emailResult = await sendBookingDeclinedEmail(
-        customer.email,
-        booking.booking_reference,
-        customer.full_name,
-        reason,
-        customMessage,
-        {
-          vehicleName: vehicle ? `${vehicle.brand} ${vehicle.model}` : undefined,
-          totalPrice: booking.total_amount,
-        }
-      );
-
-      if (!emailResult.success) {
-        console.warn('Decline email failed to send:', emailResult.error);
-      }
-
-      setShowDeclineModal(false);
-      setActionSuccess('✅ Booking cancelled successfully! Decline email sent to customer.');
-      
-      // Close modal and refresh list after short delay
-      setTimeout(() => {
-        onStatusUpdate?.();
-        onClose();
-      }, 2000);
-
-    } catch (error) {
-      console.error('Error declining booking:', error);
-      setActionError(error instanceof Error ? error.message : 'Failed to cancel booking');
-      throw error;
-    } finally {
-      setIsDeclining(false);
-    }
-  };
-
   const handleClose = () => {
-    if (!isAccepting && !isDeclining) {
+    if (!isAccepting) {
       setActionSuccess(null);
       setActionError(null);
       setReceiptError(false);
@@ -246,7 +192,7 @@ export const BookingDetailsViewModal: FC<BookingDetailsViewModalProps> = ({
           </div>
           <button
             onClick={handleClose}
-            disabled={isAccepting || isDeclining}
+            disabled={isAccepting}
             className="text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50"
           >
             <X className="w-6 h-6" />
@@ -501,7 +447,7 @@ export const BookingDetailsViewModal: FC<BookingDetailsViewModalProps> = ({
                 <div className="flex gap-3">
                   <button
                     onClick={handleAccept}
-                    disabled={isAccepting || isDeclining}
+                    disabled={isAccepting}
                     className="flex-1 px-4 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
                   >
                     {isAccepting ? (
@@ -518,7 +464,7 @@ export const BookingDetailsViewModal: FC<BookingDetailsViewModalProps> = ({
                   </button>
                   <button
                     onClick={() => setShowDeclineModal(true)}
-                    disabled={isAccepting || isDeclining}
+                    disabled={isAccepting}
                     className="flex-1 px-4 py-3 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
                   >
                     <XCircle className="w-5 h-5" />
@@ -537,7 +483,7 @@ export const BookingDetailsViewModal: FC<BookingDetailsViewModalProps> = ({
           </p>
           <button
             onClick={handleClose}
-            disabled={isAccepting || isDeclining}
+            disabled={isAccepting}
             className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             Close
@@ -545,12 +491,21 @@ export const BookingDetailsViewModal: FC<BookingDetailsViewModalProps> = ({
         </div>
       </div>
 
-      {/* Decline Reason Modal */}
-      <DeclineReasonModal
+      {/* Smart Decline Modal */}
+      <SmartDeclineModal
         isOpen={showDeclineModal}
-        onClose={() => setShowDeclineModal(false)}
-        onSubmit={handleDeclineSubmit}
-        bookingReference={booking.booking_reference}
+        booking={booking as any}
+        onClose={() => {
+          setShowDeclineModal(false);
+        }}
+        onDeclineComplete={() => {
+          setShowDeclineModal(false);
+          setActionSuccess('✅ Booking declined successfully! Customer has been notified.');
+          setTimeout(() => {
+            onStatusUpdate?.();
+            onClose();
+          }, 2000);
+        }}
       />
     </div>
   );

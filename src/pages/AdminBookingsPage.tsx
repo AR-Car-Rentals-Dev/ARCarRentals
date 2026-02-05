@@ -20,6 +20,7 @@ import { Button, Input, ConfirmDialog } from '@components/ui';
 import { supabase } from '@services/supabase';
 import { AdminPageSkeleton } from '@components/ui/AdminPageSkeleton';
 import { BookingDetailsViewModal } from '@components/ui/BookingDetailsViewModal';
+import { SmartDeclineModal } from '@components/ui/SmartDeclineModal';
 
 // Types
 interface Customer {
@@ -70,8 +71,12 @@ interface BookingWithDetails {
   pickup_location: string;
   pickup_time?: string;
   total_amount: number;
-  booking_status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
+  booking_status: 'pending' | 'confirmed' | 'cancelled' | 'completed' | 'refund_pending' | 'refunded';
   created_at: string;
+  cancellation_reason?: string;
+  refund_status?: 'none' | 'pending' | 'completed';
+  refund_reference_id?: string;
+  refund_proof_url?: string;
   customers?: Customer;
   vehicles?: Vehicle;
   payments?: Payment[];
@@ -84,15 +89,20 @@ interface BookingStats {
   rejected: number;
   cancelled: number;
   completed: number;
+  refundPending: number;
+  refunded: number;
 }
 
 // Status configurations
 const STATUS_CONFIG = {
   pending: { bg: 'bg-yellow-100', text: 'text-yellow-700', label: 'Pending' },
   accepted: { bg: 'bg-green-100', text: 'text-green-700', label: 'Accepted' },
+  confirmed: { bg: 'bg-green-100', text: 'text-green-700', label: 'Confirmed' },
   rejected: { bg: 'bg-red-100', text: 'text-red-700', label: 'Rejected' },
   cancelled: { bg: 'bg-gray-100', text: 'text-gray-700', label: 'Cancelled' },
   completed: { bg: 'bg-purple-100', text: 'text-purple-700', label: 'Completed' },
+  refund_pending: { bg: 'bg-orange-100', text: 'text-orange-700', label: 'Refund Pending' },
+  refunded: { bg: 'bg-blue-100', text: 'text-blue-700', label: 'Refunded' },
 } as const;
 
 const StatusBadge: FC<{ status: keyof typeof STATUS_CONFIG }> = ({ status }) => {
@@ -112,10 +122,20 @@ export const AdminBookingsPage: FC = () => {
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [bookings, setBookings] = useState<BookingWithDetails[]>([]);
   const [filteredBookings, setFilteredBookings] = useState<BookingWithDetails[]>([]);
-  const [stats, setStats] = useState<BookingStats>({ total: 0, pending: 0, accepted: 0, rejected: 0, cancelled: 0, completed: 0 });
+  const [stats, setStats] = useState<BookingStats>({ 
+    total: 0, 
+    pending: 0, 
+    accepted: 0, 
+    rejected: 0, 
+    cancelled: 0, 
+    completed: 0, 
+    refundPending: 0, 
+    refunded: 0 
+  });
   const [isLoading, setIsLoading] = useState(true);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [isDeclineModalOpen, setIsDeclineModalOpen] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<BookingWithDetails | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   
@@ -175,10 +195,12 @@ export const AdminBookingsPage: FC = () => {
       const statsData: BookingStats = {
         total: bookingsData.length,
         pending: bookingsData.filter(b => b.booking_status === 'pending').length,
-        accepted: bookingsData.filter(b => b.booking_status === 'accepted').length,
+        accepted: bookingsData.filter(b => b.booking_status === 'accepted' || b.booking_status === 'confirmed').length,
         rejected: bookingsData.filter(b => b.booking_status === 'rejected').length,
         cancelled: bookingsData.filter(b => b.booking_status === 'cancelled').length,
         completed: bookingsData.filter(b => b.booking_status === 'completed').length,
+        refundPending: bookingsData.filter(b => b.booking_status === 'refund_pending').length,
+        refunded: bookingsData.filter(b => b.booking_status === 'refunded').length,
       };
       setStats(statsData);
     } catch (error) {
@@ -390,9 +412,12 @@ export const AdminBookingsPage: FC = () => {
               <option value="all">All Status</option>
               <option value="pending">Pending</option>
               <option value="accepted">Accepted</option>
+              <option value="confirmed">Confirmed</option>
               <option value="rejected">Rejected</option>
               <option value="cancelled">Cancelled</option>
               <option value="completed">Completed</option>
+              <option value="refund_pending">Refund Pending</option>
+              <option value="refunded">Refunded</option>
             </select>
           </div>
         </div>
@@ -566,6 +591,16 @@ export const AdminBookingsPage: FC = () => {
         }}
         booking={selectedBooking}
         onStatusUpdate={fetchBookings}
+      />
+
+      <SmartDeclineModal
+        isOpen={isDeclineModalOpen}
+        booking={selectedBooking}
+        onClose={() => {
+          setIsDeclineModalOpen(false);
+          setSelectedBooking(null);
+        }}
+        onDeclineComplete={fetchBookings}
       />
       </div>
 
