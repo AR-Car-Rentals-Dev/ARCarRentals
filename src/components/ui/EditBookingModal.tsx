@@ -278,7 +278,7 @@ export const EditBookingModal: FC<EditBookingModalProps> = ({
       }
 
       // Send confirmation email if booking was just confirmed
-      if (isBeingConfirmed && booking.customer_email) {
+      if (isBeingConfirmed && booking.customer_email && booking.booking_number) {
         console.log('📧 Booking confirmed! Sending confirmation email...');
         
         // Import email service dynamically
