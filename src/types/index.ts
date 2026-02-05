@@ -8,7 +8,7 @@ export interface Car {
   category: CarCategory;
   pricePerDay: number;
   currency: string;
-  seats: number | string;
+  seats: number;
   transmission: TransmissionType;
   fuelType: FuelType;
   image: string;
@@ -49,7 +49,7 @@ export interface Booking {
   refundProofUrl?: string;
 }
 
-export type BookingStatus = 'pending' | 'confirmed' | 'declined' | 'active' | 'completed' | 'cancelled' | 'refund_pending' | 'refunded';
+export type BookingStatus = 'pending' | 'confirmed' | 'completed' | 'cancelled' | 'refund_pending' | 'refunded';
 
 export type RefundStatus = 'none' | 'pending' | 'completed';
 

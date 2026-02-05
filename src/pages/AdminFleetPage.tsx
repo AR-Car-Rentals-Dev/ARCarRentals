@@ -112,7 +112,9 @@ export const AdminFleetPage: FC = () => {
     
     setIsDeleting(true);
     try {
-      const { success, error } = await vehicleService.delete(selectedVehicle.id);
+      // TODO: Implement delete method in vehicleService
+      const { success, error } = { success: false, error: 'Delete not implemented yet' };
+      // const { success, error } = await vehicleService.delete(selectedVehicle.id);
 
       if (!success || error) {
         throw new Error(error || 'Failed to delete vehicle');

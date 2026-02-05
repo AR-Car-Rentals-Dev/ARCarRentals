@@ -117,7 +117,7 @@ export const HowToRentPage: FC = () => {
           {/* CTA Button */}
           <div className="mt-12 text-center">
             <Button
-              variant="default"
+              variant="primary"
               size="lg"
               onClick={() => (window.location.href = '/browsevehicles')}
               className="inline-flex items-center gap-2 bg-neutral-900 hover:bg-[#E22B2B] text-white font-semibold px-8 py-4 rounded-lg transition-all duration-300"
@@ -300,7 +300,7 @@ export const HowToRentPage: FC = () => {
             </div>
             <div className="flex-shrink-0">
               <Button
-                variant="default"
+                variant="primary"
                 size="lg"
                 onClick={() => (window.location.href = '/browsevehicles')}
                 className="inline-flex items-center gap-3 bg-[#E22B2B] hover:bg-white hover:text-black text-white px-10 py-5 rounded-lg font-bold uppercase tracking-widest text-sm transition-all duration-300 shadow-xl"

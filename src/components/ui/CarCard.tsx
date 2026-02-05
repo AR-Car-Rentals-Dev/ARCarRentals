@@ -105,7 +105,7 @@ export const CarCard: FC<CarCardProps> = ({
           <div className="h-8 w-px bg-[#eaeaf0]"></div>
           <div className="flex flex-col items-center gap-1.5">
             <Users className="h-4 w-4" strokeWidth={2} />
-            <span className="text-xs font-medium">{typeof car.seats === 'string' && car.seats.includes('-') ? `${car.seats} Seats` : `${car.seats} Seats`}</span>
+            <span className="text-xs font-medium">{car.seats} Seats</span>
           </div>
           <div className="h-8 w-px bg-[#eaeaf0]"></div>
           <div className="flex flex-col items-center gap-1.5">

@@ -287,8 +287,8 @@ export const EditBookingModal: FC<EditBookingModalProps> = ({
         
         try {
           const magicLink = getMagicLinkFromBooking(booking.booking_number);
-          const vehicleName = vehicles.find(v => v.id === formData.vehicle_id)?.brand + ' ' + 
-                             vehicles.find(v => v.id === formData.vehicle_id)?.model;
+          const vehicle = vehicles.find(v => v.id === formData.vehicle_id);
+          const vehicleName = vehicle ? `${vehicle.brand} ${vehicle.model}` : 'Unknown Vehicle';
           
           await sendMagicLinkEmail(
             booking.customer_email,

@@ -2,14 +2,12 @@ import { type FC, useState, useEffect } from 'react';
 import {
   Calendar,
   Search,
-  Filter,
   Trash2,
   CheckCircle,
   XCircle,
   Clock,
   Car,
   User,
-  MapPin,
   Download,
   RefreshCw,
   Eye,
@@ -853,6 +851,11 @@ export const AdminBookingsPage: FC = () => {
         <BookingDetailsModalComponent
           booking={selectedBooking}
           onClose={() => {
+            setIsDetailsModalOpen(false);
+            setSelectedBooking(null);
+          }}
+          onStatusUpdate={() => {
+            // Refresh bookings after status update
             setIsDetailsModalOpen(false);
             setSelectedBooking(null);
           }}

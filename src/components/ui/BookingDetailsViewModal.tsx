@@ -59,7 +59,7 @@ interface Booking {
 interface BookingDetailsViewModalProps {
   isOpen: boolean;
   onClose: () => void;
-  booking: Booking | null;
+  booking: (Booking & { booking_status?: 'pending' | 'confirmed' | 'cancelled' | 'completed' | 'refund_pending' | 'refunded' }) | null;
   onStatusUpdate?: () => void;
 }
 
