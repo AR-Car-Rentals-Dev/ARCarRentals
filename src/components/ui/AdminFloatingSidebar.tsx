@@ -4,7 +4,6 @@ import {
   LayoutDashboard, 
   Car, 
   Calendar, 
-  CreditCard, 
   FileText, 
   BarChart3,
   Users,
@@ -23,6 +22,7 @@ interface NavItem {
   label: string;
   href: string;
   icon: React.ReactNode;
+  comingSoon?: boolean;
 }
 
 interface NavSection {
@@ -35,6 +35,7 @@ const AdminFloatingSidebar: React.FC = () => {
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [showComingSoonToast, setShowComingSoonToast] = useState(false);
 
   const handleLogoutClick = () => {
     setShowLogoutModal(true);
@@ -55,6 +56,13 @@ const AdminFloatingSidebar: React.FC = () => {
 
   const handleLogoutCancel = () => {
     setShowLogoutModal(false);
+  };
+
+  const handleComingSoonClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setShowComingSoonToast(true);
+    setIsMobileMenuOpen(false);
+    setTimeout(() => setShowComingSoonToast(false), 6000);
   };
 
   const navSections: NavSection[] = [
@@ -85,22 +93,18 @@ const AdminFloatingSidebar: React.FC = () => {
       title: 'FINANCIAL',
       items: [
         {
-          id: 'transactions',
-          label: 'Transactions',
-          href: '/admin/transactions',
-          icon: <CreditCard className="nav-icon-svg" />,
-        },
-        {
           id: 'invoices',
           label: 'Invoices',
-          href: '/admin/invoices',
+          href: '#',
           icon: <FileText className="nav-icon-svg" />,
+          comingSoon: true,
         },
         {
           id: 'analytics',
           label: 'Analytics',
-          href: '/admin/analytics',
+          href: '#',
           icon: <BarChart3 className="nav-icon-svg" />,
+          comingSoon: true,
         },
       ],
     },
@@ -110,14 +114,16 @@ const AdminFloatingSidebar: React.FC = () => {
         {
           id: 'leads',
           label: 'Leads',
-          href: '/admin/leads',
+          href: '#',
           icon: <Users className="nav-icon-svg" />,
+          comingSoon: true,
         },
         {
           id: 'content',
           label: 'Website Content',
-          href: '/admin/content',
+          href: '#',
           icon: <Globe className="nav-icon-svg" />,
+          comingSoon: true,
         },
       ],
     },
@@ -127,14 +133,16 @@ const AdminFloatingSidebar: React.FC = () => {
         {
           id: 'users',
           label: 'User & Roles',
-          href: '/admin/users',
+          href: '#',
           icon: <UserCog className="nav-icon-svg" />,
+          comingSoon: true,
         },
         {
           id: 'settings',
           label: 'Settings',
-          href: '/admin/settings',
+          href: '#',
           icon: <Settings className="nav-icon-svg" />,
+          comingSoon: true,
         },
       ],
     },
@@ -175,15 +183,26 @@ const AdminFloatingSidebar: React.FC = () => {
               <div className="section-title">{section.title}</div>
               <div className="section-items">
                 {section.items.map((item) => (
-                  <NavLink
-                    key={item.id}
-                    to={item.href}
-                    className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    <span className="nav-icon">{item.icon}</span>
-                    <span className="nav-label">{item.label}</span>
-                  </NavLink>
+                  item.comingSoon ? (
+                    <button
+                      key={item.id}
+                      onClick={handleComingSoonClick}
+                      className="nav-item coming-soon-item"
+                    >
+                      <span className="nav-icon">{item.icon}</span>
+                      <span className="nav-label">{item.label}</span>
+                    </button>
+                  ) : (
+                    <NavLink
+                      key={item.id}
+                      to={item.href}
+                      className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      <span className="nav-icon">{item.icon}</span>
+                      <span className="nav-label">{item.label}</span>
+                    </NavLink>
+                  )
                 ))}
               </div>
             </div>
@@ -218,11 +237,12 @@ const AdminFloatingSidebar: React.FC = () => {
           display: flex;
           flex-direction: column;
           position: fixed;
-          top: 48px;
-          left: 48px;
-          height: calc(100vh - 96px);
+          top: 3rem;
+          left: 3rem;
+          height: calc(100vh - 6rem);
           overflow: hidden;
           z-index: 50;
+          transition: all 0.3s ease;
         }
 
         .sidebar-header {
@@ -336,6 +356,7 @@ const AdminFloatingSidebar: React.FC = () => {
           display: flex;
           align-items: center;
           justify-content: center;
+          flex-shrink: 0;
         }
 
         .nav-icon-svg {
@@ -346,6 +367,16 @@ const AdminFloatingSidebar: React.FC = () => {
         .nav-label {
           font-size: 14px;
           font-weight: 500;
+        }
+
+        .coming-soon-item {
+          opacity: 0.6;
+          position: relative;
+        }
+
+        .coming-soon-item:hover {
+          opacity: 0.8;
+          background: #f9fafb;
         }
 
         .logout-button {
@@ -387,17 +418,113 @@ const AdminFloatingSidebar: React.FC = () => {
           z-index: 999;
         }
 
-        @media (max-width: 1024px) {
+        /* 4K and Ultra-wide screens (2560px+) */
+        @media (min-width: 2560px) {
           .admin-floating-sidebar {
-            width: 240px;
-            padding: 20px 16px;
-            left: 24px;
-            top: 24px;
-            height: calc(100vh - 48px);
+            width: 320px;
+            top: 4rem;
+            left: 4rem;
+            height: calc(100vh - 8rem);
+            border-radius: 20px;
+            padding: 24px;
+          }
+
+          .brand-name {
+            font-size: 20px;
+          }
+
+          .nav-item {
+            padding: 14px 18px;
+            gap: 14px;
+          }
+
+          .nav-icon-svg {
+            width: 22px;
+            height: 22px;
+          }
+
+          .nav-label {
+            font-size: 15px;
+          }
+        }
+
+        /* Large Desktop - 1920x1080 at 100% (1920px - 2559px) */
+        @media (min-width: 1920px) and (max-width: 2559px) {
+          .admin-floating-sidebar {
+            width: 280px;
+            top: 3rem;
+            left: 3rem;
+            height: calc(100vh - 6rem);
+          }
+        }
+
+        /* Desktop (1440px - 1919px) */
+        @media (min-width: 1440px) and (max-width: 1919px) {
+          .admin-floating-sidebar {
+            width: 270px;
+            top: 2.5rem;
+            left: 2.5rem;
+            height: calc(100vh - 5rem);
+            padding: 18px;
+          }
+
+          .brand-name {
+            font-size: 17px;
+          }
+        }
+
+        /* 1920x1080 at 125% scale = 1536px effective */
+        /* CRITICAL: This prevents sidebar overlap at 125% Windows scaling */
+        @media (min-width: 1280px) and (max-width: 1439px) {
+          .admin-floating-sidebar {
+            width: 230px;
+            top: 2rem;
+            left: 2rem;
+            height: calc(100vh - 4rem);
+            padding: 16px;
           }
 
           .brand-name {
             font-size: 16px;
+          }
+
+          .logo {
+            width: 44px;
+            height: 44px;
+          }
+
+          .nav-item {
+            padding: 10px 14px;
+            gap: 10px;
+          }
+
+          .nav-label {
+            font-size: 13px;
+          }
+
+          .nav-icon-svg {
+            width: 18px;
+            height: 18px;
+          }
+        }
+
+        /* Laptop (1024px - 1279px) */
+        @media (min-width: 1024px) and (max-width: 1279px) {
+          .admin-floating-sidebar {
+            width: 240px;
+            padding: 16px;
+            left: 2rem;
+            top: 2rem;
+            height: calc(100vh - 4rem);
+          }
+
+          .brand-name {
+            font-size: 16px;
+          }
+
+          .logo {
+            width: 42px;
+            height: 42px;
           }
 
           .nav-item {
@@ -408,9 +535,35 @@ const AdminFloatingSidebar: React.FC = () => {
           .nav-label {
             font-size: 13px;
           }
+
+          .nav-icon-svg {
+            width: 18px;
+            height: 18px;
+          }
         }
 
-        @media (max-width: 768px) {
+        /* Tablet (768px - 1023px) */
+        @media (min-width: 768px) and (max-width: 1023px) {
+          .admin-floating-sidebar {
+            width: 240px;
+            padding: 16px;
+            left: 1.5rem;
+            top: 1.5rem;
+            height: calc(100vh - 3rem);
+          }
+
+          .logo {
+            width: 40px;
+            height: 40px;
+          }
+
+          .brand-name {
+            font-size: 15px;
+          }
+        }
+
+        /* Mobile (below 768px) */
+        @media (max-width: 767px) {
           .mobile-menu-toggle {
             display: flex;
             align-items: center;
@@ -426,7 +579,7 @@ const AdminFloatingSidebar: React.FC = () => {
             top: 0;
             left: -100%;
             height: 100vh;
-            width: 280px;
+            width: min(280px, 80vw);
             margin: 0;
             border-radius: 0;
             z-index: 1000;
@@ -445,7 +598,7 @@ const AdminFloatingSidebar: React.FC = () => {
 
         @media (max-width: 480px) {
           .admin-floating-sidebar {
-            width: 260px;
+            width: min(260px, 75vw);
           }
 
           .mobile-menu-toggle {
@@ -464,6 +617,87 @@ const AdminFloatingSidebar: React.FC = () => {
         onConfirm={handleLogoutConfirm}
         isLoading={isLoggingOut}
       />
+
+      {/* Coming Soon Toast */}
+      {showComingSoonToast && (
+        <div className="coming-soon-toast">
+          <div className="toast-content">
+            <div className="toast-icon">🚀</div>
+            <div className="toast-text">
+              <div className="toast-title">Coming Soon!</div>
+              <div className="toast-message">This feature is under development and will be available in upcoming updates.</div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <style>{`
+        .coming-soon-toast {
+          position: fixed;
+          top: 24px;
+          right: 24px;
+          z-index: 9999;
+          animation: slideInRight 0.3s ease-out;
+        }
+
+        @keyframes slideInRight {
+          from {
+            transform: translateX(400px);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0);
+            opacity: 1;
+          }
+        }
+
+        .toast-content {
+          background: white;
+          border: 1px solid #e5e7eb;
+          border-radius: 12px;
+          padding: 16px 20px;
+          box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+          display: flex;
+          gap: 12px;
+          max-width: 400px;
+          min-width: 320px;
+        }
+
+        .toast-icon {
+          font-size: 24px;
+          flex-shrink: 0;
+        }
+
+        .toast-text {
+          flex: 1;
+        }
+
+        .toast-title {
+          font-size: 14px;
+          font-weight: 700;
+          color: #1a1a1a;
+          margin-bottom: 4px;
+        }
+
+        .toast-message {
+          font-size: 13px;
+          color: #6b7280;
+          line-height: 1.4;
+        }
+
+        @media (max-width: 768px) {
+          .coming-soon-toast {
+            top: 80px;
+            right: 16px;
+            left: 16px;
+          }
+
+          .toast-content {
+            min-width: auto;
+            max-width: 100%;
+          }
+        }
+      `}</style>
     </>
   );
 };

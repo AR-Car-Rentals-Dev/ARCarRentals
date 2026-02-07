@@ -4,6 +4,7 @@ import AdminFloatingSidebar from '@components/ui/AdminFloatingSidebar';
 
 /**
  * Admin Layout with Floating Sidebar
+ * Fully responsive layout that adapts to all screen sizes and scaling settings
  */
 export const AdminLayout: FC = () => {
   return (
@@ -19,37 +20,63 @@ export const AdminLayout: FC = () => {
       </div>
 
       <style>{`
+        /* Use landing page layout pattern for consistency and responsiveness */
         .admin-layout-wrapper {
-          display: flex;
-          gap: 24px;
-          padding: 48px;
-          padding-left: 360px;
           min-height: 100vh;
+          margin-left: 280px;
+          transition: margin-left 0.3s ease;
         }
 
         .admin-main-content {
-          flex: 1;
-          min-width: 0;
-          max-width: 1200px;
+          width: 100%;
+          max-width: 1600px;
+          margin: 0 auto;
+          padding: clamp(1.5rem, 3vw, 3rem);
         }
 
-        @media (max-width: 1024px) {
+        /* 4K and Ultra-wide screens (2560px+) */
+        @media (min-width: 2560px) {
           .admin-layout-wrapper {
-            padding: 24px;
-            padding-left: 300px;
-            gap: 20px;
+            margin-left: 320px;
           }
         }
 
-        @media (max-width: 768px) {
+        /* Desktop (1440px - 2559px) */
+        @media (min-width: 1440px) and (max-width: 2559px) {
           .admin-layout-wrapper {
-            padding: 16px;
-            padding-left: 16px;
-            padding-top: 72px;
+            margin-left: 270px;
+          }
+        }
+
+        /* 1920x1080 at 125% scale = 1536px effective (1280px - 1439px) */
+        @media (min-width: 1280px) and (max-width: 1439px) {
+          .admin-layout-wrapper {
+            margin-left: 230px;
+          }
+        }
+
+        /* Laptop (1024px - 1279px) */
+        @media (min-width: 1024px) and (max-width: 1279px) {
+          .admin-layout-wrapper {
+            margin-left: 240px;
+          }
+        }
+
+        /* Tablet (768px - 1023px) */
+        @media (min-width: 768px) and (max-width: 1023px) {
+          .admin-layout-wrapper {
+            margin-left: 240px;
+          }
+        }
+
+        /* Mobile (below 768px) */
+        @media (max-width: 767px) {
+          .admin-layout-wrapper {
+            margin-left: 0;
           }
 
           .admin-main-content {
-            max-width: 100%;
+            padding-top: 4.5rem;
           }
         }
       `}</style>

@@ -434,7 +434,7 @@ export const AdminBookingsPage: FC = () => {
       <div style="
         position: fixed;
         top: 24px;
-        right: 24px;
+        right: clamp(20px, 2vw, 24px);
         background: #10b981;
         color: white;
         padding: 16px 24px;
@@ -442,7 +442,7 @@ export const AdminBookingsPage: FC = () => {
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         display: flex;
         align-items: center;
-        gap: 12px;
+        gap: clamp(10px, 0.9vw, 12px);
         z-index: 9999;
         animation: slideIn 0.3s ease-out;
         max-width: 400px;
@@ -450,7 +450,7 @@ export const AdminBookingsPage: FC = () => {
         <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M10 0C4.48 0 0 4.48 0 10C0 15.52 4.48 20 10 20C15.52 20 20 15.52 20 10C20 4.48 15.52 0 10 0ZM8 15L3 10L4.41 8.59L8 12.17L15.59 4.58L17 6L8 15Z" fill="white"/>
         </svg>
-        <span style="font-size: 14px; font-weight: 500;">${message}</span>
+        <span style="font-size: clamp(13px, 1vw, 14px); font-weight: 500;">${message}</span>
       </div>
     `;
     
@@ -701,14 +701,14 @@ export const AdminBookingsPage: FC = () => {
         .bookings-container {
           display: flex;
           flex-direction: column;
-          gap: 20px;
-          padding-bottom: 24px;
+          gap: clamp(16px, 1.5vw, 20px);
+          padding-bottom: clamp(20px, 2vw, 24px);
         }
 
         .user-info-top {
           display: flex;
           align-items: center;
-          gap: 12px;
+          gap: clamp(10px, 0.9vw, 12px);
           justify-content: flex-end;
           margin-bottom: 0;
         }
@@ -718,7 +718,7 @@ export const AdminBookingsPage: FC = () => {
         }
 
         .user-name {
-          font-size: 14px;
+          font-size: clamp(13px, 1vw, 14px);
           font-weight: 600;
           color: #1a1a1a;
           line-height: 1.2;
@@ -731,8 +731,8 @@ export const AdminBookingsPage: FC = () => {
         }
 
         .user-avatar {
-          width: 40px;
-          height: 40px;
+          width: clamp(36px, 2.8vw, 40px);
+          height: clamp(36px, 2.8vw, 40px);
           border-radius: 50%;
           overflow: hidden;
           background: #f3f4f6;
@@ -790,7 +790,7 @@ export const AdminBookingsPage: FC = () => {
           border: 1px solid #d1d5db !important;
           color: #1f2937 !important;
           border-radius: 6px;
-          font-size: 14px;
+          font-size: clamp(13px, 1vw, 14px);
           font-weight: 500;
           cursor: pointer;
           transition: all 0.2s;
@@ -814,7 +814,7 @@ export const AdminBookingsPage: FC = () => {
           border: 1px solid #E22B2B !important;
           color: white !important;
           border-radius: 6px;
-          font-size: 14px;
+          font-size: clamp(13px, 1vw, 14px);
           font-weight: 500;
           transition: all 0.2s;
         }
@@ -866,7 +866,7 @@ export const AdminBookingsPage: FC = () => {
           border: 1px solid #d1d5db;
           color: #6b7280;
           border-radius: 6px;
-          font-size: 14px;
+          font-size: clamp(13px, 1vw, 14px);
           font-weight: 500;
           cursor: pointer;
           transition: all 0.2s;
@@ -908,7 +908,7 @@ export const AdminBookingsPage: FC = () => {
           padding: 10px 14px;
           border: none;
           background: transparent;
-          font-size: 14px;
+          font-size: clamp(13px, 1vw, 14px);
           color: #374151;
           cursor: pointer;
           transition: background 0.15s;
@@ -931,7 +931,7 @@ export const AdminBookingsPage: FC = () => {
           border: 1px solid #d1d5db !important;
           color: #6b7280 !important;
           border-radius: 6px;
-          font-size: 14px;
+          font-size: clamp(13px, 1vw, 14px);
           font-weight: 400;
           cursor: pointer;
         }
@@ -948,7 +948,7 @@ export const AdminBookingsPage: FC = () => {
           padding: 12px 16px 16px 16px;
           border: none;
           background: transparent;
-          font-size: 14px;
+          font-size: clamp(13px, 1vw, 14px);
           font-weight: 500;
           color: #6b7280;
           cursor: pointer;
@@ -977,7 +977,7 @@ export const AdminBookingsPage: FC = () => {
           padding: 0 8px;
           background: #f3f4f6;
           border-radius: 10px;
-          font-size: 12px;
+          font-size: clamp(11px, 0.85vw, 12px);
           font-weight: 600;
           color: #6b7280;
         }
@@ -990,7 +990,7 @@ export const AdminBookingsPage: FC = () => {
         .column-headers {
           display: grid;
           grid-template-columns: 2.5fr 1.8fr 3.5fr 1.5fr auto;
-          gap: 24px;
+          gap: clamp(20px, 1.8vw, 24px);
           padding: 12px 16px;
           background: #f9fafb;
           border-radius: 8px;
@@ -1102,6 +1102,19 @@ export const AdminBookingsPage: FC = () => {
           }
         }
 
+        /* Desktop - Compact layout (1280px - 1439px) for 125% scaling */
+        @media (min-width: 1024px) and (max-width: 1439px) {
+          .booking-card-desktop {
+            grid-template-columns: 2fr 1.5fr 2.8fr 1.3fr auto;
+            gap: 16px;
+          }
+
+          .booking-list-card {
+            padding: 14px;
+          }
+        }
+
+        /* Tablet and Small Desktop (max-width: 1024px) */
         @media (max-width: 1024px) {
           .page-header-row {
             flex-wrap: wrap;
@@ -1116,8 +1129,29 @@ export const AdminBookingsPage: FC = () => {
           .action-buttons {
             flex-wrap: wrap;
           }
+
+          /* Switch to mobile card layout for tablets */
+          .column-headers {
+            display: none;
+          }
+
+          .booking-card-desktop {
+            display: none;
+          }
+
+          .booking-card-mobile {
+            display: block;
+          }
         }
 
+        /* Tablet (769px - 1023px) - Enhanced mobile layout */
+        @media (min-width: 769px) and (max-width: 1023px) {
+          .booking-list-card {
+            padding: 16px;
+          }
+        }
+
+        /* Tablet (max-width: 768px) */
         @media (max-width: 768px) {
           .bookings-container {
             padding-bottom: 24px;
@@ -1194,23 +1228,12 @@ export const AdminBookingsPage: FC = () => {
             padding: 8px;
           }
 
-          .column-headers {
-            display: none;
-          }
-
-          .booking-card-desktop {
-            display: none;
-          }
-
-          .booking-card-mobile {
-            display: block;
-          }
-
           .booking-list-card {
             padding: 14px;
           }
         }
 
+        /* Small Mobile (max-width: 640px) */
         @media (max-width: 640px) {
           .page-header-row {
             padding: 10px 12px;

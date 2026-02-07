@@ -411,11 +411,11 @@ export const AdminFleetPage: FC = () => {
         .fleet-container {
           display: flex;
           flex-direction: column;
-          gap: 20px;
+          gap: clamp(16px, 1.5vw, 20px);
         }
 
         .page-title {
-          font-size: 32px;
+          font-size: clamp(24px, 2vw, 32px);
           font-weight: 700;
           color: #1a1a1a;
           margin: 0 0 4px 0;
@@ -425,7 +425,7 @@ export const AdminFleetPage: FC = () => {
         .user-info-section {
           display: flex;
           align-items: center;
-          gap: 12px;
+          gap: clamp(10px, 0.9vw, 12px);
           justify-content: flex-end;
           margin-bottom: 4px;
         }
@@ -435,21 +435,21 @@ export const AdminFleetPage: FC = () => {
         }
 
         .user-name {
-          font-size: 14px;
+          font-size: clamp(13px, 1vw, 14px);
           font-weight: 600;
           color: #1a1a1a;
           line-height: 1.2;
         }
 
         .user-role {
-          font-size: 12px;
+          font-size: clamp(11px, 0.85vw, 12px);
           color: #9ca3af;
           line-height: 1.2;
         }
 
         .user-avatar {
-          width: 40px;
-          height: 40px;
+          width: clamp(36px, 2.8vw, 40px);
+          height: clamp(36px, 2.8vw, 40px);
           border-radius: 50%;
           overflow: hidden;
           background: #f3f4f6;
@@ -463,15 +463,15 @@ export const AdminFleetPage: FC = () => {
 
         .stats-grid {
           display: grid;
-          grid-template-columns: repeat(4, 1fr);
-          gap: 20px;
+          grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+          gap: clamp(16px, 1.5vw, 20px);
         }
 
         .stat-card {
           background: white;
           border: 1px solid #e5e7eb;
-          border-radius: 16px;
-          padding: 24px;
+          border-radius: clamp(12px, 1vw, 16px);
+          padding: clamp(18px, 1.8vw, 24px);
           box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
           transition: all 0.2s ease;
         }
@@ -482,23 +482,23 @@ export const AdminFleetPage: FC = () => {
         }
 
         .stat-label {
-          font-size: 13px;
+          font-size: clamp(12px, 0.95vw, 13px);
           color: #9ca3af;
         }
 
         .search-card {
           background: white;
           border: 1px solid #e5e7eb;
-          border-radius: 16px;
-          padding: 20px;
+          border-radius: clamp(12px, 1vw, 16px);
+          padding: clamp(16px, 1.5vw, 20px);
           box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
         }
 
         .fleet-floating-add {
           display: flex;
           position: fixed;
-          bottom: 32px;
-          right: 32px;
+          bottom: clamp(24px, 2.5vw, 32px);
+          right: clamp(24px, 2.5vw, 32px);
           width: 56px;
           height: 56px;
           background: #E22B2B;
@@ -518,13 +518,48 @@ export const AdminFleetPage: FC = () => {
           box-shadow: 0 6px 20px rgba(226, 43, 43, 0.5);
         }
 
-        @media (max-width: 1024px) {
+        /* 4K and Ultra-wide (2560px+) */
+        @media (min-width: 2560px) {
           .stats-grid {
-            grid-template-columns: repeat(2, 1fr);
+            grid-template-columns: repeat(4, 1fr);
+            gap: 24px;
+            max-width: 1600px;
+          }
+          
+          .page-title {
+            font-size: 32px;
           }
         }
 
-        @media (max-width: 768px) {
+        /* Large Desktop - 1920x1080 (1440px - 2559px) */
+        @media (min-width: 1440px) and (max-width: 2559px) {
+          .stats-grid {
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+          }
+        }
+
+        /* Standard Desktop - 125% scaling (1280px - 1439px) */
+        @media (min-width: 1280px) and (max-width: 1439px) {
+          .stats-grid {
+            grid-template-columns: repeat(3, 1fr);
+            gap: 18px;
+          }
+          
+          .page-title {
+            font-size: 26px;
+          }
+        }
+
+        /* Tablet and Small Desktop (1024px - 1279px) */
+        @media (max-width: 1279px) {
+          .stats-grid {
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+          }
+        }
+
+        /* Tablet (768px - 1023px) */
+        @media (max-width: 1023px) {
           .fleet-container {
             gap: 16px;
             padding-bottom: 80px;
@@ -539,7 +574,7 @@ export const AdminFleetPage: FC = () => {
           }
 
           .stats-grid {
-            grid-template-columns: repeat(2, 1fr);
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 12px;
           }
 
@@ -557,6 +592,15 @@ export const AdminFleetPage: FC = () => {
           }
         }
 
+        /* Mobile (max-width: 767px) */
+        @media (max-width: 767px) {
+          .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+          }
+        }
+
+        /* Small Mobile (max-width: 480px) */
         @media (max-width: 480px) {
           .page-title {
             font-size: 22px;

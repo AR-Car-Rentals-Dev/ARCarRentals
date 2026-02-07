@@ -8,7 +8,6 @@ import {
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { authService, type User as UserType } from '@services/authService';
-import { vehicleService } from '@services/vehicleService';
 import { supabase } from '@services/supabase';
 import { AdminPageSkeleton } from '@components/ui/AdminPageSkeleton';
 
@@ -105,14 +104,8 @@ export const AdminDashboardPage: FC = () => {
     maintenanceVehicles: 0,
   });
 
-  // Chart data (Feb to Jun)
-  const chartData = [
-    { month: 'Feb', bookings: 12 },
-    { month: 'Mar', bookings: 18 },
-    { month: 'Apr', bookings: 15 },
-    { month: 'May', bookings: 24 },
-    { month: 'Jun', bookings: 28 },
-  ];
+  // Chart data - dynamically loaded from database
+  const [chartData, setChartData] = useState<Array<{ month: string; bookings: number }>>([]);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -134,11 +127,79 @@ export const AdminDashboardPage: FC = () => {
     const fetchDashboardData = async () => {
       setIsLoading(true);
       try {
-        // Fetch bookings with counts
-        const { data: bookingsData, error: bookingsError } = await supabase
+        // 1. Fetch total fleet count
+        const { count: totalFleet } = await supabase
+          .from('vehicles')
+          .select('*', { count: 'exact', head: true });
+
+        // 2. Fetch maintenance vehicles count
+        const { count: maintenanceVehicles } = await supabase
+          .from('vehicles')
+          .select('*', { count: 'exact', head: true })
+          .eq('status', 'maintenance');
+
+        // 3. Fetch active bookings (confirmed + pending with paid status)
+        const { data: activeBookingsData } = await supabase
           .from('bookings')
           .select(`
             id,
+            payments (payment_status)
+          `)
+          .in('booking_status', ['pending', 'confirmed']);
+
+        // Filter bookings with paid payments
+        const actualActiveBookings = activeBookingsData?.filter((booking: any) => {
+          const latestPayment = booking.payments?.[0];
+          return latestPayment?.payment_status === 'paid' || latestPayment?.payment_status === 'completed';
+        }).length || 0;
+
+        // 4. Calculate this month's revenue (paid bookings only)
+        const currentDate = new Date();
+        const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).toISOString();
+        const lastDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0, 23, 59, 59).toISOString();
+
+        const { data: revenueData } = await supabase
+          .from('bookings')
+          .select(`
+            total_amount,
+            payments!inner (
+              payment_status,
+              paid_at
+            )
+          `)
+          .gte('payments.paid_at', firstDayOfMonth)
+          .lte('payments.paid_at', lastDayOfMonth)
+          .in('payments.payment_status', ['paid', 'completed']);
+        
+        const totalRevenue = revenueData?.reduce((sum, b) => sum + (b.total_amount || 0), 0) || 0;
+
+        // 5. Fetch bookings over time (last 6 months)
+        const monthsData = [];
+        for (let i = 5; i >= 0; i--) {
+          const date = new Date();
+          date.setMonth(date.getMonth() - i);
+          const monthStart = new Date(date.getFullYear(), date.getMonth(), 1).toISOString();
+          const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59).toISOString();
+
+          const { count } = await supabase
+            .from('bookings')
+            .select('*', { count: 'exact', head: true })
+            .gte('created_at', monthStart)
+            .lte('created_at', monthEnd);
+
+          monthsData.push({
+            month: date.toLocaleDateString('en-US', { month: 'short' }),
+            bookings: count || 0,
+          });
+        }
+        setChartData(monthsData);
+
+        // 6. Fetch recent bookings
+        const { data: bookingsData } = await supabase
+          .from('bookings')
+          .select(`
+            id,
+            booking_reference,
             booking_status,
             total_amount,
             start_date,
@@ -148,71 +209,48 @@ export const AdminDashboardPage: FC = () => {
           .order('created_at', { ascending: false })
           .limit(3);
 
-        if (bookingsError) throw bookingsError;
-
-        // Calculate active bookings count
-        const { count: activeBookings } = await supabase
-          .from('bookings')
-          .select('*', { count: 'exact', head: true })
-          .in('booking_status', ['pending', 'accepted']);
-
-        // Calculate total revenue
-        const { data: revenueData } = await supabase
-          .from('bookings')
-          .select('total_amount')
-          .eq('booking_status', 'completed');
-        
-        const totalRevenue = revenueData?.reduce((sum, b) => sum + (b.total_amount || 0), 0) || 125840;
-
-        const vehicleStatsRes = await vehicleService.getStats();
-
-        if (vehicleStatsRes.data) {
-          const totalFleet = vehicleStatsRes.data.total || 48;
-          const activeBookingsCount = activeBookings || 23;
-          const bookedVehicles = activeBookingsCount;
-          const maintenanceVehicles = 7;
-          const availableVehicles = totalFleet - bookedVehicles - maintenanceVehicles;
-          const utilization = totalFleet > 0 ? Math.round((bookedVehicles / totalFleet) * 100) : 0;
-
-          setStats({
-            totalRevenue,
-            activeBookings: activeBookingsCount,
-            totalFleet,
-            utilization,
-            availableVehicles,
-            bookedVehicles,
-            maintenanceVehicles,
-          });
-        }
-
         if (bookingsData) {
           const transformed: RecentBooking[] = bookingsData.map((booking: any) => ({
-            id: booking.id.substring(0, 11),
+            id: booking.booking_reference || booking.id.substring(0, 11),
             customer: booking.customers?.full_name || 'Unknown Customer',
             vehicle: booking.vehicles ? `${booking.vehicles.brand} ${booking.vehicles.model}` : 'Unknown Vehicle',
-            date: new Date(booking.start_date).toISOString().split('T')[0],
-            status: booking.booking_status === 'accepted' || booking.booking_status === 'pending' ? 'active' : 
+            date: new Date(booking.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+            status: booking.booking_status === 'confirmed' || booking.booking_status === 'pending' ? 'active' : 
                    booking.booking_status === 'completed' ? 'completed' : 'cancelled',
           }));
           setRecentBookings(transformed);
         }
+
+        // 7. Calculate fleet statistics
+        const total = totalFleet || 0;
+        const booked = actualActiveBookings;
+        const maintenance = maintenanceVehicles || 0;
+        const available = Math.max(0, total - booked - maintenance);
+        const utilization = total > 0 ? Math.round((booked / total) * 100) : 0;
+
+        setStats({
+          totalRevenue,
+          activeBookings: booked,
+          totalFleet: total,
+          utilization,
+          availableVehicles: available,
+          bookedVehicles: booked,
+          maintenanceVehicles: maintenance,
+        });
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
-        // Use placeholder data
+        // Set empty/zero values on error
         setStats({
-          totalRevenue: 125840,
-          activeBookings: 23,
-          totalFleet: 48,
-          utilization: 78,
-          availableVehicles: 18,
-          bookedVehicles: 23,
-          maintenanceVehicles: 7,
+          totalRevenue: 0,
+          activeBookings: 0,
+          totalFleet: 0,
+          utilization: 0,
+          availableVehicles: 0,
+          bookedVehicles: 0,
+          maintenanceVehicles: 0,
         });
-        setRecentBookings([
-          { id: 'BK-2024-001', customer: 'Sarah Johnson', vehicle: 'Tesla Model 3', date: '2024-01-15', status: 'active' },
-          { id: 'BK-2024-002', customer: 'Michael Chen', vehicle: 'BMW X5', date: '2024-01-14', status: 'completed' },
-          { id: 'BK-2024-003', customer: 'Emma Davis', vehicle: 'Mercedes C-Class', date: '2024-01-14', status: 'active' },
-        ]);
+        setRecentBookings([]);
+        setChartData([]);
       } finally {
         setIsLoading(false);
       }
@@ -266,7 +304,7 @@ export const AdminDashboardPage: FC = () => {
           />
           <KpiCard
             title="Revenue"
-            value={`$${stats.totalRevenue.toLocaleString()}`}
+            value={`₱${stats.totalRevenue.toLocaleString()}`}
             helperText="This month"
             icon={<DollarSign className="h-5 w-5 text-neutral-400" />}
             isLoading={isLoading}
@@ -288,37 +326,43 @@ export const AdminDashboardPage: FC = () => {
               <h2 className="chart-title">Bookings Over Time</h2>
             </div>
             <div className="chart-container">
-              <ResponsiveContainer width="100%" height={280}>
-                <LineChart data={chartData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis 
-                    dataKey="month" 
-                    tick={{ fill: '#9ca3af', fontSize: 13 }}
-                    axisLine={{ stroke: '#e5e7eb' }}
-                  />
-                  <YAxis 
-                    tick={{ fill: '#9ca3af', fontSize: 13 }}
-                    axisLine={{ stroke: '#e5e7eb' }}
-                  />
-                  <Tooltip 
-                    contentStyle={{ 
-                      background: 'white', 
-                      border: '1px solid #e5e7eb',
-                      borderRadius: '8px',
-                      padding: '8px 12px'
-                    }}
-                    labelStyle={{ color: '#1a1a1a', fontWeight: 600 }}
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="bookings" 
-                    stroke="#ea580c" 
-                    strokeWidth={3}
-                    dot={{ fill: '#ea580c', r: 5 }}
-                    activeDot={{ r: 7 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
+              {isLoading || chartData.length === 0 ? (
+                <div className="flex items-center justify-center h-[280px]">
+                  <div className="text-neutral-400">Loading chart data...</div>
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height={280}>
+                  <LineChart data={chartData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                    <XAxis 
+                      dataKey="month" 
+                      tick={{ fill: '#9ca3af', fontSize: 13 }}
+                      axisLine={{ stroke: '#e5e7eb' }}
+                    />
+                    <YAxis 
+                      tick={{ fill: '#9ca3af', fontSize: 13 }}
+                      axisLine={{ stroke: '#e5e7eb' }}
+                    />
+                    <Tooltip 
+                      contentStyle={{ 
+                        background: 'white', 
+                        border: '1px solid #e5e7eb',
+                        borderRadius: '8px',
+                        padding: '8px 12px'
+                      }}
+                      labelStyle={{ color: '#1a1a1a', fontWeight: 600 }}
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="bookings" 
+                      stroke="#ea580c" 
+                      strokeWidth={3}
+                      dot={{ fill: '#ea580c', r: 5 }}
+                      activeDot={{ r: 7 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              )}
             </div>
           </div>
 
@@ -339,30 +383,40 @@ export const AdminDashboardPage: FC = () => {
             <h2 className="bookings-title">Recent Bookings</h2>
           </div>
           <div className="table-container">
-            <table className="bookings-table">
-              <thead>
-                <tr>
-                  <th>Booking ID</th>
-                  <th>Customer</th>
-                  <th>Vehicle</th>
-                  <th>Date</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {recentBookings.map((booking) => (
-                  <tr key={booking.id}>
-                    <td className="font-medium">{booking.id}</td>
-                    <td className="customer-name">{booking.customer}</td>
-                    <td>{booking.vehicle}</td>
-                    <td>{booking.date}</td>
-                    <td>
-                      <StatusBadge status={booking.status} />
-                    </td>
+            {isLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="text-neutral-400">Loading bookings...</div>
+              </div>
+            ) : recentBookings.length === 0 ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="text-neutral-400">No bookings yet</div>
+              </div>
+            ) : (
+              <table className="bookings-table">
+                <thead>
+                  <tr>
+                    <th>Booking ID</th>
+                    <th>Customer</th>
+                    <th>Vehicle</th>
+                    <th>Date</th>
+                    <th>Status</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {recentBookings.map((booking) => (
+                    <tr key={booking.id}>
+                      <td className="font-medium">{booking.id}</td>
+                      <td className="customer-name">{booking.customer}</td>
+                      <td>{booking.vehicle}</td>
+                      <td>{booking.date}</td>
+                      <td>
+                        <StatusBadge status={booking.status} />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
         </div>
       </div>
@@ -371,20 +425,20 @@ export const AdminDashboardPage: FC = () => {
         .dashboard-container {
           display: flex;
           flex-direction: column;
-          gap: 24px;
+          gap: clamp(20px, 1.8vw, 24px);
         }
 
         /* Page Header */
         .user-info-section {
           display: flex;
           align-items: center;
-          gap: 12px;
+          gap: clamp(10px, 0.9vw, 12px);
           justify-content: flex-end;
           margin-bottom: 4px;
         }
 
         .page-title {
-          font-size: 32px;
+          font-size: clamp(24px, 2vw, 32px);
           font-weight: 700;
           color: #1a1a1a;
           margin: 0 0 8px 0;
@@ -395,19 +449,19 @@ export const AdminDashboardPage: FC = () => {
         }
 
         .user-name {
-          font-size: 14px;
+          font-size: clamp(13px, 1vw, 14px);
           font-weight: 600;
           color: #1a1a1a;
         }
 
         .user-role {
-          font-size: 12px;
+          font-size: clamp(11px, 0.85vw, 12px);
           color: #9ca3af;
         }
 
         .user-avatar {
-          width: 40px;
-          height: 40px;
+          width: clamp(36px, 2.8vw, 40px);
+          height: clamp(36px, 2.8vw, 40px);
           border-radius: 50%;
           overflow: hidden;
           background: #f3f4f6;
@@ -422,15 +476,15 @@ export const AdminDashboardPage: FC = () => {
         /* KPI Cards */
         .kpi-grid {
           display: grid;
-          grid-template-columns: repeat(4, 1fr);
-          gap: 20px;
+          grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+          gap: clamp(16px, 1.5vw, 20px);
         }
 
         .kpi-card {
           background: white;
           border: 1px solid #e5e7eb;
-          border-radius: 16px;
-          padding: 24px;
+          border-radius: clamp(12px, 1vw, 16px);
+          padding: clamp(18px, 1.8vw, 24px);
           box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
           transition: all 0.2s ease;
         }
@@ -448,7 +502,7 @@ export const AdminDashboardPage: FC = () => {
         }
 
         .kpi-label {
-          font-size: 13px;
+          font-size: clamp(12px, 0.95vw, 13px);
           color: #6b7280;
           font-weight: 500;
         }
@@ -468,14 +522,14 @@ export const AdminDashboardPage: FC = () => {
         }
 
         .kpi-value {
-          font-size: 32px;
+          font-size: clamp(24px, 2vw, 32px);
           font-weight: 700;
           color: #1a1a1a;
           line-height: 1;
         }
 
         .kpi-helper {
-          font-size: 13px;
+          font-size: clamp(12px, 0.95vw, 13px);
           color: #9ca3af;
         }
 
@@ -483,23 +537,23 @@ export const AdminDashboardPage: FC = () => {
         .analytics-row {
           display: grid;
           grid-template-columns: 1fr 380px;
-          gap: 20px;
+          gap: clamp(16px, 1.5vw, 20px);
         }
 
         .chart-card {
           background: white;
           border: 1px solid #e5e7eb;
-          border-radius: 16px;
-          padding: 24px;
+          border-radius: clamp(12px, 1vw, 16px);
+          padding: clamp(18px, 1.8vw, 24px);
           box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
         }
 
         .chart-header {
-          margin-bottom: 24px;
+          margin-bottom: clamp(20px, 2vw, 24px);
         }
 
         .chart-title {
-          font-size: 16px;
+          font-size: clamp(14px, 1.15vw, 16px);
           font-weight: 700;
           color: #1a1a1a;
           margin: 0;
@@ -513,13 +567,13 @@ export const AdminDashboardPage: FC = () => {
         .fleet-status-card {
           background: white;
           border: 1px solid #e5e7eb;
-          border-radius: 16px;
-          padding: 24px;
+          border-radius: clamp(12px, 1vw, 16px);
+          padding: clamp(18px, 1.8vw, 24px);
           box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
         }
 
         .fleet-status-title {
-          font-size: 16px;
+          font-size: clamp(14px, 1.15vw, 16px);
           font-weight: 700;
           color: #1a1a1a;
           margin: 0 0 24px 0;
@@ -528,7 +582,7 @@ export const AdminDashboardPage: FC = () => {
         .fleet-status-list {
           display: flex;
           flex-direction: column;
-          gap: 24px;
+          gap: clamp(20px, 1.8vw, 24px);
         }
 
         .fleet-status-item {
@@ -540,8 +594,8 @@ export const AdminDashboardPage: FC = () => {
         .fleet-status-label {
           display: flex;
           align-items: center;
-          gap: 12px;
-          font-size: 14px;
+          gap: clamp(10px, 0.9vw, 12px);
+          font-size: clamp(13px, 1vw, 14px);
           color: #4b5563;
         }
 
@@ -573,8 +627,8 @@ export const AdminDashboardPage: FC = () => {
         .bookings-card {
           background: white;
           border: 1px solid #e5e7eb;
-          border-radius: 16px;
-          padding: 24px;
+          border-radius: clamp(12px, 1vw, 16px);
+          padding: clamp(18px, 1.8vw, 24px);
           box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
         }
 
@@ -583,7 +637,7 @@ export const AdminDashboardPage: FC = () => {
         }
 
         .bookings-title {
-          font-size: 16px;
+          font-size: clamp(14px, 1.15vw, 16px);
           font-weight: 700;
           color: #1a1a1a;
           margin: 0;
@@ -605,7 +659,7 @@ export const AdminDashboardPage: FC = () => {
         .bookings-table th {
           text-align: left;
           padding: 12px 16px;
-          font-size: 13px;
+          font-size: clamp(12px, 0.95vw, 13px);
           font-weight: 600;
           color: #6b7280;
         }
@@ -624,8 +678,8 @@ export const AdminDashboardPage: FC = () => {
         }
 
         .bookings-table td {
-          padding: 16px;
-          font-size: 14px;
+          padding: clamp(14px, 1.2vw, 16px);
+          font-size: clamp(13px, 1vw, 14px);
           color: #4b5563;
         }
 
@@ -643,8 +697,8 @@ export const AdminDashboardPage: FC = () => {
         .status-badge {
           display: inline-block;
           padding: 4px 12px;
-          border-radius: 12px;
-          font-size: 12px;
+          border-radius: clamp(10px, 0.85vw, 12px);
+          font-size: clamp(11px, 0.85vw, 12px);
           font-weight: 500;
           text-transform: capitalize;
         }
@@ -664,8 +718,38 @@ export const AdminDashboardPage: FC = () => {
           color: #dc2626;
         }
 
-        /* Responsive Design */
-        @media (max-width: 1280px) {
+        /* 4K and Ultra-wide (2560px+) */
+        @media (min-width: 2560px) {
+          .kpi-grid {
+            grid-template-columns: repeat(4, 1fr);
+            gap: 24px;
+            max-width: 1600px;
+          }
+          
+          .page-title {
+            font-size: 32px;
+          }
+        }
+
+        /* Large Desktop - 1920x1080 (1440px - 2559px) */
+        @media (min-width: 1440px) and (max-width: 2559px) {
+          .kpi-grid {
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+          }
+        }
+
+        /* Standard Desktop - 125% scaling (1280px - 1439px) */
+        @media (min-width: 1280px) and (max-width: 1439px) {
+          .kpi-grid {
+            grid-template-columns: repeat(3, 1fr);
+            gap: 18px;
+          }
+          
+          .page-title {
+            font-size: 26px;
+          }
+          
           .analytics-row {
             grid-template-columns: 1fr;
           }
@@ -675,13 +759,23 @@ export const AdminDashboardPage: FC = () => {
           }
         }
 
-        @media (max-width: 1024px) {
+        /* Tablet and Small Desktop (1024px - 1279px) */
+        @media (max-width: 1279px) {
+          .analytics-row {
+            grid-template-columns: 1fr;
+          }
+
+          .fleet-status-card {
+            max-width: none;
+          }
+          
           .kpi-grid {
-            grid-template-columns: repeat(2, 1fr);
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
           }
         }
 
-        @media (max-width: 768px) {
+        /* Tablet (768px - 1023px) */
+        @media (max-width: 1023px) {
           .user-info-section {
             margin-bottom: 0;
           }
@@ -691,7 +785,7 @@ export const AdminDashboardPage: FC = () => {
           }
 
           .kpi-grid {
-            grid-template-columns: repeat(2, 1fr);
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 12px;
           }
 
@@ -729,6 +823,15 @@ export const AdminDashboardPage: FC = () => {
           }
         }
 
+        /* Mobile (max-width: 767px) */
+        @media (max-width: 767px) {
+          .kpi-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+          }
+        }
+
+        /* Small Mobile (max-width: 480px) */
         @media (max-width: 480px) {
           .kpi-grid {
             grid-template-columns: 1fr;
