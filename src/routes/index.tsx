@@ -6,6 +6,7 @@ import {
   NotFoundPage,
   HowToRentPage,
   AboutUsPage,
+  ContactUsPage,
   LoginPage,
   AdminDashboardPage,
   AdminFleetPage,
@@ -74,6 +75,10 @@ export const routes: RouteObject[] = [
   {
     path: '/aboutus',
     element: <MainLayout><AboutUsPage /></MainLayout>,
+  },
+  {
+    path: '/contact',
+    element: <MainLayout><ContactUsPage /></MainLayout>,
   },
   {
     path: '/sidebar-demo',

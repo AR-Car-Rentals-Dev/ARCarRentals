@@ -5,6 +5,7 @@ export { NotFoundPage } from './NotFoundPage';
 export { FeaturesPage } from './FeaturesPage';
 export { HowToRentPage } from './HowToRentPage';
 export { AboutUsPage } from './AboutUsPage';
+export { ContactUsPage } from './ContactUsPage';
 export { LoginPage } from './LoginPage';
 export { AdminDashboardPage } from './AdminDashboardPage';
 export { AdminFleetPage } from './AdminFleetPage';

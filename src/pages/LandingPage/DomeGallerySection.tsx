@@ -1,4 +1,4 @@
-import { type FC, useRef, useEffect, useState } from 'react';
+import { type FC, useRef, useEffect, useState, useCallback } from 'react';
 
 interface ImageData {
   src: string;
@@ -9,27 +9,26 @@ interface ImageData {
 interface InfiniteScrollGalleryProps {
   images?: ImageData[];
   scrollSpeed?: number;
-  grayscale?: boolean;
 }
 
-const DEFAULT_IMAGES: ImageData[] = [
-  { src: 'https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?w=800&auto=format', alt: 'Santorini', label: 'Santorini' },
-  { src: 'https://images.unsplash.com/photo-1502877338535-766e1452684a?w=800&auto=format', alt: 'Blurry Lights', label: 'Blurry Lights' },
-  { src: 'https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?w=800&auto=format', alt: 'New York', label: 'New York' },
-  { src: 'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=800&auto=format', alt: 'Good Boy', label: 'Good Boy' },
-  { src: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&auto=format', alt: 'Coastline', label: 'Coastline' },
-  { src: 'https://images.unsplash.com/photo-1449965408869-eaa3f722e40d?w=800&auto=format', alt: 'Happy Customers', label: 'Happy Customers' },
-  { src: 'https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=800&auto=format', alt: 'Car Rental', label: 'Car Rental' },
-  { src: 'https://images.unsplash.com/photo-1583121274602-3e2820c69888?w=800&auto=format', alt: 'Premium Service', label: 'Premium Service' },
+// Customer memory photos from public/memories folder
+const MEMORY_IMAGES: ImageData[] = [
+  { src: '/memories/622053418_1372617564878272_8665739112050125720_n.jpg', alt: 'Happy Customer 1', label: 'Cebu Trip' },
+  { src: '/memories/622590474_2074369719995679_4060973652471360895_n.jpg', alt: 'Happy Customer 2', label: 'Island Adventure' },
+  { src: '/memories/623809740_25531247293227421_1023255353939186773_n.jpg', alt: 'Happy Customer 3', label: 'Beach Getaway' },
+  { src: '/memories/625142606_914730327636854_7648819686795032889_n.jpg', alt: 'Happy Customer 4', label: 'Family Trip' },
+  { src: '/memories/626751603_2080472402716484_5712831838357826546_n.jpg', alt: 'Happy Customer 5', label: 'Scenic Drive' },
+  { src: '/memories/629238391_1270451841812252_3506399103069722613_n.jpg', alt: 'Happy Customer 6', label: 'Oslob Adventure' },
 ];
 
 const InfiniteScrollGallery: FC<InfiniteScrollGalleryProps> = ({
-  images = DEFAULT_IMAGES,
+  images = MEMORY_IMAGES,
   scrollSpeed = 1,
-  grayscale = true,
 }) => {
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [scrollPosition, setScrollPosition] = useState(0);
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [isHovering, setIsHovering] = useState(false);
 
   // Auto-scroll animation
   useEffect(() => {
@@ -50,18 +49,57 @@ const InfiniteScrollGallery: FC<InfiniteScrollGalleryProps> = ({
     }
   }, [scrollPosition, images.length]);
 
+  // Handle mouse move for flashlight effect - track raw client position
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    if (containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      setMousePosition({
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top
+      });
+    }
+  }, []);
+
   // Duplicate images for seamless loop
   const duplicatedImages = [...images, ...images, ...images];
 
+  // Calculate clip-path position accounting for scroll offset
+  // The color layer is translated by -scrollPosition, so we need to add scrollPosition to the mouse X
+  const clipPathX = mousePosition.x + scrollPosition;
+  const clipPathY = mousePosition.y;
+
   return (
     <div
+      ref={containerRef}
+      onMouseMove={handleMouseMove}
+      onMouseEnter={() => setIsHovering(true)}
+      onMouseLeave={() => setIsHovering(false)}
       style={{
         width: '100%',
         height: '350px',
         position: 'relative',
         overflow: 'hidden',
+        cursor: 'none',
       }}
     >
+      {/* Custom flashlight cursor */}
+      {isHovering && (
+        <div
+          style={{
+            position: 'fixed',
+            left: mousePosition.x + (containerRef.current?.getBoundingClientRect().left || 0) - 10,
+            top: mousePosition.y + (containerRef.current?.getBoundingClientRect().top || 0) - 10,
+            width: '20px',
+            height: '20px',
+            borderRadius: '50%',
+            border: '2px solid rgba(255,255,255,0.8)',
+            pointerEvents: 'none',
+            zIndex: 100,
+            boxShadow: '0 0 10px rgba(255,255,255,0.5)',
+          }}
+        />
+      )}
+
       {/* Blur gradients on edges */}
       <div
         style={{
@@ -71,7 +109,7 @@ const InfiniteScrollGallery: FC<InfiniteScrollGalleryProps> = ({
           bottom: 0,
           width: '200px',
           background: 'linear-gradient(to right, #0A0A0A 0%, transparent 100%)',
-          zIndex: 10,
+          zIndex: 20,
           pointerEvents: 'none',
         }}
       />
@@ -83,14 +121,13 @@ const InfiniteScrollGallery: FC<InfiniteScrollGalleryProps> = ({
           bottom: 0,
           width: '200px',
           background: 'linear-gradient(to left, #0A0A0A 0%, transparent 100%)',
-          zIndex: 10,
+          zIndex: 20,
           pointerEvents: 'none',
         }}
       />
 
-      {/* Scrolling content */}
+      {/* Grayscale layer (visible by default) */}
       <div
-        ref={scrollRef}
         style={{
           display: 'flex',
           gap: '20px',
@@ -98,11 +135,14 @@ const InfiniteScrollGallery: FC<InfiniteScrollGalleryProps> = ({
           transition: 'none',
           paddingTop: '20px',
           paddingBottom: '20px',
+          position: 'absolute',
+          top: 0,
+          left: 0,
         }}
       >
         {duplicatedImages.map((image, index) => (
           <div
-            key={index}
+            key={`gray-${index}`}
             style={{
               minWidth: '240px',
               height: '300px',
@@ -120,7 +160,52 @@ const InfiniteScrollGallery: FC<InfiniteScrollGalleryProps> = ({
                 width: '100%',
                 height: '100%',
                 objectFit: 'cover',
-                filter: grayscale ? 'grayscale(100%)' : 'none',
+                filter: 'grayscale(100%)',
+              }}
+            />
+          </div>
+        ))}
+      </div>
+
+      {/* Color layer (revealed by flashlight) - clip-path adjusted for scroll */}
+      <div
+        style={{
+          display: 'flex',
+          gap: '20px',
+          transform: `translateX(-${scrollPosition}px)`,
+          transition: 'none',
+          paddingTop: '20px',
+          paddingBottom: '20px',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          clipPath: isHovering
+            ? `circle(100px at ${clipPathX}px ${clipPathY}px)`
+            : 'circle(0px at 0px 0px)',
+          pointerEvents: 'none',
+          zIndex: 10,
+        }}
+      >
+        {duplicatedImages.map((image, index) => (
+          <div
+            key={`color-${index}`}
+            style={{
+              minWidth: '240px',
+              height: '300px',
+              borderRadius: '20px',
+              overflow: 'hidden',
+              boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
+              backgroundColor: '#1a1a1a',
+              flexShrink: 0,
+            }}
+          >
+            <img
+              src={image.src}
+              alt={image.alt}
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
               }}
             />
           </div>
@@ -135,7 +220,7 @@ const InfiniteScrollGallery: FC<InfiniteScrollGalleryProps> = ({
  */
 export const InfiniteScrollGallerySection: FC = () => {
   return (
-    <section 
+    <section
       className="bg-[#0A0A0A] py-16 sm:py-24"
       style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
     >
@@ -145,7 +230,7 @@ export const InfiniteScrollGallerySection: FC = () => {
           Memories From Our Satisfied Customers
         </h2>
 
-        {/* Infinite Scroll Gallery */}
+        {/* Infinite Scroll Gallery with Flashlight Effect */}
         <InfiniteScrollGallery />
       </div>
     </section>
