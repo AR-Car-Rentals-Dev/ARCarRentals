@@ -194,7 +194,7 @@ export const vehicleService = {
           brand: vehicle.brand,
           model: vehicle.model,
           year: new Date().getFullYear(),
-          category: mapVehicleCategory(vehicle.vehicle_categories?.name),
+          category: vehicle.vehicle_categories?.name || 'SUV',
           pricePerDay: Number(vehicle.price_per_day),
           currency: 'PHP',
           seats: vehicle.seats || 5,
@@ -239,17 +239,6 @@ export const vehicleService = {
       return { data: null, error: error.message || 'Failed to fetch vehicle images' };
     }
   },
-};
-
-/**
- * Map vehicle type/category to Car category
- */
-const mapVehicleCategory = (type: string | null | undefined): 'sedan' | 'suv' | 'van' => {
-  if (!type) return 'sedan';
-  const t = type.toLowerCase();
-  if (t.includes('suv')) return 'suv';
-  if (t.includes('van')) return 'van';
-  return 'sedan';
 };
 
 export default vehicleService;

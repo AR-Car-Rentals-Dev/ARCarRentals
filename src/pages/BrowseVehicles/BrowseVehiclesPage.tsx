@@ -648,7 +648,6 @@ export const BrowseVehiclesPage: FC = () => {
                       key={car.id}
                       car={car}
                       onBookNow={handleBookNow}
-                      showAvailability
                     />
                   ))
                 )}

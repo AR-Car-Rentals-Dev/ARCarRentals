@@ -90,22 +90,9 @@ const BookingListCard: FC<BookingListCardProps> = ({ booking, onClick, onDelete 
 
   return (
     <div className="booking-list-card">
-      <div className="grid gap-6" style={{ gridTemplateColumns: '2.5fr 1.8fr 3.5fr 1.5fr auto' }}>
-        {/* Vehicle Column */}
-        <div className="flex items-center gap-3">
-          <div className="w-24 h-20 rounded-lg overflow-hidden bg-neutral-100 flex-shrink-0">
-            {booking.vehicles?.image_url ? (
-              <img
-                src={booking.vehicles.image_url}
-                alt={`${booking.vehicles.brand} ${booking.vehicles.model}`}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-neutral-400">
-                <Calendar className="h-8 w-8" />
-              </div>
-            )}
-          </div>
+      <div className="grid gap-6" style={{ gridTemplateColumns: '3fr 1.8fr 3.5fr 1.5fr auto' }}>
+        {/* Vehicle Column - Without Image */}
+        <div className="flex items-center">
           <div>
             <div className="text-xs text-red-600 font-bold mb-1">
               {booking.booking_reference}
@@ -113,8 +100,11 @@ const BookingListCard: FC<BookingListCardProps> = ({ booking, onClick, onDelete 
             <div className="text-sm font-semibold text-neutral-900">
               {booking.vehicles ? `${booking.vehicles.brand} ${booking.vehicles.model}` : 'N/A'}
             </div>
-            <div className="text-xs text-neutral-500">
-              {booking.vehicles?.vehicle_categories?.name || 'SUV'} • {booking.vehicles?.seats || 7} Seater
+            {/* Horizontal divider with specs */}
+            <div className="flex items-center gap-2 mt-1 text-xs text-neutral-500">
+              <span>{booking.vehicles?.vehicle_categories?.name || 'SUV'}</span>
+              <div className="h-3 w-px bg-neutral-300"></div>
+              <span>{booking.vehicles?.seats || 7} Seats</span>
             </div>
           </div>
         </div>

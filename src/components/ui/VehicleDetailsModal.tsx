@@ -7,7 +7,7 @@ import {
   Settings2,
   Car,
   Check,
-  X,
+  ArrowRight,
 } from 'lucide-react';
 import { Modal } from './Modal';
 import { Button } from './Button';
@@ -322,7 +322,6 @@ export const VehicleDetailsModal: FC<VehicleDetailsModalProps> = ({
               onClick={onClose}
               className="flex-1 py-3"
             >
-              <X className="w-4 h-4 mr-2" />
               Close
             </Button>
             <Button
@@ -330,8 +329,8 @@ export const VehicleDetailsModal: FC<VehicleDetailsModalProps> = ({
               onClick={handleProceedToBooking}
               className="flex-1 bg-primary-600 hover:bg-primary-700 py-3"
             >
-              <Car className="w-4 h-4 mr-2" />
-              Proceed to Booking
+              Proceed
+              <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
           </div>
         </div>

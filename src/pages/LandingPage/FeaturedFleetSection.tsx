@@ -1,16 +1,17 @@
 import { type FC, useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
-import { BookNowModal, CarCard, VehicleDetailsModal } from '@/components/ui';
+import { CarCard, VehicleDetailsModal } from '@/components/ui';
 import { supabase } from '@services/supabase';
 import type { Car } from '@/types';
+import { updateVehicle, getSession, initSession } from '@/utils/sessionManager';
 
 /**
  * Featured Fleet section - Dynamically loads featured vehicles from database
  */
 export const FeaturedFleetSection: FC = () => {
+  const navigate = useNavigate();
   const [isVehicleDetailsModalOpen, setIsVehicleDetailsModalOpen] = useState(false);
-  const [isBookNowModalOpen, setIsBookNowModalOpen] = useState(false);
   const [selectedCar, setSelectedCar] = useState<Car | null>(null);
   const [featuredCars, setFeaturedCars] = useState<Car[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -56,7 +57,7 @@ export const FeaturedFleetSection: FC = () => {
           brand: v.brand,
           model: v.model,
           year: new Date().getFullYear(), // Current year as default
-          category: v.vehicle_categories?.name?.toLowerCase() || 'suv',
+          category: v.vehicle_categories?.name || 'SUV',
           pricePerDay: v.price_per_day,
           currency: 'PHP',
           seats: typeof v.seats === 'string' ? parseInt(v.seats) || 5 : v.seats,
@@ -82,23 +83,38 @@ export const FeaturedFleetSection: FC = () => {
     fetchFeaturedVehicles();
   }, []);
 
+  // Initialize session on mount
+  useEffect(() => {
+    const session = getSession();
+    if (!session.sessionId) {
+      initSession();
+    }
+  }, []);
+
   const handleBookNow = (car: Car) => {
     setSelectedCar(car);
     setIsVehicleDetailsModalOpen(true);
   };
 
-  const handleProceedToBooking = () => {
+  const handleProceedToBooking = async () => {
+    if (!selectedCar) return;
+    
+    // Save vehicle to session
+    await updateVehicle(selectedCar);
+    
+    // Close modal
     setIsVehicleDetailsModalOpen(false);
-    setIsBookNowModalOpen(true);
+
+    // Navigate to booking page with vehicle data
+    navigate('/browsevehicles/booking', {
+      state: {
+        vehicle: selectedCar,
+      },
+    });
   };
 
   const handleCloseVehicleDetails = () => {
     setIsVehicleDetailsModalOpen(false);
-    setSelectedCar(null);
-  };
-
-  const handleCloseBookNow = () => {
-    setIsBookNowModalOpen(false);
     setSelectedCar(null);
   };
 
@@ -149,6 +165,7 @@ export const FeaturedFleetSection: FC = () => {
                 key={car.id} 
                 car={car} 
                 onBookNow={handleBookNow}
+                showAvailability
               />
             ))}
           </div>
@@ -174,25 +191,6 @@ export const FeaturedFleetSection: FC = () => {
           image: selectedCar.image,
           images: selectedCar.images,
           features: selectedCar.features,
-        } : null}
-      />
-
-      {/* Book Now Modal */}
-      <BookNowModal
-        isOpen={isBookNowModalOpen}
-        onClose={handleCloseBookNow}
-        selectedVehicle={selectedCar ? {
-          id: selectedCar.id,
-          name: selectedCar.name,
-          brand: selectedCar.brand,
-          model: selectedCar.model,
-          year: selectedCar.year,
-          category: selectedCar.category,
-          pricePerDay: selectedCar.pricePerDay,
-          seats: selectedCar.seats,
-          transmission: selectedCar.transmission,
-          fuelType: selectedCar.fuelType,
-          image: selectedCar.image,
         } : null}
       />
     </section>
