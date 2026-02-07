@@ -8,7 +8,7 @@ export interface Car {
   category: CarCategory;
   pricePerDay: number;
   currency: string;
-  seats: number;
+  seats: number | string;
   transmission: TransmissionType;
   fuelType: FuelType;
   image: string;

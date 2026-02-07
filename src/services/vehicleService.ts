@@ -8,7 +8,7 @@ export interface Vehicle {
   type?: string;
   transmission: string;
   fuel_type: string;
-  seats: number;
+  seats: number | string;
   color?: string | null;
   price_per_day: number;
   status: 'available' | 'rented' | 'maintenance';
@@ -201,7 +201,7 @@ export const vehicleService = {
           category: validCategory as 'sedan' | 'suv' | 'van',
           pricePerDay: Number(vehicle.price_per_day),
           currency: 'PHP',
-          seats: vehicle.seats || 5,
+          seats: vehicle.seats || '5',
           transmission: (vehicle.transmission?.toLowerCase() || 'automatic') as 'automatic' | 'manual',
           fuelType: (vehicle.fuel_type?.toLowerCase() || 'gasoline') as 'gasoline' | 'diesel' | 'electric' | 'hybrid',
           image: primaryImage,

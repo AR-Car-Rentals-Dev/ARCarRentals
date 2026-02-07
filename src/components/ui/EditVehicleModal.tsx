@@ -244,7 +244,7 @@ export const EditVehicleModal: FC<EditVehicleModalProps> = ({
           color: formData.color || null,
           transmission: formData.transmission,
           fuel_type: formData.fuel_type,
-          seats: parseInt(formData.seats) || 5,
+          seats: formData.seats || '5',
           features: featuresArray,
           image_url: primaryImageUrl,
           price_per_day: parseFloat(formData.price_per_day),

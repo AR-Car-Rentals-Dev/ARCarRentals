@@ -154,7 +154,7 @@ export const AddVehicleModal: FC<AddVehicleModalProps> = ({
           color: formData.color || null,
           transmission: formData.transmission,
           fuel_type: formData.fuel_type,
-          seats: formData.seats.includes('-') ? formData.seats : (parseInt(formData.seats) || 5),
+          seats: formData.seats || '5',
           features: featuresArray,
           image_url: primaryImageUrl,
           price_per_day: parseFloat(formData.price_per_day),
@@ -331,7 +331,7 @@ export const AddVehicleModal: FC<AddVehicleModalProps> = ({
                     required
                   />
                   <p className="text-xs text-neutral-500 mt-1">
-                    Enter a single number (e.g., 5) or a range (e.g., 7-8, 13-15)
+                    Enter a single number (e.g., 5) or a range (e.g., 4-5, 7-8)
                   </p>
                 </div>
                 <div>
