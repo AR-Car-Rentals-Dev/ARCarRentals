@@ -175,7 +175,7 @@ export const CarRentalAgreementModal: FC<CarRentalAgreementModalProps> = ({
                 </h4>
                 <div className="grid grid-cols-1 gap-1 text-xs text-neutral-700">
                   <span>• Take photos/videos of vehicle before and after use</span>
-                  <span>• Report accidents immediately to our 24/7 hotline: <strong>0917-123-4567</strong></span>
+                  <span>• Report accidents immediately to our 24/7 hotline: <strong>0956-662-5224</strong></span>
                   <span>• Keep all documents (OR/CR) inside the vehicle at all times</span>
                   <span>• Extension requests must be made 6 hours before scheduled return</span>
                 </div>

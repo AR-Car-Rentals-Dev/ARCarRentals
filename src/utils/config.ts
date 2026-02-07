@@ -16,7 +16,7 @@ export const config = {
     debugMode: import.meta.env.VITE_ENABLE_DEBUG_MODE === 'true',
   },
   contact: {
-    phone: import.meta.env.VITE_CONTACT_PHONE || '+63 123 456 7890',
+    phone: import.meta.env.VITE_CONTACT_PHONE || '+63 956 662 5224',
     email: import.meta.env.VITE_CONTACT_EMAIL || 'info@arcarrentals.com',
     businessHours: import.meta.env.VITE_BUSINESS_HOURS || 'Monday - Saturday 10:00am - 5:30pm',
     location: import.meta.env.VITE_BUSINESS_LOCATION || 'Cebu City, Philippines',

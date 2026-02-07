@@ -267,7 +267,7 @@ const getEmailFooter = () => `
           Our support team is here to assist you
         </p>
         <p style="margin: 0 0 8px; color: #525252; font-size: 14px;">
-          <strong style="color: #171717;">📞 Phone:</strong> +63 123 456 7890
+          <strong style="color: #171717;">📞 Phone:</strong> +63 956 662 5224
         </p>
         <p style="margin: 0 0 8px; color: #525252; font-size: 14px;">
           <strong style="color: #171717;">📧 Email:</strong> <a href="mailto:info@arcarrentals.com" style="color: #E22B2B; text-decoration: none;">info@arcarrentals.com</a>
@@ -588,7 +588,7 @@ const getDeclinedEmailHTML = (
                   If you have any questions or would like to make a new booking, please contact us:
                 </p>
                 <p style="margin: 0; color: #525252; font-size: 14px; line-height: 1.8;">
-                  📞 <strong>Phone:</strong> +63 123 456 7890<br>
+                  📞 <strong>Phone:</strong> +63 956 662 5224<br>
                   📧 <strong>Email:</strong> info@arcarrentals.com<br>
                   ⏰ <strong>Hours:</strong> Monday - Saturday, 10:00am - 5:30pm
                 </p>
@@ -874,7 +874,7 @@ const getRefundPendingEmailHTML = (
                   If you have any questions, please contact us:
                 </p>
                 <p style="margin: 0; color: #525252; font-size: 14px; line-height: 1.8;">
-                  📞 <strong>Phone:</strong> +63 123 456 7890<br>
+                  📞 <strong>Phone:</strong> +63 956 662 5224<br>
                   📧 <strong>Email:</strong> info@arcarrentals.com<br>
                   ⏰ <strong>Hours:</strong> Monday - Saturday, 10:00am - 5:30pm
                 </p>

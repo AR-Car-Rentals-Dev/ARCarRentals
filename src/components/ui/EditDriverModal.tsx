@@ -256,7 +256,7 @@ export const EditDriverModal: FC<EditDriverModalProps> = ({
               name="phone_number"
               value={formData.phone_number}
               onChange={handleChange}
-              placeholder="+63 912 345 6789"
+              placeholder="+63 956 662 5224"
               leftIcon={<Phone className="h-4 w-4" />}
             />
             <Input
