@@ -957,8 +957,9 @@ serve(async (req) => {
 
     // Prepare email body
     const emailBody: any = {
-      from: 'AR Car Rentals <onboarding@resend.dev>',
+      from: 'AR Car Rentals <info@arcarrentalscebu.com>',
       to: [email],
+      reply_to: 'info@arcarrentalscebu.com',
       subject: '',
       html: '',
     }

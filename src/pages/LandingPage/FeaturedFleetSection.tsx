@@ -60,7 +60,7 @@ export const FeaturedFleetSection: FC = () => {
           category: v.vehicle_categories?.name || 'SUV',
           pricePerDay: v.price_per_day,
           currency: 'PHP',
-          seats: typeof v.seats === 'string' ? parseInt(v.seats) || 5 : v.seats,
+          seats: v.seats || '5',
           transmission: v.transmission,
           fuelType: v.fuel_type,
           image: v.image_url || 'https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?w=800&q=80',

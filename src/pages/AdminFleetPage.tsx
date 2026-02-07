@@ -48,6 +48,7 @@ export const AdminFleetPage: FC = () => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState<VehicleType | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const fetchVehicles = async () => {
     setIsLoading(true);
@@ -104,6 +105,7 @@ export const AdminFleetPage: FC = () => {
 
   const handleDeleteClick = (vehicle: VehicleType) => {
     setSelectedVehicle(vehicle);
+    setDeleteError(null); // Clear any previous errors
     setIsDeleteDialogOpen(true);
   };
 
@@ -111,21 +113,24 @@ export const AdminFleetPage: FC = () => {
     if (!selectedVehicle) return;
     
     setIsDeleting(true);
+    setDeleteError(null); // Clear any previous errors
+    
     try {
-      // TODO: Implement delete method in vehicleService
-      const { success, error } = { success: false, error: 'Delete not implemented yet' };
-      // const { success, error } = await vehicleService.delete(selectedVehicle.id);
+      const { success, error } = await vehicleService.delete(selectedVehicle.id);
 
       if (!success || error) {
-        throw new Error(error || 'Failed to delete vehicle');
+        setDeleteError(error || 'Failed to delete vehicle');
+        return;
       }
       
-      fetchVehicles();
+      // Success - close modal and refresh
       setIsDeleteDialogOpen(false);
       setSelectedVehicle(null);
+      setDeleteError(null);
+      fetchVehicles();
     } catch (error: any) {
       console.error('Error deleting vehicle:', error);
-      alert(error.message || 'Failed to delete vehicle');
+      setDeleteError(error.message || 'Failed to delete vehicle');
     } finally {
       setIsDeleting(false);
     }
@@ -392,6 +397,7 @@ export const AdminFleetPage: FC = () => {
         onClose={() => {
           setIsDeleteDialogOpen(false);
           setSelectedVehicle(null);
+          setDeleteError(null);
         }}
         onConfirm={handleDeleteConfirm}
         title="Delete Vehicle"
@@ -399,6 +405,7 @@ export const AdminFleetPage: FC = () => {
         confirmText="Delete"
         variant="danger"
         isLoading={isDeleting}
+        errorMessage={deleteError}
       />
       </div>
 

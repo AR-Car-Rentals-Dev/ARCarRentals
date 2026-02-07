@@ -13,6 +13,7 @@ interface ConfirmDialogProps {
   cancelText?: string;
   variant?: 'danger' | 'warning' | 'info';
   isLoading?: boolean;
+  errorMessage?: string | null;
 }
 
 /**
@@ -28,6 +29,7 @@ export const ConfirmDialog: FC<ConfirmDialogProps> = ({
   cancelText = 'Cancel',
   variant = 'danger',
   isLoading = false,
+  errorMessage = null,
 }) => {
   const iconColors = {
     danger: 'bg-red-100 text-red-600',
@@ -58,6 +60,13 @@ export const ConfirmDialog: FC<ConfirmDialogProps> = ({
 
         {/* Message */}
         <p className="text-neutral-500 mb-6">{message}</p>
+
+        {/* Error Message */}
+        {errorMessage && (
+          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-left">
+            <p className="text-sm text-red-600 leading-relaxed">{errorMessage}</p>
+          </div>
+        )}
 
         {/* Actions */}
         <div className="flex gap-3">

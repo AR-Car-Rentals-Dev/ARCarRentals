@@ -243,6 +243,58 @@ export const vehicleService = {
       return { data: null, error: error.message || 'Failed to fetch vehicle images' };
     }
   },
+
+  /**
+   * Delete vehicle and all related data
+   */
+  async delete(vehicleId: string): Promise<{ success: boolean; error: string | null }> {
+    try {
+      // First, check if there are any bookings for this vehicle
+      const { data: bookings, error: bookingsCheckError } = await supabase
+        .from('bookings')
+        .select('id')
+        .eq('vehicle_id', vehicleId);
+
+      if (bookingsCheckError) {
+        console.error('Error checking bookings:', bookingsCheckError);
+        return { success: false, error: 'Failed to check vehicle bookings' };
+      }
+
+      if (bookings && bookings.length > 0) {
+        return { 
+          success: false, 
+          error: `Cannot delete vehicle with ${bookings.length} existing booking(s). Please cancel or complete all bookings first, or set the vehicle status to "Maintenance" instead.` 
+        };
+      }
+
+      // Delete all vehicle images
+      const { error: imagesError } = await supabase
+        .from('vehicle_images')
+        .delete()
+        .eq('vehicle_id', vehicleId);
+
+      if (imagesError) {
+        console.error('Error deleting vehicle images:', imagesError);
+        // Continue anyway - we still want to delete the vehicle
+      }
+
+      // Delete the vehicle
+      const { error: vehicleError } = await supabase
+        .from('vehicles')
+        .delete()
+        .eq('id', vehicleId);
+
+      if (vehicleError) {
+        console.error('Error deleting vehicle:', vehicleError);
+        return { success: false, error: vehicleError.message };
+      }
+
+      return { success: true, error: null };
+    } catch (error: any) {
+      console.error('Error in delete operation:', error);
+      return { success: false, error: error.message || 'Failed to delete vehicle' };
+    }
+  },
 };
 
 export default vehicleService;
