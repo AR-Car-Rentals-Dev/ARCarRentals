@@ -21,7 +21,7 @@ interface VehicleInput {
   color?: string | null;
   transmission?: string;
   fuel_type?: string;
-  seats?: number;
+  seats?: number | string;
   features?: string[] | any;
   image_url?: string | null;
   price_per_day?: number;
