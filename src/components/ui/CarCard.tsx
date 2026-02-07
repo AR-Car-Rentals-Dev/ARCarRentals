@@ -71,7 +71,7 @@ export const CarCard: FC<CarCardProps> = ({
           <h3 className="font-bold text-lg text-[#1f1f1f] leading-tight">
             {car.name}
           </h3>
-          <span className="px-2.5 py-1 text-xs font-semibold text-[#6b7280] bg-[#f3f4f6] rounded-full capitalize flex-shrink-0 whitespace-nowrap">
+          <span className="px-2.5 py-1 text-xs font-semibold text-white bg-[#e53935] rounded-full flex-shrink-0 whitespace-nowrap">
             {car.category}
           </span>
         </div>

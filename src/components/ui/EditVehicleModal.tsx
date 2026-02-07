@@ -1,16 +1,16 @@
-import { type FC, useState, useRef, useEffect } from 'react';
+import { type FC, useState, useEffect } from 'react';
 import {
   Car,
-  DollarSign,
   Settings2,
   Loader2,
-  Upload,
-  X,
   Save,
+  X,
+  Star,
 } from 'lucide-react';
 import { Modal } from './Modal';
 import { Input } from './Input';
 import { Button } from './Button';
+import { MultiImageUpload, type ImageUploadItem } from './MultiImageUpload';
 import { supabase } from '@services/supabase';
 
 interface VehicleInput {
@@ -27,6 +27,7 @@ interface VehicleInput {
   price_per_day?: number;
   status?: 'available' | 'rented' | 'maintenance';
   description?: string | null;
+  is_featured?: boolean;
 }
 
 interface EditVehicleModalProps {
@@ -54,6 +55,7 @@ interface VehicleFormData {
   image_url: string;
   price_per_day: string;
   status: 'available' | 'rented' | 'maintenance';
+  is_featured: boolean;
 }
 
 /**
@@ -77,15 +79,13 @@ export const EditVehicleModal: FC<EditVehicleModalProps> = ({
     image_url: '',
     price_per_day: '',
     status: 'available',
+    is_featured: false,
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string>('');
-  const [uploadingImage, setUploadingImage] = useState(false);
+  const [vehicleImages, setVehicleImages] = useState<ImageUploadItem[]>([]);
   const [categories, setCategories] = useState<VehicleCategory[]>([]);
   const [loadingCategories, setLoadingCategories] = useState(true);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Fetch vehicle categories
   useEffect(() => {
@@ -113,7 +113,9 @@ export const EditVehicleModal: FC<EditVehicleModalProps> = ({
 
   // Load vehicle data when modal opens
   useEffect(() => {
-    if (vehicle && isOpen) {
+    const loadVehicleData = async () => {
+      if (!vehicle || !isOpen) return;
+
       // Parse features - handle both array and JSON formats
       let featuresStr = '';
       if (vehicle.features) {
@@ -136,10 +138,62 @@ export const EditVehicleModal: FC<EditVehicleModalProps> = ({
         image_url: vehicle.image_url || '',
         price_per_day: vehicle.price_per_day?.toString() || '',
         status: vehicle.status || 'available',
+        is_featured: vehicle.is_featured || false,
       });
-      setImagePreview(vehicle.image_url || '');
-      setImageFile(null);
-    }
+
+      // Fetch existing images from vehicle_images table
+      try {
+        const { data: images, error } = await supabase
+          .from('vehicle_images')
+          .select('*')
+          .eq('vehicle_id', vehicle.id)
+          .order('is_primary', { ascending: false })
+          .order('display_order', { ascending: true });
+
+        if (error) {
+          console.error('Error fetching vehicle images:', error);
+          // Fallback to single image from vehicle
+          if (vehicle.image_url) {
+            setVehicleImages([{
+              id: `existing-0`,
+              url: vehicle.image_url,
+              isPrimary: true,
+            }]);
+          } else {
+            setVehicleImages([]);
+          }
+          return;
+        }
+
+        if (images && images.length > 0) {
+          setVehicleImages(images.map((img: any, index: number) => ({
+            id: img.id || `existing-${index}`,
+            url: img.image_url,
+            isPrimary: img.is_primary || index === 0,
+          })));
+        } else if (vehicle.image_url) {
+          // Fallback to single image from vehicle
+          setVehicleImages([{
+            id: `existing-0`,
+            url: vehicle.image_url,
+            isPrimary: true,
+          }]);
+        } else {
+          setVehicleImages([]);
+        }
+      } catch (err) {
+        console.error('Error loading vehicle images:', err);
+        if (vehicle.image_url) {
+          setVehicleImages([{
+            id: `existing-0`,
+            url: vehicle.image_url,
+            isPrimary: true,
+          }]);
+        }
+      }
+    };
+
+    loadVehicleData();
   }, [vehicle, isOpen]);
 
   const handleChange = (
@@ -152,55 +206,7 @@ export const EditVehicleModal: FC<EditVehicleModalProps> = ({
     }));
   };
 
-  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setImageFile(file);
-      const previewUrl = URL.createObjectURL(file);
-      setImagePreview(previewUrl);
-    }
-  };
-
-  const removeImage = () => {
-    setImageFile(null);
-    setImagePreview('');
-    setFormData(prev => ({ ...prev, image_url: '' }));
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  };
-
-  const uploadImage = async (): Promise<string | null> => {
-    if (!imageFile) return formData.image_url || null;
-
-    setUploadingImage(true);
-    try {
-      const fileExt = imageFile.name.split('.').pop();
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-      const filePath = `vehicles/${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('vehicle-images')
-        .upload(filePath, imageFile);
-
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('vehicle-images')
-        .getPublicUrl(filePath);
-
-      return publicUrl;
-    } catch (err) {
-      console.error('Error uploading image:', err);
-      return formData.image_url || null;
-    } finally {
-      setUploadingImage(false);
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
+  const handleSubmit = async () => {
     if (!vehicle?.id) return;
 
     // Validation
@@ -221,13 +227,13 @@ export const EditVehicleModal: FC<EditVehicleModalProps> = ({
     setError(null);
 
     try {
-      // Upload image first if selected
-      const imageUrl = await uploadImage();
-
       // Parse features to array
       const featuresArray = formData.features
         ? formData.features.split(',').map((f) => f.trim()).filter(Boolean)
         : [];
+
+      // Get primary image URL (first image) for backward compatibility
+      const primaryImageUrl = vehicleImages.length > 0 ? vehicleImages[0].url : null;
 
       const { error: updateError } = await supabase
         .from('vehicles')
@@ -240,14 +246,40 @@ export const EditVehicleModal: FC<EditVehicleModalProps> = ({
           fuel_type: formData.fuel_type,
           seats: parseInt(formData.seats) || 5,
           features: featuresArray,
-          image_url: imageUrl,
+          image_url: primaryImageUrl,
           price_per_day: parseFloat(formData.price_per_day),
           status: formData.status,
+          is_featured: formData.is_featured,
           updated_at: new Date().toISOString(),
         })
         .eq('id', vehicle.id);
 
       if (updateError) throw updateError;
+
+      // Delete old images and insert new ones
+      await supabase
+        .from('vehicle_images')
+        .delete()
+        .eq('vehicle_id', vehicle.id);
+
+      // Insert new vehicle images if any
+      if (vehicleImages.length > 0) {
+        const imageRecords = vehicleImages.map((img, index) => ({
+          vehicle_id: vehicle.id,
+          image_url: img.url,
+          is_primary: index === 0, // First image is primary
+          display_order: index,
+        }));
+
+        const { error: imagesError } = await supabase
+          .from('vehicle_images')
+          .insert(imageRecords);
+
+        if (imagesError) {
+          console.error('Error saving vehicle images:', imagesError);
+          // Don't throw - vehicle was updated successfully
+        }
+      }
 
       onSuccess?.();
       onClose();
@@ -261,253 +293,260 @@ export const EditVehicleModal: FC<EditVehicleModalProps> = ({
 
   const handleClose = () => {
     setError(null);
-    setImageFile(null);
+    setVehicleImages([]);
     onClose();
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title="Edit Vehicle" size="lg">
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Error Message */}
-        {error && (
-          <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
-            {error}
-          </div>
-        )}
+    <Modal isOpen={isOpen} onClose={handleClose} title="Edit Vehicle" size="2xl">
+      <p className="text-sm text-neutral-500 mb-6">
+        Update the vehicle details below.
+      </p>
 
-        {/* Basic Info */}
-        <div className="space-y-4">
-          <div className="flex items-center gap-2 text-neutral-700 font-medium">
-            <Car className="h-5 w-5" />
-            <span>Basic Information</span>
-          </div>
-          
-          <div className="grid grid-cols-2 gap-4">
-            <Input
-              label="Brand *"
-              name="brand"
-              value={formData.brand}
-              onChange={handleChange}
-              placeholder="e.g., Toyota"
-            />
-            <Input
-              label="Model *"
-              name="model"
-              value={formData.model}
-              onChange={handleChange}
-              placeholder="e.g., Vios"
-            />
-          </div>
-          
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="mb-2 block text-sm font-medium text-neutral-700">
-                Category
-              </label>
-              {loadingCategories ? (
-                <div className="w-full rounded-lg border border-neutral-300 bg-neutral-50 px-4 py-3 text-neutral-500">
-                  Loading...
+      {/* Error Message */}
+      {error && (
+        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm flex items-start gap-2">
+          <X className="h-5 w-5 flex-shrink-0 mt-0.5" />
+          <span>{error}</span>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+        {/* LEFT COLUMN - Vehicle Details */}
+        <div className="space-y-6">
+          {/* Basic Info Section */}
+          <div className="bg-white border border-neutral-200 rounded-xl p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <Car className="h-5 w-5 text-primary-600" />
+              <h3 className="text-base font-semibold text-neutral-900">Basic Info</h3>
+            </div>
+            <div className="space-y-4">
+              <Input
+                label="Brand"
+                name="brand"
+                value={formData.brand}
+                onChange={handleChange}
+                placeholder="e.g. Toyota"
+                required
+              />
+              <Input
+                label="Model"
+                name="model"
+                value={formData.model}
+                onChange={handleChange}
+                placeholder="e.g. Vios"
+                required
+              />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-neutral-700">
+                    Vehicle Category <span className="text-red-500">*</span>
+                  </label>
+                  {loadingCategories ? (
+                    <div className="w-full rounded-lg border border-neutral-300 bg-neutral-50 px-4 py-3 text-neutral-500 text-sm">
+                      Loading...
+                    </div>
+                  ) : (
+                    <select
+                      name="category_id"
+                      value={formData.category_id}
+                      onChange={handleChange}
+                      className="w-full rounded-lg border border-neutral-300 bg-white px-4 py-3 text-neutral-900 text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-colors"
+                    >
+                      <option value="">Select Category</option>
+                      {categories.map((cat) => (
+                        <option key={cat.id} value={cat.id}>
+                          {cat.name}
+                        </option>
+                      ))}
+                    </select>
+                  )}
                 </div>
-              ) : (
-                <select
-                  name="category_id"
-                  value={formData.category_id}
+                <Input
+                  label="Color"
+                  name="color"
+                  value={formData.color}
                   onChange={handleChange}
-                  className="w-full rounded-lg border border-neutral-300 bg-white px-4 py-3 text-neutral-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
-                >
-                  <option value="">Select Category</option>
-                  {categories.map((cat) => (
-                    <option key={cat.id} value={cat.id}>
-                      {cat.name}
-                    </option>
-                  ))}
-                </select>
-              )}
-            </div>
-            <Input
-              label="Color"
-              name="color"
-              value={formData.color}
-              onChange={handleChange}
-              placeholder="e.g., White"
-            />
-          </div>
-        </div>
-
-        {/* Specifications */}
-        <div className="space-y-4">
-          <div className="flex items-center gap-2 text-neutral-700 font-medium">
-            <Settings2 className="h-5 w-5" />
-            <span>Specifications</span>
-          </div>
-          
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="mb-2 block text-sm font-medium text-neutral-700">
-                Transmission
-              </label>
-              <select
-                name="transmission"
-                value={formData.transmission}
-                onChange={handleChange}
-                className="w-full rounded-lg border border-neutral-300 bg-white px-4 py-3 text-neutral-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
-              >
-                <option value="automatic">Automatic</option>
-                <option value="manual">Manual</option>
-              </select>
-            </div>
-            <div>
-              <label className="mb-2 block text-sm font-medium text-neutral-700">
-                Fuel Type
-              </label>
-              <select
-                name="fuel_type"
-                value={formData.fuel_type}
-                onChange={handleChange}
-                className="w-full rounded-lg border border-neutral-300 bg-white px-4 py-3 text-neutral-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
-              >
-                <option value="gasoline">Gasoline</option>
-                <option value="diesel">Diesel</option>
-                <option value="hybrid">Hybrid</option>
-                <option value="electric">Electric</option>
-              </select>
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-2 gap-4">
-            <Input
-              label="Seats"
-              name="seats"
-              type="number"
-              value={formData.seats}
-              onChange={handleChange}
-              min="1"
-              max="20"
-            />
-            <div>
-              <label className="mb-2 block text-sm font-medium text-neutral-700">
-                Status
-              </label>
-              <select
-                name="status"
-                value={formData.status}
-                onChange={handleChange}
-                className="w-full rounded-lg border border-neutral-300 bg-white px-4 py-3 text-neutral-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
-              >
-                <option value="available">Available</option>
-                <option value="rented">Rented</option>
-                <option value="maintenance">Maintenance</option>
-              </select>
-            </div>
-          </div>
-
-          <div>
-            <label className="mb-2 block text-sm font-medium text-neutral-700">
-              Features (comma-separated)
-            </label>
-            <textarea
-              name="features"
-              value={formData.features}
-              onChange={handleChange}
-              placeholder="e.g., GPS, Bluetooth, Backup Camera"
-              rows={2}
-              className="w-full rounded-lg border border-neutral-300 bg-white px-4 py-3 text-neutral-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 resize-none"
-            />
-          </div>
-        </div>
-
-        {/* Image & Pricing */}
-        <div className="space-y-4">
-          <div className="flex items-center gap-2 text-neutral-700 font-medium">
-            <DollarSign className="h-5 w-5" />
-            <span>Image & Pricing</span>
-          </div>
-
-          {/* Image Upload */}
-          <div>
-            <label className="mb-2 block text-sm font-medium text-neutral-700">
-              Vehicle Image
-            </label>
-            {imagePreview ? (
-              <div className="relative rounded-lg overflow-hidden border border-neutral-200">
-                <img
-                  src={imagePreview}
-                  alt="Vehicle preview"
-                  className="w-full h-40 object-cover"
+                  placeholder="e.g., White"
                 />
-                <button
-                  type="button"
-                  onClick={removeImage}
-                  className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="absolute bottom-2 right-2 px-3 py-1.5 bg-white text-neutral-700 rounded-lg text-sm font-medium hover:bg-neutral-100 transition-colors border"
-                >
-                  Change
-                </button>
               </div>
-            ) : (
-              <div
-                onClick={() => fileInputRef.current?.click()}
-                className="border-2 border-dashed border-neutral-300 rounded-lg p-6 text-center cursor-pointer hover:border-primary-500 hover:bg-primary-50/50 transition-colors"
-              >
-                <Upload className="h-8 w-8 text-neutral-400 mx-auto mb-2" />
-                <p className="text-neutral-600 text-sm">Click to upload</p>
-              </div>
-            )}
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleImageSelect}
-              className="hidden"
-            />
+            </div>
           </div>
 
-          <Input
-            label="Or paste Image URL"
-            name="image_url"
-            value={formData.image_url}
-            onChange={(e) => {
-              handleChange(e);
-              if (e.target.value) {
-                setImagePreview(e.target.value);
-                setImageFile(null);
-              }
-            }}
-            placeholder="https://example.com/image.jpg"
-          />
-
-          <Input
-            label="Price per Day (₱) *"
-            name="price_per_day"
-            type="number"
-            value={formData.price_per_day}
-            onChange={handleChange}
-            placeholder="2500"
-            min="0"
-            step="100"
-          />
+          {/* Specifications Section */}
+          <div className="bg-white border border-neutral-200 rounded-xl p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <Settings2 className="h-5 w-5 text-primary-600" />
+              <h3 className="text-base font-semibold text-neutral-900">Specifications</h3>
+            </div>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-neutral-700">
+                    Transmission <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    name="transmission"
+                    value={formData.transmission}
+                    onChange={handleChange}
+                    className="w-full rounded-lg border border-neutral-300 bg-white px-4 py-3 text-neutral-900 text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-colors"
+                  >
+                    <option value="automatic">Automatic</option>
+                    <option value="manual">Manual</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-neutral-700">
+                    Fuel Type <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    name="fuel_type"
+                    value={formData.fuel_type}
+                    onChange={handleChange}
+                    className="w-full rounded-lg border border-neutral-300 bg-white px-4 py-3 text-neutral-900 text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-colors"
+                  >
+                    <option value="gasoline">Gasoline</option>
+                    <option value="diesel">Diesel</option>
+                    <option value="hybrid">Hybrid</option>
+                    <option value="electric">Electric</option>
+                  </select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Input
+                    label="Seats"
+                    name="seats"
+                    type="text"
+                    value={formData.seats}
+                    onChange={handleChange}
+                    placeholder="e.g. 5 or 7-8"
+                    required
+                  />
+                  <p className="text-xs text-neutral-500 mt-1">
+                    Enter a single number (e.g., 5) or a range (e.g., 7-8, 13-15)
+                  </p>
+                </div>
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-neutral-700">
+                    Status <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    name="status"
+                    value={formData.status}
+                    onChange={handleChange}
+                    className="w-full rounded-lg border border-neutral-300 bg-white px-4 py-3 text-neutral-900 text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-colors"
+                  >
+                    <option value="available">Available</option>
+                    <option value="rented">Rented</option>
+                    <option value="maintenance">Maintenance</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="mb-2 block text-sm font-medium text-neutral-700">
+                  Features (comma-separated)
+                </label>
+                <textarea
+                  name="features"
+                  value={formData.features}
+                  onChange={handleChange}
+                  placeholder="e.g., GPS, Bluetooth, Backup Camera, Leather Seats"
+                  rows={3}
+                  className="w-full rounded-lg border border-neutral-300 bg-white px-4 py-3 text-neutral-900 text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 resize-none transition-colors"
+                />
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Buttons */}
-        <div className="flex justify-end gap-3 pt-4 border-t border-neutral-200">
-          <Button type="button" variant="outline" onClick={handleClose} disabled={isLoading}>
+        {/* RIGHT COLUMN - Image & Pricing */}
+        <div className="space-y-6">
+          <div className="bg-white border border-neutral-200 rounded-xl p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <Car className="h-5 w-5 text-primary-600" />
+              <h3 className="text-base font-semibold text-neutral-900">Vehicle Images & Pricing</h3>
+            </div>
+
+            {/* Multi-Image Upload */}
+            <div className="mb-6">
+              <MultiImageUpload
+                images={vehicleImages}
+                onChange={setVehicleImages}
+                maxImages={10}
+                disabled={isLoading}
+              />
+            </div>
+
+            {/* Price Card */}
+            <div className="bg-neutral-50 border border-neutral-200 rounded-xl p-6">
+              <label className="block text-sm font-medium text-neutral-700 mb-3">
+                Price per Day (₱) <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500 text-lg font-medium">₱</span>
+                <input
+                  type="number"
+                  name="price_per_day"
+                  value={formData.price_per_day}
+                  onChange={handleChange}
+                  placeholder="0.00"
+                  min="0"
+                  step="100"
+                  className="w-full pl-10 pr-16 py-4 text-2xl font-bold text-neutral-900 bg-white border-2 border-neutral-300 rounded-xl focus:border-primary-500 focus:outline-none focus:ring-4 focus:ring-primary-500/20 transition-all"
+                />
+                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400 text-sm font-medium">/day</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Footer Actions */}
+      <div className="flex items-center justify-between mt-8 pt-6 border-t border-neutral-200">
+        {/* Featured Toggle - Bottom Left */}
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setFormData(prev => ({ ...prev, is_featured: !prev.is_featured }))}
+            disabled={isLoading}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
+              formData.is_featured ? 'bg-primary-600' : 'bg-neutral-300'
+            }`}
+          >
+            <span
+              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                formData.is_featured ? 'translate-x-6' : 'translate-x-1'
+              }`}
+            />
+          </button>
+          <div className="flex items-center gap-2">
+            <Star className={`h-4 w-4 ${
+              formData.is_featured ? 'text-yellow-500 fill-yellow-500' : 'text-neutral-400'
+            }`} />
+            <span className="text-sm font-medium text-neutral-700">Featured Vehicle</span>
+          </div>
+        </div>
+
+        {/* Action Buttons - Bottom Right */}
+        <div className="flex gap-3">
+          <Button
+            variant="outline"
+            onClick={handleClose}
+            disabled={isLoading}
+            className="px-6"
+          >
             Cancel
           </Button>
           <Button
-            type="submit"
-            disabled={isLoading || uploadingImage}
-            className="bg-primary-600 hover:bg-primary-700"
+            onClick={handleSubmit}
+            disabled={isLoading}
+            className="bg-primary-600 hover:bg-primary-700 px-8"
           >
-            {isLoading || uploadingImage ? (
+            {isLoading ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                {uploadingImage ? 'Uploading...' : 'Saving...'}
+                Saving...
               </>
             ) : (
               <>
@@ -517,7 +556,7 @@ export const EditVehicleModal: FC<EditVehicleModalProps> = ({
             )}
           </Button>
         </div>
-      </form>
+      </div>
     </Modal>
   );
 };

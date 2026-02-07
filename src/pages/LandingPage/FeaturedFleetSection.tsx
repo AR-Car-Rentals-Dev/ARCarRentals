@@ -1,141 +1,103 @@
-import { type FC, useState } from 'react';
+import { type FC, useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
-import { BookNowModal, CarCard } from '@/components/ui';
+import { BookNowModal, CarCard, VehicleDetailsModal } from '@/components/ui';
+import { supabase } from '@services/supabase';
 import type { Car } from '@/types';
 
-// Top 6 most popular rental cars in the Philippines (based on client's fleet)
-// Ranked by popularity: Innova, Fortuner, Xpander, Vios, GL Grandia, Montero
-const featuredCars: Car[] = [
-  {
-    id: '1',
-    name: 'Toyota Innova',
-    brand: 'Toyota',
-    model: 'Innova',
-    year: 2024,
-    category: 'suv',
-    pricePerDay: 2800,
-    currency: 'PHP',
-    seats: 8,
-    transmission: 'automatic',
-    fuelType: 'diesel',
-    image: 'https://images.unsplash.com/photo-1519641471654-76ce0107ad1b?w=800&q=80',
-    images: [],
-    features: ['AC', 'Spacious', 'Family-friendly', 'USB Charging'],
-    available: true,
-    rating: 4.9,
-    reviewCount: 187,
-  },
-  {
-    id: '2',
-    name: 'Toyota Fortuner',
-    brand: 'Toyota',
-    model: 'Fortuner',
-    year: 2024,
-    category: 'suv',
-    pricePerDay: 4000,
-    currency: 'PHP',
-    seats: 7,
-    transmission: 'automatic',
-    fuelType: 'diesel',
-    image: 'https://images.unsplash.com/photo-1606664515524-ed2f786a0bd6?w=800&q=80',
-    images: [],
-    features: ['AC', 'Leather Seats', '4WD', 'Navigation', 'Premium'],
-    available: true,
-    rating: 4.9,
-    reviewCount: 167,
-  },
-  {
-    id: '3',
-    name: 'Mitsubishi Xpander',
-    brand: 'Mitsubishi',
-    model: 'Xpander',
-    year: 2024,
-    category: 'suv',
-    pricePerDay: 2600,
-    currency: 'PHP',
-    seats: 7,
-    transmission: 'automatic',
-    fuelType: 'gasoline',
-    image: 'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?w=800&q=80',
-    images: [],
-    features: ['AC', 'Bluetooth', 'Spacious', 'Modern Design'],
-    available: true,
-    rating: 4.8,
-    reviewCount: 156,
-  },
-  {
-    id: '4',
-    name: 'Toyota Vios',
-    brand: 'Toyota',
-    model: 'Vios',
-    year: 2024,
-    category: 'sedan',
-    pricePerDay: 1800,
-    currency: 'PHP',
-    seats: 5,
-    transmission: 'automatic',
-    fuelType: 'gasoline',
-    image: 'https://images.unsplash.com/photo-1550355291-bbee04a92027?w=800&q=80',
-    images: [],
-    features: ['AC', 'Bluetooth', 'USB Charging'],
-    available: true,
-    rating: 4.8,
-    reviewCount: 124,
-  },
-  {
-    id: '5',
-    name: 'GL Grandia',
-    brand: 'Toyota',
-    model: 'Grandia GL',
-    year: 2024,
-    category: 'van',
-    pricePerDay: 5000,
-    currency: 'PHP',
-    seats: 12,
-    transmission: 'automatic',
-    fuelType: 'diesel',
-    image: 'https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?w=800&q=80',
-    images: [],
-    features: ['AC', 'Premium Interior', 'Automatic', 'Captain Seats'],
-    available: true,
-    rating: 4.9,
-    reviewCount: 145,
-  },
-  {
-    id: '6',
-    name: 'Mitsubishi Montero',
-    brand: 'Mitsubishi',
-    model: 'Montero Sport',
-    year: 2024,
-    category: 'suv',
-    pricePerDay: 4000,
-    currency: 'PHP',
-    seats: 7,
-    transmission: 'automatic',
-    fuelType: 'diesel',
-    image: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=800&q=80',
-    images: [],
-    features: ['AC', 'Leather Seats', '4WD', 'Navigation'],
-    available: true,
-    rating: 4.9,
-    reviewCount: 134,
-  },
-];
-
 /**
- * Featured Fleet section
+ * Featured Fleet section - Dynamically loads featured vehicles from database
  */
 export const FeaturedFleetSection: FC = () => {
+  const [isVehicleDetailsModalOpen, setIsVehicleDetailsModalOpen] = useState(false);
   const [isBookNowModalOpen, setIsBookNowModalOpen] = useState(false);
   const [selectedCar, setSelectedCar] = useState<Car | null>(null);
+  const [featuredCars, setFeaturedCars] = useState<Car[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Fetch featured vehicles from database
+  useEffect(() => {
+    const fetchFeaturedVehicles = async () => {
+      setIsLoading(true);
+      try {
+        const { data: vehicles, error } = await supabase
+          .from('vehicles')
+          .select(`
+            id,
+            brand,
+            model,
+            category_id,
+            price_per_day,
+            seats,
+            transmission,
+            fuel_type,
+            image_url,
+            features,
+            status,
+            vehicle_categories (
+              name
+            )
+          `)
+          .eq('is_featured', true)
+          .eq('status', 'available')
+          .order('created_at', { ascending: false })
+          .limit(8);
+
+        if (error) {
+          console.error('Error fetching featured vehicles:', error);
+          setFeaturedCars([]);
+          return;
+        }
+
+        // Transform database format to Car type
+        const transformed: Car[] = (vehicles || []).map((v: any) => ({
+          id: v.id,
+          name: `${v.brand} ${v.model}`,
+          brand: v.brand,
+          model: v.model,
+          year: new Date().getFullYear(), // Current year as default
+          category: v.vehicle_categories?.name?.toLowerCase() || 'suv',
+          pricePerDay: v.price_per_day,
+          currency: 'PHP',
+          seats: typeof v.seats === 'string' ? parseInt(v.seats) || 5 : v.seats,
+          transmission: v.transmission,
+          fuelType: v.fuel_type,
+          image: v.image_url || 'https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?w=800&q=80',
+          images: [],
+          features: Array.isArray(v.features) ? v.features : [],
+          available: v.status === 'available',
+          rating: 4.8,
+          reviewCount: 0,
+        }));
+
+        setFeaturedCars(transformed);
+      } catch (err) {
+        console.error('Error loading featured vehicles:', err);
+        setFeaturedCars([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchFeaturedVehicles();
+  }, []);
 
   const handleBookNow = (car: Car) => {
     setSelectedCar(car);
+    setIsVehicleDetailsModalOpen(true);
+  };
+
+  const handleProceedToBooking = () => {
+    setIsVehicleDetailsModalOpen(false);
     setIsBookNowModalOpen(true);
   };
 
-  const handleCloseModal = () => {
+  const handleCloseVehicleDetails = () => {
+    setIsVehicleDetailsModalOpen(false);
+    setSelectedCar(null);
+  };
+
+  const handleCloseBookNow = () => {
     setIsBookNowModalOpen(false);
     setSelectedCar(null);
   };
@@ -163,22 +125,75 @@ export const FeaturedFleetSection: FC = () => {
         </div>
 
         {/* Cars Grid - responsive */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-          {featuredCars.map((car) => (
-            <CarCard 
-              key={car.id} 
-              car={car} 
-              onBookNow={handleBookNow}
-            />
-          ))}
-        </div>
+        {isLoading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="bg-neutral-100 rounded-xl h-80 animate-pulse" />
+            ))}
+          </div>
+        ) : featuredCars.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-neutral-500 text-lg">No featured vehicles available at the moment.</p>
+            <Link
+              to="/browsevehicles"
+              className="mt-4 inline-flex items-center gap-2 text-primary-600 hover:text-primary-700 font-medium"
+            >
+              Browse all vehicles
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            {featuredCars.map((car) => (
+              <CarCard 
+                key={car.id} 
+                car={car} 
+                onBookNow={handleBookNow}
+              />
+            ))}
+          </div>
+        )}
       </div>
+
+      {/* Vehicle Details Modal */}
+      <VehicleDetailsModal
+        isOpen={isVehicleDetailsModalOpen}
+        onClose={handleCloseVehicleDetails}
+        onProceedToBooking={handleProceedToBooking}
+        vehicle={selectedCar ? {
+          id: selectedCar.id,
+          name: selectedCar.name,
+          brand: selectedCar.brand,
+          model: selectedCar.model,
+          year: selectedCar.year,
+          category: selectedCar.category,
+          pricePerDay: selectedCar.pricePerDay,
+          seats: selectedCar.seats,
+          transmission: selectedCar.transmission,
+          fuelType: selectedCar.fuelType,
+          image: selectedCar.image,
+          images: selectedCar.images,
+          features: selectedCar.features,
+        } : null}
+      />
 
       {/* Book Now Modal */}
       <BookNowModal
         isOpen={isBookNowModalOpen}
-        onClose={handleCloseModal}
-        selectedVehicle={selectedCar}
+        onClose={handleCloseBookNow}
+        selectedVehicle={selectedCar ? {
+          id: selectedCar.id,
+          name: selectedCar.name,
+          brand: selectedCar.brand,
+          model: selectedCar.model,
+          year: selectedCar.year,
+          category: selectedCar.category,
+          pricePerDay: selectedCar.pricePerDay,
+          seats: selectedCar.seats,
+          transmission: selectedCar.transmission,
+          fuelType: selectedCar.fuelType,
+          image: selectedCar.image,
+        } : null}
       />
     </section>
   );

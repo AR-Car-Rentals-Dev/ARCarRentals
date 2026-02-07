@@ -158,31 +158,85 @@ export const vehicleService = {
       
       if (error) throw error;
       
+      // Fetch images for all vehicles
+      const vehicleIds = (data || []).map((v: Vehicle) => v.id);
+      let imagesMap: Record<string, string[]> = {};
+      
+      if (vehicleIds.length > 0) {
+        const { data: imagesData } = await supabase
+          .from('vehicle_images')
+          .select('vehicle_id, image_url, is_primary, display_order')
+          .in('vehicle_id', vehicleIds)
+          .order('is_primary', { ascending: false })
+          .order('display_order', { ascending: true });
+        
+        if (imagesData) {
+          imagesMap = imagesData.reduce((acc: Record<string, string[]>, img: any) => {
+            if (!acc[img.vehicle_id]) {
+              acc[img.vehicle_id] = [];
+            }
+            acc[img.vehicle_id].push(img.image_url);
+            return acc;
+          }, {});
+        }
+      }
+      
       // Map to Car type
-      const vehicles = (data || []).map((vehicle: Vehicle) => ({
-        id: vehicle.id,
-        name: `${vehicle.brand} ${vehicle.model}`,
-        brand: vehicle.brand,
-        model: vehicle.model,
-        year: new Date().getFullYear(),
-        category: mapVehicleCategory(vehicle.vehicle_categories?.name),
-        pricePerDay: Number(vehicle.price_per_day),
-        currency: 'PHP',
-        seats: vehicle.seats || 5,
-        transmission: (vehicle.transmission?.toLowerCase() || 'automatic') as 'automatic' | 'manual',
-        fuelType: (vehicle.fuel_type?.toLowerCase() || 'gasoline') as 'gasoline' | 'diesel' | 'electric' | 'hybrid',
-        image: vehicle.image_url || 'https://images.unsplash.com/photo-1550355291-bbee04a92027?w=800&q=80',
-        images: vehicle.image_url ? [vehicle.image_url] : [],
-        features: Array.isArray(vehicle.features) ? vehicle.features : ['AC', 'Bluetooth'],
-        available: vehicle.status === 'available',
-        rating: 4.8,
-        reviewCount: Math.floor(Math.random() * 150) + 50,
-      }));
+      const vehicles = (data || []).map((vehicle: Vehicle) => {
+        const vehicleImages = imagesMap[vehicle.id] || [];
+        const primaryImage = vehicleImages.length > 0 
+          ? vehicleImages[0] 
+          : vehicle.image_url || 'https://images.unsplash.com/photo-1550355291-bbee04a92027?w=800&q=80';
+        
+        return {
+          id: vehicle.id,
+          name: `${vehicle.brand} ${vehicle.model}`,
+          brand: vehicle.brand,
+          model: vehicle.model,
+          year: new Date().getFullYear(),
+          category: mapVehicleCategory(vehicle.vehicle_categories?.name),
+          pricePerDay: Number(vehicle.price_per_day),
+          currency: 'PHP',
+          seats: vehicle.seats || 5,
+          transmission: (vehicle.transmission?.toLowerCase() || 'automatic') as 'automatic' | 'manual',
+          fuelType: (vehicle.fuel_type?.toLowerCase() || 'gasoline') as 'gasoline' | 'diesel' | 'electric' | 'hybrid',
+          image: primaryImage,
+          images: vehicleImages.length > 0 ? vehicleImages : (vehicle.image_url ? [vehicle.image_url] : []),
+          features: Array.isArray(vehicle.features) ? vehicle.features : ['AC', 'Bluetooth'],
+          available: vehicle.status === 'available',
+          rating: 4.8,
+          reviewCount: Math.floor(Math.random() * 150) + 50,
+        };
+      });
       
       return { data: vehicles, error: null };
     } catch (error: any) {
       console.error('Error fetching vehicles for browse:', error);
       return { data: [], error: error.message || 'Failed to fetch vehicles' };
+    }
+  },
+
+  /**
+   * Get images for a specific vehicle
+   */
+  async getVehicleImages(vehicleId: string): Promise<{ data: string[] | null; error: string | null }> {
+    try {
+      const { data, error } = await supabase
+        .from('vehicle_images')
+        .select('image_url, is_primary, display_order')
+        .eq('vehicle_id', vehicleId)
+        .order('is_primary', { ascending: false })
+        .order('display_order', { ascending: true });
+
+      if (error) {
+        console.error('Error fetching vehicle images:', error);
+        return { data: null, error: error.message };
+      }
+
+      return { data: data?.map((img: any) => img.image_url) || [], error: null };
+    } catch (error: any) {
+      console.error('Error fetching vehicle images:', error);
+      return { data: null, error: error.message || 'Failed to fetch vehicle images' };
     }
   },
 };

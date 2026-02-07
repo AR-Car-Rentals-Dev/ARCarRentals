@@ -1,7 +1,7 @@
 import { type FC, useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { ChevronDown } from 'lucide-react';
-import { Button, CarCard } from '@/components/ui';
+import { Button, CarCard, VehicleDetailsModal } from '@/components/ui';
 import type { Car } from '@/types';
 import { initSession, updateVehicle, getSession } from '@/utils/sessionManager';
 import { vehicleService } from '@/services/vehicleService';
@@ -341,6 +341,10 @@ export const BrowseVehiclesPage: FC = () => {
   // Vehicle state
   const [allCars, setAllCars] = useState<Car[]>([]);
   const [isLoadingVehicles, setIsLoadingVehicles] = useState(true);
+  
+  // Modal state
+  const [isVehicleDetailsModalOpen, setIsVehicleDetailsModalOpen] = useState(false);
+  const [selectedCar, setSelectedCar] = useState<Car | null>(null);
 
   const [filters, setFilters] = useState<FilterState>({
     carTypes: [],
@@ -394,18 +398,33 @@ export const BrowseVehiclesPage: FC = () => {
     setSearchParams(params);
   };
 
-  // Handle booking a car - navigate to booking page
-  const handleBookNow = async (car: Car) => {
-    // No validation needed - customer will provide details on booking page
+  // Handle booking a car - show vehicle details modal first
+  const handleBookNow = (car: Car) => {
+    setSelectedCar(car);
+    setIsVehicleDetailsModalOpen(true);
+  };
+
+  // Proceed to booking page from vehicle details modal
+  const handleProceedToBooking = async () => {
+    if (!selectedCar) return;
+    
     // Save vehicle to session
-    await updateVehicle(car);
+    await updateVehicle(selectedCar);
+    
+    // Close modal
+    setIsVehicleDetailsModalOpen(false);
 
     // Navigate to booking page with vehicle data
     navigate('/browsevehicles/booking', {
       state: {
-        vehicle: car,
+        vehicle: selectedCar,
       },
     });
+  };
+
+  const handleCloseVehicleDetails = () => {
+    setIsVehicleDetailsModalOpen(false);
+    setSelectedCar(null);
   };
 
   // Initialize session on mount
@@ -673,6 +692,28 @@ export const BrowseVehiclesPage: FC = () => {
 
       {/* Bottom Spacing */}
       <div className="h-16"></div>
+
+      {/* Vehicle Details Modal */}
+      <VehicleDetailsModal
+        isOpen={isVehicleDetailsModalOpen}
+        onClose={handleCloseVehicleDetails}
+        onProceedToBooking={handleProceedToBooking}
+        vehicle={selectedCar ? {
+          id: selectedCar.id,
+          name: selectedCar.name,
+          brand: selectedCar.brand,
+          model: selectedCar.model,
+          year: selectedCar.year,
+          category: selectedCar.category,
+          pricePerDay: selectedCar.pricePerDay,
+          seats: selectedCar.seats,
+          transmission: selectedCar.transmission,
+          fuelType: selectedCar.fuelType,
+          image: selectedCar.image,
+          images: selectedCar.images,
+          features: selectedCar.features,
+        } : null}
+      />
     </div>
   );
 };

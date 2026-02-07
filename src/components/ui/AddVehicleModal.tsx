@@ -1,14 +1,14 @@
-import { type FC, useState, useRef, useEffect } from 'react';
+import { type FC, useState, useEffect } from 'react';
 import {
   Loader2,
-  Upload,
   X,
-  Image as ImageIcon,
   Car,
+  Star,
 } from 'lucide-react';
 import { Modal } from './Modal';
 import { Input } from './Input';
 import { Button } from './Button';
+import { MultiImageUpload, type ImageUploadItem } from './MultiImageUpload';
 import { supabase } from '@services/supabase';
 
 interface AddVehicleModalProps {
@@ -35,6 +35,7 @@ interface VehicleFormData {
   image_url: string;
   price_per_day: string;
   status: 'available' | 'rented' | 'maintenance';
+  is_featured: boolean;
 }
 
 const initialFormData: VehicleFormData = {
@@ -49,6 +50,7 @@ const initialFormData: VehicleFormData = {
   image_url: '',
   price_per_day: '',
   status: 'available',
+  is_featured: false,
 };
 
 /**
@@ -62,12 +64,9 @@ export const AddVehicleModal: FC<AddVehicleModalProps> = ({
   const [formData, setFormData] = useState<VehicleFormData>(initialFormData);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string>('');
-  const [uploadingImage, setUploadingImage] = useState(false);
+  const [vehicleImages, setVehicleImages] = useState<ImageUploadItem[]>([]);
   const [categories, setCategories] = useState<VehicleCategory[]>([]);
   const [loadingCategories, setLoadingCategories] = useState(true);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Fetch vehicle categories
   useEffect(() => {
@@ -108,60 +107,6 @@ export const AddVehicleModal: FC<AddVehicleModalProps> = ({
     }));
   };
 
-  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setImageFile(file);
-      const previewUrl = URL.createObjectURL(file);
-      setImagePreview(previewUrl);
-    }
-  };
-
-  const removeImage = () => {
-    setImageFile(null);
-    setImagePreview('');
-    setFormData(prev => ({ ...prev, image_url: '' }));
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  };
-
-  const uploadImage = async (): Promise<string | null> => {
-    // If no file selected, return the URL from the input field
-    if (!imageFile) {
-      return formData.image_url?.trim() || null;
-    }
-
-    setUploadingImage(true);
-    try {
-      const fileExt = imageFile.name.split('.').pop();
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-      const filePath = `vehicles/${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('vehicle-images')
-        .upload(filePath, imageFile);
-
-      if (uploadError) {
-        console.error('Storage upload error:', uploadError);
-        // If bucket doesn't exist or upload fails, use URL from input as fallback
-        return formData.image_url?.trim() || null;
-      }
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('vehicle-images')
-        .getPublicUrl(filePath);
-
-      return publicUrl;
-    } catch (err) {
-      console.error('Error uploading image:', err);
-      // Fallback to URL input if upload fails
-      return formData.image_url?.trim() || null;
-    } finally {
-      setUploadingImage(false);
-    }
-  };
-
   const validateForm = (): boolean => {
     setError(null);
     
@@ -191,33 +136,57 @@ export const AddVehicleModal: FC<AddVehicleModalProps> = ({
     setError(null);
 
     try {
-      // Upload image first if selected
-      const imageUrl = await uploadImage();
-
       // Parse features to array
       const featuresArray = formData.features
         ? formData.features.split(',').map((f) => f.trim()).filter(Boolean)
         : [];
 
-      const { error: insertError } = await supabase.from('vehicles').insert({
-        brand: formData.brand,
-        model: formData.model,
-        category_id: formData.category_id || null,
-        color: formData.color || null,
-        transmission: formData.transmission,
-        fuel_type: formData.fuel_type,
-        seats: formData.seats.includes('-') ? formData.seats : (parseInt(formData.seats) || 5),
-        features: featuresArray,
-        image_url: imageUrl,
-        price_per_day: parseFloat(formData.price_per_day),
-        status: formData.status,
-      });
+      // Get primary image URL (first image) for backward compatibility
+      const primaryImageUrl = vehicleImages.length > 0 ? vehicleImages[0].url : null;
+
+      // Insert vehicle and get its ID
+      const { data: vehicleData, error: insertError } = await supabase
+        .from('vehicles')
+        .insert({
+          brand: formData.brand,
+          model: formData.model,
+          category_id: formData.category_id || null,
+          color: formData.color || null,
+          transmission: formData.transmission,
+          fuel_type: formData.fuel_type,
+          seats: formData.seats.includes('-') ? formData.seats : (parseInt(formData.seats) || 5),
+          features: featuresArray,
+          image_url: primaryImageUrl,
+          price_per_day: parseFloat(formData.price_per_day),
+          status: formData.status,
+          is_featured: formData.is_featured,
+        })
+        .select('id')
+        .single();
 
       if (insertError) throw insertError;
 
+      // Insert vehicle images if any
+      if (vehicleData && vehicleImages.length > 0) {
+        const imageRecords = vehicleImages.map((img, index) => ({
+          vehicle_id: vehicleData.id,
+          image_url: img.url,
+          is_primary: index === 0, // First image is primary
+          display_order: index,
+        }));
+
+        const { error: imagesError } = await supabase
+          .from('vehicle_images')
+          .insert(imageRecords);
+
+        if (imagesError) {
+          console.error('Error saving vehicle images:', imagesError);
+          // Don't throw - vehicle was created successfully
+        }
+      }
+
       setFormData(initialFormData);
-      setImageFile(null);
-      setImagePreview('');
+      setVehicleImages([]);
       onSuccess?.();
       onClose();
     } catch (err: any) {
@@ -231,8 +200,7 @@ export const AddVehicleModal: FC<AddVehicleModalProps> = ({
   const handleClose = () => {
     setFormData(initialFormData);
     setError(null);
-    setImageFile(null);
-    setImagePreview('');
+    setVehicleImages([]);
     onClose();
   };
 
@@ -315,7 +283,7 @@ export const AddVehicleModal: FC<AddVehicleModalProps> = ({
           {/* Specifications Section */}
           <div className="bg-white border border-neutral-200 rounded-xl p-6">
             <div className="flex items-center gap-2 mb-4">
-              <ImageIcon className="h-5 w-5 text-primary-600" />
+              <Car className="h-5 w-5 text-primary-600" />
               <h3 className="text-base font-semibold text-neutral-900">Specifications</h3>
             </div>
             <div className="space-y-4">
@@ -403,87 +371,18 @@ export const AddVehicleModal: FC<AddVehicleModalProps> = ({
         <div className="space-y-6">
           <div className="bg-white border border-neutral-200 rounded-xl p-6">
             <div className="flex items-center gap-2 mb-4">
-              <Upload className="h-5 w-5 text-primary-600" />
-              <h3 className="text-base font-semibold text-neutral-900">Vehicle Image & Pricing</h3>
+              <Car className="h-5 w-5 text-primary-600" />
+              <h3 className="text-base font-semibold text-neutral-900">Vehicle Images & Pricing</h3>
             </div>
 
-            {/* Image Upload Zone */}
+            {/* Multi-Image Upload */}
             <div className="mb-6">
-              {imagePreview || formData.image_url ? (
-                <div className="relative rounded-xl overflow-hidden border-2 border-neutral-200 group">
-                  <img
-                    src={imagePreview || formData.image_url}
-                    alt="Vehicle preview"
-                    className="w-full h-64 object-cover"
-                  />
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
-                    <button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      className="px-4 py-2 bg-white text-neutral-900 rounded-lg text-sm font-medium hover:bg-neutral-100 transition-colors"
-                    >
-                      Change
-                    </button>
-                    <button
-                      type="button"
-                      onClick={removeImage}
-                      className="px-4 py-2 bg-red-500 text-white rounded-lg text-sm font-medium hover:bg-red-600 transition-colors"
-                    >
-                      Remove
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div
-                  onClick={() => fileInputRef.current?.click()}
-                  className="border-2 border-dashed border-neutral-300 rounded-xl p-12 text-center cursor-pointer hover:border-primary-500 hover:bg-primary-50/30 transition-all group"
-                >
-                  <div className="w-16 h-16 rounded-full bg-primary-50 flex items-center justify-center mx-auto mb-4 group-hover:bg-primary-100 transition-colors">
-                    <Upload className="h-8 w-8 text-primary-600" />
-                  </div>
-                  <p className="text-neutral-700 font-medium mb-1">Click or drag file to upload</p>
-                  <p className="text-neutral-500 text-sm">PNG, JPG up to 5MB</p>
-                </div>
-              )}
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleImageSelect}
-                className="hidden"
+              <MultiImageUpload
+                images={vehicleImages}
+                onChange={setVehicleImages}
+                maxImages={10}
+                disabled={isLoading}
               />
-            </div>
-
-            {/* OR Divider */}
-            <div className="relative mb-6">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-neutral-200"></div>
-              </div>
-              <div className="relative flex justify-center text-xs">
-                <span className="px-3 bg-white text-neutral-500 uppercase tracking-wide">OR USE URL</span>
-              </div>
-            </div>
-
-            {/* URL Input */}
-            <div className="mb-6">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 rounded-lg bg-neutral-100 flex items-center justify-center flex-shrink-0">
-                  <ImageIcon className="h-4 w-4 text-neutral-600" />
-                </div>
-                <Input
-                  name="image_url"
-                  value={formData.image_url}
-                  onChange={(e) => {
-                    handleChange(e);
-                    if (e.target.value) {
-                      setImagePreview(e.target.value);
-                      setImageFile(null);
-                    }
-                  }}
-                  placeholder="https://example.com/car-image.jpg"
-                  className="flex-1"
-                />
-              </div>
             </div>
 
             {/* Price Card */}
@@ -511,32 +410,59 @@ export const AddVehicleModal: FC<AddVehicleModalProps> = ({
       </div>
 
       {/* Footer Actions */}
-      <div className="flex justify-end gap-3 mt-8 pt-6 border-t border-neutral-200">
-        <Button
-          variant="outline"
-          onClick={handleClose}
-          disabled={isLoading}
-          className="px-6"
-        >
-          Cancel
-        </Button>
-        <Button
-          onClick={handleSubmit}
-          disabled={isLoading || uploadingImage}
-          className="bg-primary-600 hover:bg-primary-700 px-8"
-        >
-          {isLoading || uploadingImage ? (
-            <>
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              {uploadingImage ? 'Uploading...' : 'Adding...'}
-            </>
-          ) : (
-            <>
-              <Car className="h-4 w-4 mr-2" />
-              Add Vehicle
-            </>
-          )}
-        </Button>
+      <div className="flex items-center justify-between mt-8 pt-6 border-t border-neutral-200">
+        {/* Featured Toggle - Bottom Left */}
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setFormData(prev => ({ ...prev, is_featured: !prev.is_featured }))}
+            disabled={isLoading}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
+              formData.is_featured ? 'bg-primary-600' : 'bg-neutral-300'
+            }`}
+          >
+            <span
+              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                formData.is_featured ? 'translate-x-6' : 'translate-x-1'
+              }`}
+            />
+          </button>
+          <div className="flex items-center gap-2">
+            <Star className={`h-4 w-4 ${
+              formData.is_featured ? 'text-yellow-500 fill-yellow-500' : 'text-neutral-400'
+            }`} />
+            <span className="text-sm font-medium text-neutral-700">Featured Vehicle</span>
+          </div>
+        </div>
+
+        {/* Action Buttons - Bottom Right */}
+        <div className="flex gap-3">
+          <Button
+            variant="outline"
+            onClick={handleClose}
+            disabled={isLoading}
+            className="px-6"
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleSubmit}
+            disabled={isLoading}
+            className="bg-primary-600 hover:bg-primary-700 px-8"
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Adding...
+              </>
+            ) : (
+              <>
+                <Car className="h-4 w-4 mr-2" />
+                Add Vehicle
+              </>
+            )}
+          </Button>
+        </div>
       </div>
     </Modal>
   );

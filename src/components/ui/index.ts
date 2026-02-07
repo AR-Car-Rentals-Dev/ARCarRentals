@@ -27,3 +27,5 @@ export { AdminPageSkeleton } from './AdminPageSkeleton';
 export { LogoutModal } from './LogoutModal';
 export { BookingDetailsViewModal } from './BookingDetailsViewModal';
 export { SmartDeclineModal } from './SmartDeclineModal';
+export { VehicleDetailsModal } from './VehicleDetailsModal';
+export { MultiImageUpload, type ImageUploadItem } from './MultiImageUpload';
