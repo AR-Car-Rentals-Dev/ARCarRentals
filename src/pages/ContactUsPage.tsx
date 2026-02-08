@@ -1,8 +1,9 @@
 import { type FC, useState, useEffect } from 'react';
-import { ArrowRight, Calendar, Phone, Mail, MapPin, Clock } from 'lucide-react';
+import { Search, Phone, Mail, MapPin, Clock, Car as CarIcon, Cog, Users, ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui';
 import { config } from '@utils/config';
+import type { CarCategory, TransmissionType } from '@/types';
 
 // Cebu scenic images for carousel
 const cebuImages = [
@@ -48,50 +49,32 @@ export const ContactUsPage: FC = () => {
         return () => clearInterval(interval);
     }, []);
 
-    // Quick booking form state
-    const [bookingForm, setBookingForm] = useState({
-        carType: '',
-        pickupLocation: '',
-        returnLocation: '',
-        rentalDate: '',
-        returnDate: '',
-    });
+    // Quick booking form state - matching landing page
+    const [carType, setCarType] = useState<CarCategory | ''>('');
+    const [transmission, setTransmission] = useState<TransmissionType | ''>('');
+    const [seats, setSeats] = useState<string>('');
 
-    const handleBookingChange = (e: React.ChangeEvent<HTMLSelectElement | HTMLInputElement>) => {
-        const { name, value } = e.target;
-        setBookingForm(prev => ({ ...prev, [name]: value }));
+    const handleSearch = (e: React.FormEvent) => {
+        e.preventDefault();
+        
+        // Build URL parameters from preference filters
+        const params = new URLSearchParams();
+        
+        if (carType) {
+            params.append('carType', carType);
+        }
+        
+        if (transmission) {
+            params.append('transmission', transmission);
+        }
+        
+        if (seats) {
+            params.append('seats', seats);
+        }
+        
+        // Navigate to browse vehicles page with filter parameters
+        navigate(`/browsevehicles?${params.toString()}`);
     };
-
-    const handleBookNow = () => {
-        // Navigate to browse vehicles with search params
-        const searchParams = new URLSearchParams();
-        if (bookingForm.carType) searchParams.set('type', bookingForm.carType);
-        if (bookingForm.pickupLocation) searchParams.set('location', bookingForm.pickupLocation);
-        if (bookingForm.rentalDate) searchParams.set('pickupDate', bookingForm.rentalDate);
-        if (bookingForm.returnDate) searchParams.set('returnDate', bookingForm.returnDate);
-
-        navigate(`/browsevehicles?${searchParams.toString()}`);
-    };
-
-    // Car types for dropdown
-    const carTypes = [
-        { value: 'sedan', label: 'Sedan' },
-        { value: 'suv', label: 'SUV' },
-        { value: 'hatchback', label: 'Hatchback' },
-        { value: 'mpv', label: 'MPV / Van' },
-        { value: 'pickup', label: 'Pickup' },
-    ];
-
-    // Popular locations
-    const locations = [
-        'Mactan-Cebu International Airport',
-        'SM Seaside City Cebu',
-        'Ayala Center Cebu',
-        'SM City Cebu',
-        'Cebu IT Park',
-        'Mandaue City',
-        'Lapu-Lapu City',
-    ];
 
     return (
         <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }} className="bg-white">
@@ -109,91 +92,87 @@ export const ContactUsPage: FC = () => {
             <section className="pt-8 pb-12 bg-white">
                 <div className="mx-auto w-full max-w-[1600px]" style={{ paddingInline: 'clamp(1.5rem, 3vw, 3rem)' }}>
                     <div className="grid grid-cols-1 lg:grid-cols-10 gap-8 lg:gap-8 items-stretch">
-                        {/* Left Column - Dark Booking Form Card (30%) */}
-                        <div className="lg:col-span-3 bg-neutral-900 rounded-2xl p-6 text-white min-h-[480px] flex flex-col">
-                            <h2 className="text-xl font-bold mb-5">Book your car</h2>
+                        {/* Left Column - Light Booking Form Card (30%) - Matching Landing Page Style */}
+                        <div className="lg:col-span-3 bg-white rounded-2xl shadow-xl p-6 min-h-[400px] flex flex-col">
+                            <h2 className="text-xl font-bold text-neutral-900 mb-5">Find Your Car</h2>
 
-                            <div className="space-y-3 flex-1">
+                            <form onSubmit={handleSearch} className="space-y-4 flex-1 flex flex-col">
                                 {/* Car Type */}
-                                <select
-                                    name="carType"
-                                    value={bookingForm.carType}
-                                    onChange={handleBookingChange}
-                                    className="w-full bg-neutral-800 border border-neutral-700 rounded-lg px-4 py-3 text-sm text-white focus:outline-none focus:border-[#E22B2B] transition-all appearance-none cursor-pointer"
-                                    style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%239ca3af'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.75rem center', backgroundSize: '1.25rem' }}
-                                >
-                                    <option value="" className="bg-neutral-800">Car type</option>
-                                    {carTypes.map(type => (
-                                        <option key={type.value} value={type.value} className="bg-neutral-800">{type.label}</option>
-                                    ))}
-                                </select>
-
-                                {/* Place of Rental */}
-                                <select
-                                    name="pickupLocation"
-                                    value={bookingForm.pickupLocation}
-                                    onChange={handleBookingChange}
-                                    className="w-full bg-neutral-800 border border-neutral-700 rounded-lg px-4 py-3 text-sm text-white focus:outline-none focus:border-[#E22B2B] transition-all appearance-none cursor-pointer"
-                                    style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%239ca3af'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.75rem center', backgroundSize: '1.25rem' }}
-                                >
-                                    <option value="" className="bg-neutral-800">Place of rental</option>
-                                    {locations.map(loc => (
-                                        <option key={loc} value={loc} className="bg-neutral-800">{loc}</option>
-                                    ))}
-                                </select>
-
-                                {/* Place of Return */}
-                                <select
-                                    name="returnLocation"
-                                    value={bookingForm.returnLocation}
-                                    onChange={handleBookingChange}
-                                    className="w-full bg-neutral-800 border border-neutral-700 rounded-lg px-4 py-3 text-sm text-white focus:outline-none focus:border-[#E22B2B] transition-all appearance-none cursor-pointer"
-                                    style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%239ca3af'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.75rem center', backgroundSize: '1.25rem' }}
-                                >
-                                    <option value="" className="bg-neutral-800">Place of return</option>
-                                    {locations.map(loc => (
-                                        <option key={loc} value={loc} className="bg-neutral-800">{loc}</option>
-                                    ))}
-                                </select>
-
-                                {/* Rental Date */}
-                                <div className="relative">
-                                    <input
-                                        type="date"
-                                        name="rentalDate"
-                                        value={bookingForm.rentalDate}
-                                        onChange={handleBookingChange}
-                                        min={new Date().toISOString().split('T')[0]}
-                                        className="w-full bg-neutral-800 border border-neutral-700 rounded-lg px-4 py-3 text-sm text-white focus:outline-none focus:border-[#E22B2B] transition-all [color-scheme:dark]"
-                                    />
-                                    <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-500 pointer-events-none" />
+                                <div>
+                                    <label className="block text-sm font-medium text-neutral-500 mb-2">
+                                        CAR TYPE
+                                    </label>
+                                    <div className="relative">
+                                        <CarIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-neutral-400 pointer-events-none" />
+                                        <select
+                                            value={carType}
+                                            onChange={(e) => setCarType(e.target.value as CarCategory | '')}
+                                            className="w-full pl-11 pr-4 py-3 border border-neutral-200 rounded-lg appearance-none bg-white hover:border-[#E22B2B] focus:border-[#E22B2B] focus:outline-none focus:ring-2 focus:ring-[#E22B2B]/20 transition-colors text-neutral-900"
+                                        >
+                                            <option value="">All Types</option>
+                                            <option value="sedan">Sedan</option>
+                                            <option value="suv">SUV</option>
+                                            <option value="van">Van</option>
+                                        </select>
+                                    </div>
                                 </div>
 
-                                {/* Return Date */}
-                                <div className="relative">
-                                    <input
-                                        type="date"
-                                        name="returnDate"
-                                        value={bookingForm.returnDate}
-                                        onChange={handleBookingChange}
-                                        min={bookingForm.rentalDate || new Date().toISOString().split('T')[0]}
-                                        className="w-full bg-neutral-800 border border-neutral-700 rounded-lg px-4 py-3 text-sm text-white focus:outline-none focus:border-[#E22B2B] transition-all [color-scheme:dark]"
-                                    />
-                                    <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-500 pointer-events-none" />
+                                {/* Transmission */}
+                                <div>
+                                    <label className="block text-sm font-medium text-neutral-500 mb-2">
+                                        TRANSMISSION
+                                    </label>
+                                    <div className="relative">
+                                        <Cog className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-neutral-400 pointer-events-none" />
+                                        <select
+                                            value={transmission}
+                                            onChange={(e) => setTransmission(e.target.value as TransmissionType | '')}
+                                            className="w-full pl-11 pr-4 py-3 border border-neutral-200 rounded-lg appearance-none bg-white hover:border-[#E22B2B] focus:border-[#E22B2B] focus:outline-none focus:ring-2 focus:ring-[#E22B2B]/20 transition-colors text-neutral-900"
+                                        >
+                                            <option value="">Any</option>
+                                            <option value="automatic">Automatic</option>
+                                            <option value="manual">Manual</option>
+                                        </select>
+                                    </div>
                                 </div>
-                            </div>
 
-                            {/* Book Now Button */}
-                            <button
-                                onClick={handleBookNow}
-                                className="w-full mt-5 bg-[#E22B2B] hover:bg-[#c82424] text-white font-bold py-3.5 px-6 rounded-lg flex items-center justify-center gap-2 transition-all duration-300"
-                            >
-                                Book now
-                            </button>
+                                {/* Number of Seats */}
+                                <div>
+                                    <label className="block text-sm font-medium text-neutral-500 mb-2">
+                                        NUMBER OF SEATS
+                                    </label>
+                                    <div className="relative">
+                                        <Users className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-neutral-400 pointer-events-none" />
+                                        <select
+                                            value={seats}
+                                            onChange={(e) => setSeats(e.target.value)}
+                                            className="w-full pl-11 pr-4 py-3 border border-neutral-200 rounded-lg appearance-none bg-white hover:border-[#E22B2B] focus:border-[#E22B2B] focus:outline-none focus:ring-2 focus:ring-[#E22B2B]/20 transition-colors text-neutral-900"
+                                        >
+                                            <option value="">Any</option>
+                                            <option value="2-5">2 - 5 Seats</option>
+                                            <option value="6-8">6 - 8 Seats</option>
+                                            <option value="9+">9+ Seats</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                {/* Search Button */}
+                                <div className="mt-auto pt-4">
+                                    <Button
+                                        type="submit"
+                                        variant="primary"
+                                        size="lg"
+                                        fullWidth
+                                        leftIcon={<Search className="h-5 w-5" />}
+                                    >
+                                        Find Available Cars
+                                    </Button>
+                                </div>
+                            </form>
                         </div>
 
                         {/* Right Column - Image Carousel (70%) */}
-                        <div className="lg:col-span-7 rounded-2xl overflow-hidden min-h-[480px] relative">
+                        <div className="lg:col-span-7 rounded-2xl overflow-hidden min-h-[400px] relative">
                             {/* Images */}
                             {cebuImages.map((image, index) => (
                                 <div

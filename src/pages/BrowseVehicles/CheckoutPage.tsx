@@ -12,7 +12,8 @@ import {
   CloudUpload,
   QrCode,
   Building2,
-  Info
+  Info,
+  ArrowLeft
 } from 'lucide-react';
 import { Button } from '@/components/ui';
 import type { Car } from '@/types';
@@ -319,6 +320,17 @@ export const CheckoutPage: FC = () => {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Back Button */}
+      <div className="max-w-5xl mx-auto px-4 pt-4">
+        <button
+          onClick={() => navigate('/browsevehicles/booking', { state: { vehicle } })}
+          className="flex items-center gap-2 text-neutral-600 hover:text-[#E22B2B] transition-colors group"
+        >
+          <ArrowLeft className="h-5 w-5 group-hover:-translate-x-1 transition-transform" />
+          <span className="text-sm font-medium">Back to Enter Details</span>
+        </button>
       </div>
 
       {/* Main Content */}

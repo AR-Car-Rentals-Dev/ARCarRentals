@@ -105,7 +105,7 @@ export const HeroSection: FC = () => {
           <img
             src="/carSectionImage.png"
             alt="Premium car"
-            className="w-[130%] sm:w-[110%] md:w-[80%] lg:w-[60%] h-auto object-contain translate-y-[10%] sm:translate-y-0"
+            className="w-[200%] sm:w-[140%] md:w-[80%] lg:w-[60%] h-auto object-contain translate-y-[5%] sm:translate-y-0"
           />
         </div>
       </div>

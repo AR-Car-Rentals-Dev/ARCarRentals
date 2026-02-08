@@ -20,7 +20,7 @@ export { AddDriverModal } from './AddDriverModal';
 export { EditDriverModal } from './EditDriverModal';
 export { BookNowModal } from './BookNowModal';
 export { BookingDateModal } from './BookingDateModal';
-export type { BookingData } from './BookingDateModal';
+export type { BookingData, BookedDateRange } from './BookingDateModal';
 export { LocationPickerModal } from './LocationPickerModal';
 export { CarCard } from './CarCard';
 export { AdminPageSkeleton } from './AdminPageSkeleton';

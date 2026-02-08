@@ -101,7 +101,8 @@ export const BookingDetailsViewModal: FC<BookingDetailsViewModalProps> = ({
     setActionSuccess(null);
 
     try {
-      // Update booking status to confirmed and set vehicle to rented
+      // Update booking status to confirmed
+      // Note: Vehicle status is no longer changed - booked dates are blocked in calendar instead
       const { error: updateError } = await bookingService.updateStatus(booking.id, 'confirmed', true);
       
       if (updateError) {

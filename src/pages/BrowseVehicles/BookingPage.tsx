@@ -1,10 +1,11 @@
 import { type FC, useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { User, Check, ChevronRight, AlertCircle } from 'lucide-react';
+import { User, Check, ChevronRight, AlertCircle, AlertTriangle, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui';
 import type { Car } from '@/types';
 import { updateRenterInfo, updateSearchCriteria, updateDriveOption, agreeToTerms } from '@/utils/sessionManager';
 import { CarRentalAgreementModal } from './CarRentalAgreementModal';
+import { bookingService } from '@/services/adminBookingService';
 
 interface BookingState {
   vehicle: Car;
@@ -48,6 +49,41 @@ export const BookingPage: FC = () => {
     driveOption: false,
   });
   const [showAgreementModal, setShowAgreementModal] = useState(false);
+  const [bookedDateRanges, setBookedDateRanges] = useState<{ startDate: Date; endDate: Date }[]>([]);
+  const [dateOverlapWarning, setDateOverlapWarning] = useState<string | null>(null);
+
+  // Fetch booked dates for the vehicle
+  useEffect(() => {
+    const fetchBookedDates = async () => {
+      if (state?.vehicle?.id) {
+        const { data } = await bookingService.getVehicleBookedDates(state.vehicle.id);
+        if (data) {
+          setBookedDateRanges(data);
+        }
+      }
+    };
+    fetchBookedDates();
+  }, [state?.vehicle?.id]);
+
+  // Check if selected dates overlap with booked dates
+  const checkDateOverlap = (start: string, end: string): boolean => {
+    if (!start || !end) return false;
+    
+    const selectedStart = new Date(start);
+    selectedStart.setHours(0, 0, 0, 0);
+    const selectedEnd = new Date(end);
+    selectedEnd.setHours(0, 0, 0, 0);
+    
+    return bookedDateRanges.some(range => {
+      const rangeStart = new Date(range.startDate);
+      rangeStart.setHours(0, 0, 0, 0);
+      const rangeEnd = new Date(range.endDate);
+      rangeEnd.setHours(0, 0, 0, 0);
+      
+      // Check if ranges overlap
+      return selectedStart < rangeEnd && selectedEnd > rangeStart;
+    });
+  };
 
   // Redirect if no vehicle data
   useEffect(() => {
@@ -132,6 +168,13 @@ export const BookingPage: FC = () => {
 
   // Handle form submission - Show agreement first
   const handleProceedToPayment = async () => {
+    // Check for date overlap first
+    if (checkDateOverlap(pickupDate, returnDate)) {
+      setDateOverlapWarning('Cannot proceed: Selected dates overlap with an existing booking. Please choose different dates.');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
     // Validate required fields
     const errors = {
       fullName: !fullName.trim(),
@@ -263,6 +306,17 @@ export const BookingPage: FC = () => {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Back Button */}
+      <div className="max-w-5xl mx-auto px-4 pt-4">
+        <button
+          onClick={() => navigate('/browsevehicles')}
+          className="flex items-center gap-2 text-neutral-600 hover:text-[#E22B2B] transition-colors group"
+        >
+          <ArrowLeft className="h-5 w-5 group-hover:-translate-x-1 transition-transform" />
+          <span className="text-sm font-medium">Back to Vehicles</span>
+        </button>
       </div>
 
       {/* Main Content */}
@@ -408,6 +462,12 @@ export const BookingPage: FC = () => {
                       onChange={(e) => {
                         setPickupDate(e.target.value);
                         if (e.target.value) setFormErrors(prev => ({ ...prev, pickupDate: false }));
+                        // Check for overlap
+                        if (e.target.value && returnDate && checkDateOverlap(e.target.value, returnDate)) {
+                          setDateOverlapWarning('Selected dates overlap with an existing booking. Please choose different dates.');
+                        } else {
+                          setDateOverlapWarning(null);
+                        }
                       }}
                       min={new Date().toISOString().split('T')[0]}
                       className={`w-full px-4 py-3 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#E22B2B]/20 focus:border-[#E22B2B] ${
@@ -431,6 +491,12 @@ export const BookingPage: FC = () => {
                       onChange={(e) => {
                         setReturnDate(e.target.value);
                         if (e.target.value) setFormErrors(prev => ({ ...prev, returnDate: false }));
+                        // Check for overlap
+                        if (pickupDate && e.target.value && checkDateOverlap(pickupDate, e.target.value)) {
+                          setDateOverlapWarning('Selected dates overlap with an existing booking. Please choose different dates.');
+                        } else {
+                          setDateOverlapWarning(null);
+                        }
                       }}
                       min={pickupDate || new Date().toISOString().split('T')[0]}
                       className={`w-full px-4 py-3 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#E22B2B]/20 focus:border-[#E22B2B] ${
@@ -445,6 +511,32 @@ export const BookingPage: FC = () => {
                     )}
                   </div>
                 </div>
+
+                {/* Date Overlap Warning */}
+                {dateOverlapWarning && (
+                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                    <div className="flex items-center gap-2 text-amber-700">
+                      <AlertTriangle className="h-5 w-5 flex-shrink-0" />
+                      <p className="text-sm font-medium">{dateOverlapWarning}</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Booked Dates Info */}
+                {bookedDateRanges.length > 0 && (
+                  <div className="p-3 bg-neutral-100 rounded-lg">
+                    <p className="text-xs font-medium text-neutral-700 mb-2">
+                      This vehicle is already booked on:
+                    </p>
+                    <div className="space-y-1">
+                      {bookedDateRanges.map((range, index) => (
+                        <p key={index} className="text-xs text-neutral-500">
+                          {new Date(range.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {new Date(range.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </p>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {/* Pickup Time */}
                 <div>

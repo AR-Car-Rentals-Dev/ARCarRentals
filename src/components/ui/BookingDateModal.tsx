@@ -1,12 +1,18 @@
 import { type FC, useState, useEffect } from 'react';
-import { X, Calendar, Clock, ChevronLeft, ChevronRight, HelpCircle, Truck } from 'lucide-react';
+import { X, Calendar, Clock, ChevronLeft, ChevronRight, HelpCircle, Truck, AlertTriangle } from 'lucide-react';
 import { cn } from '@utils/helpers';
+
+export interface BookedDateRange {
+  startDate: Date;
+  endDate: Date;
+}
 
 interface BookingDateModalProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: (bookingData: BookingData) => void;
   initialData?: BookingData;
+  bookedDateRanges?: BookedDateRange[];
 }
 
 export interface BookingData {
@@ -93,7 +99,8 @@ const CalendarPicker: FC<{
   currentMonth: Date;
   onMonthChange: (date: Date) => void;
   selectingEnd: boolean;
-}> = ({ selectedStartDate, selectedEndDate, onSelectDate, currentMonth, onMonthChange, selectingEnd }) => {
+  bookedDateRanges?: BookedDateRange[];
+}> = ({ selectedStartDate, selectedEndDate, onSelectDate, currentMonth, onMonthChange, selectingEnd, bookedDateRanges = [] }) => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
@@ -145,11 +152,28 @@ const CalendarPicker: FC<{
     return date > selectedStartDate && date < selectedEndDate;
   };
 
+  // Check if a date falls within any booked date range
+  const isDateBooked = (date: Date) => {
+    const dateOnly = new Date(date);
+    dateOnly.setHours(0, 0, 0, 0);
+    
+    return bookedDateRanges.some(range => {
+      const rangeStart = new Date(range.startDate);
+      rangeStart.setHours(0, 0, 0, 0);
+      const rangeEnd = new Date(range.endDate);
+      rangeEnd.setHours(0, 0, 0, 0);
+      
+      return dateOnly >= rangeStart && dateOnly < rangeEnd;
+    });
+  };
+
   const isDateDisabled = (date: Date) => {
     // Disable past dates
     if (date < today) return true;
     // When selecting end date, disable dates before or same as start date (minimum 1 day difference)
     if (selectingEnd && selectedStartDate && date <= selectedStartDate) return true;
+    // Disable booked dates
+    if (isDateBooked(date)) return true;
     return false;
   };
 
@@ -193,15 +217,18 @@ const CalendarPicker: FC<{
           const selected = isDateSelected(date);
           const inRange = isDateInRange(date);
           const disabled = isDateDisabled(date);
+          const booked = isDateBooked(date);
 
           return (
             <button
               key={date.toISOString()}
               onClick={() => !disabled && onSelectDate(date)}
               disabled={disabled}
+              title={booked ? 'Already booked' : undefined}
               className={cn(
-                'h-10 rounded-lg text-sm font-medium transition-all',
-                disabled && 'text-neutral-300 cursor-not-allowed',
+                'h-10 rounded-lg text-sm font-medium transition-all relative',
+                disabled && !booked && 'text-neutral-300 cursor-not-allowed',
+                booked && 'bg-neutral-200 text-neutral-400 cursor-not-allowed line-through',
                 !disabled && !selected && !inRange && 'hover:bg-neutral-200 text-neutral-700',
                 selected === 'start' && 'bg-[#E22B2B] text-white',
                 selected === 'end' && 'bg-[#9F0303] text-white',
@@ -213,6 +240,14 @@ const CalendarPicker: FC<{
           );
         })}
       </div>
+
+      {/* Legend for booked dates */}
+      {bookedDateRanges.length > 0 && (
+        <div className="mt-3 flex items-center gap-2 text-xs text-neutral-500">
+          <span className="inline-block w-4 h-4 bg-neutral-200 rounded line-through text-[10px] flex items-center justify-center">x</span>
+          <span>Already booked</span>
+        </div>
+      )}
     </div>
   );
 };
@@ -258,6 +293,7 @@ export const BookingDateModal: FC<BookingDateModalProps> = ({
   onClose,
   onConfirm,
   initialData,
+  bookedDateRanges = [],
 }) => {
   const [startDate, setStartDate] = useState<Date | null>(initialData?.startDate || null);
   const [endDate, setEndDate] = useState<Date | null>(initialData?.endDate || null);
@@ -266,6 +302,27 @@ export const BookingDateModal: FC<BookingDateModalProps> = ({
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [showMinDurationWarning, setShowMinDurationWarning] = useState(true); // Show on open
   const [activeTab, setActiveTab] = useState<'start' | 'end'>('start');
+  const [overlapWarning, setOverlapWarning] = useState<string | null>(null);
+
+  // Check if selected date range overlaps with any booked range
+  const checkOverlap = (start: Date | null, end: Date | null): boolean => {
+    if (!start || !end) return false;
+    
+    const selectedStart = new Date(start);
+    selectedStart.setHours(0, 0, 0, 0);
+    const selectedEnd = new Date(end);
+    selectedEnd.setHours(0, 0, 0, 0);
+    
+    return bookedDateRanges.some(range => {
+      const rangeStart = new Date(range.startDate);
+      rangeStart.setHours(0, 0, 0, 0);
+      const rangeEnd = new Date(range.endDate);
+      rangeEnd.setHours(0, 0, 0, 0);
+      
+      // Check if ranges overlap
+      return selectedStart < rangeEnd && selectedEnd > rangeStart;
+    });
+  };
 
   // Reset state when modal opens - show warning every time
   useEffect(() => {
@@ -277,6 +334,7 @@ export const BookingDateModal: FC<BookingDateModalProps> = ({
       setCurrentMonth(new Date());
       setActiveTab('start');
       setShowMinDurationWarning(true); // Always show warning when modal opens
+      setOverlapWarning(null);
     }
   }, [isOpen, initialData]);
 
@@ -300,9 +358,15 @@ export const BookingDateModal: FC<BookingDateModalProps> = ({
   const handleDateSelect = (date: Date) => {
     if (activeTab === 'start') {
       setStartDate(date);
+      setOverlapWarning(null); // Clear warning when start date changes
       // If end date is before or same as start date, reset it
       if (endDate && date >= endDate) {
         setEndDate(null);
+      } else if (endDate) {
+        // Check for overlap with new start date
+        if (checkOverlap(date, endDate)) {
+          setOverlapWarning('Selected dates overlap with an existing booking. Please choose different dates.');
+        }
       }
       // Auto-switch to end tab after selecting start
       setActiveTab('end');
@@ -312,10 +376,24 @@ export const BookingDateModal: FC<BookingDateModalProps> = ({
         return;
       }
       setEndDate(date);
+      // Check for overlap
+      if (checkOverlap(startDate, date)) {
+        setOverlapWarning('Selected dates overlap with an existing booking. Please choose different dates.');
+      } else {
+        setOverlapWarning(null);
+      }
     }
   };
 
+  const hasOverlap = checkOverlap(startDate, endDate);
+
   const handleConfirm = () => {
+    // Prevent confirmation if dates overlap with existing bookings
+    if (hasOverlap) {
+      setOverlapWarning('Cannot confirm: Selected dates overlap with an existing booking. Please choose different dates.');
+      return;
+    }
+    
     // Return time is the same as pickup time
     onConfirm({
       startDate,
@@ -333,6 +411,7 @@ export const BookingDateModal: FC<BookingDateModalProps> = ({
     setPickupTime('');
     setDeliveryMethod('');
     setActiveTab('start');
+    setOverlapWarning(null);
   };
 
   const formatDate = (date: Date | null) => {
@@ -474,6 +553,7 @@ export const BookingDateModal: FC<BookingDateModalProps> = ({
                   currentMonth={currentMonth}
                   onMonthChange={setCurrentMonth}
                   selectingEnd={activeTab === 'end'}
+                  bookedDateRanges={bookedDateRanges}
                 />
               </div>
 
@@ -487,6 +567,16 @@ export const BookingDateModal: FC<BookingDateModalProps> = ({
             </div>
           </div>
 
+          {/* Overlap Warning Message */}
+          {overlapWarning && (
+            <div className="px-6 py-3 bg-amber-50 border-t border-amber-200">
+              <div className="flex items-center gap-2 text-amber-700">
+                <AlertTriangle className="h-5 w-5 flex-shrink-0" />
+                <p className="text-sm font-medium">{overlapWarning}</p>
+              </div>
+            </div>
+          )}
+
           {/* Footer */}
           <div className="flex gap-4 p-6 border-t border-neutral-200">
             <button
@@ -497,10 +587,10 @@ export const BookingDateModal: FC<BookingDateModalProps> = ({
             </button>
             <button
               onClick={handleConfirm}
-              disabled={!startDate || !endDate || !pickupTime}
+              disabled={!startDate || !endDate || !pickupTime || hasOverlap}
               className={cn(
                 'flex-1 py-3 font-semibold rounded-xl transition-colors',
-                startDate && endDate && pickupTime
+                startDate && endDate && pickupTime && !hasOverlap
                   ? 'bg-[#E22B2B] hover:bg-[#c92525] text-white'
                   : 'bg-neutral-200 text-neutral-400 cursor-not-allowed'
               )}

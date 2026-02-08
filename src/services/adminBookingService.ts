@@ -306,16 +306,12 @@ export const bookingService = {
 
   /**
    * Update booking status
+   * Note: Vehicle status is NO LONGER changed to 'rented' when booking is confirmed.
+   * This is because vehicles are now always shown as available, with booked date ranges
+   * being blocked in the calendar during booking.
    */
-  async updateStatus(id: string, status: Booking['booking_status'], updateVehicleStatus?: boolean): Promise<{ data: Booking | null; error: string | null }> {
+  async updateStatus(id: string, status: Booking['booking_status'], _updateVehicleStatus?: boolean): Promise<{ data: Booking | null; error: string | null }> {
     try {
-      // First get the booking to get vehicle_id
-      const { data: booking } = await supabase
-        .from('bookings')
-        .select('vehicle_id')
-        .eq('id', id)
-        .single();
-
       // Update booking status
       const { data, error } = await supabase
         .from('bookings')
@@ -333,22 +329,8 @@ export const bookingService = {
         return { data: null, error: error.message };
       }
 
-      // Update vehicle status if needed
-      if (updateVehicleStatus && booking?.vehicle_id) {
-        const vehicleStatus = status === 'confirmed' ? 'rented' : 'available';
-        await supabase
-          .from('vehicles')
-          .update({ status: vehicleStatus })
-          .eq('id', booking.vehicle_id);
-      }
-
-      // Always update vehicle to available when completing or cancelling
-      if (booking?.vehicle_id && (status === 'completed' || status === 'cancelled')) {
-        await supabase
-          .from('vehicles')
-          .update({ status: 'available' })
-          .eq('id', booking.vehicle_id);
-      }
+      // Note: We no longer set vehicle status to 'rented' when confirmed
+      // Vehicles are always shown with booked dates blocked in calendar
 
       return { data: data as Booking, error: null };
     } catch (error: any) {
@@ -564,6 +546,38 @@ export const bookingService = {
     } catch (error: any) {
       console.error('Error declining with refund:', error);
       return { data: null, error: error.message || 'Failed to decline with refund' };
+    }
+  },
+
+  /**
+   * Get booked date ranges for a specific vehicle
+   * Returns confirmed bookings to block those dates from being selected
+   */
+  async getVehicleBookedDates(vehicleId: string): Promise<{ data: { startDate: Date; endDate: Date }[] | null; error: string | null }> {
+    try {
+      const { data, error } = await supabase
+        .from('bookings')
+        .select('start_date, rental_days')
+        .eq('vehicle_id', vehicleId)
+        .in('booking_status', ['confirmed', 'pending']); // Include both confirmed and pending to avoid double bookings
+
+      if (error) {
+        console.error('Error fetching vehicle booked dates:', error);
+        return { data: null, error: error.message };
+      }
+
+      // Transform to date ranges
+      const bookedRanges = data?.map(booking => {
+        const startDate = new Date(booking.start_date);
+        const endDate = new Date(booking.start_date);
+        endDate.setDate(endDate.getDate() + booking.rental_days);
+        return { startDate, endDate };
+      }) || [];
+
+      return { data: bookedRanges, error: null };
+    } catch (error: any) {
+      console.error('Error fetching vehicle booked dates:', error);
+      return { data: null, error: error.message || 'Failed to fetch booked dates' };
     }
   },
 };
