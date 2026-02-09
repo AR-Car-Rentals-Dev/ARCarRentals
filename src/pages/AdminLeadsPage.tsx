@@ -232,9 +232,11 @@ export const AdminLeadsPage: FC = () => {
             setIsLoading(true);
             try {
                 // Use the leads_with_vehicle view for vehicle info
+                // Only show PENDING and ABANDONED leads (exclude RECOVERED)
                 const { data, error } = await supabase
                     .from('leads_with_vehicle')
                     .select('*')
+                    .neq('status', 'recovered')  // Exclude recovered leads
                     .order('created_at', { ascending: false });
 
                 if (error) {

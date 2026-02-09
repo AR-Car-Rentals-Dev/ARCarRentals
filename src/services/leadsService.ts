@@ -1,9 +1,40 @@
 /**
  * Leads Service - Handle saving and updating leads in Supabase
  * Captures abandoned booking information for follow-up
+ * 
+ * Lead Lifecycle:
+ * 1. PENDING - User filled renter info, not yet paid
+ * 2. RECOVERED - User completed payment (booking created)
+ * 3. ABANDONED - User left without paying (set by cron after 60 min)
  */
 
 import { supabase } from './supabase';
+
+// Lead status constants
+export const LEAD_STATUS = {
+    PENDING: 'pending',
+    RECOVERED: 'recovered',
+    ABANDONED: 'abandoned',
+} as const;
+
+export type LeadStatus = typeof LEAD_STATUS[keyof typeof LEAD_STATUS];
+
+// Last step constants
+export const LEAD_STEP = {
+    RENTER_INFO: 'renter_info',
+    PAYMENT: 'payment',
+    COMPLETED: 'completed',
+} as const;
+
+export type LeadStep = typeof LEAD_STEP[keyof typeof LEAD_STEP];
+
+// Automation status constants
+export const AUTOMATION_STATUS = {
+    NOT_SENT: 'not_sent',
+    SENT: 'sent',
+    OPENED: 'opened',
+    CLICKED: 'clicked',
+} as const;
 
 export interface LeadData {
     lead_name: string;
@@ -18,7 +49,7 @@ export interface LeadData {
     rental_days?: number;
     estimated_price?: number;
     drive_option?: 'self-drive' | 'with-driver' | '';
-    last_step: 'date_selection' | 'renter_info' | 'payment';
+    last_step?: LeadStep;
 }
 
 export interface SaveLeadResponse {
@@ -27,15 +58,54 @@ export interface SaveLeadResponse {
     error?: string;
 }
 
-/**
- * Save or update a lead in the abandoned_leads table
- * Uses email + vehicle_id as a unique identifier to upsert
- */
-export const saveOrUpdateLead = async (leadData: LeadData): Promise<SaveLeadResponse> => {
-    try {
-        console.log('💾 Saving lead to Supabase:', leadData.email);
+// Session storage key for current lead ID
+const LEAD_SESSION_KEY = 'ar_current_lead_id';
 
-        // Check if a lead already exists with same email and vehicle
+/**
+ * Store lead ID in session storage
+ */
+export const storeLeadIdInSession = (leadId: string): void => {
+    try {
+        sessionStorage.setItem(LEAD_SESSION_KEY, leadId);
+        console.log('📦 Lead ID stored in session:', leadId);
+    } catch (e) {
+        console.warn('⚠️ Failed to store lead ID in session:', e);
+    }
+};
+
+/**
+ * Get lead ID from session storage
+ */
+export const getLeadIdFromSession = (): string | null => {
+    try {
+        return sessionStorage.getItem(LEAD_SESSION_KEY);
+    } catch (e) {
+        console.warn('⚠️ Failed to get lead ID from session:', e);
+        return null;
+    }
+};
+
+/**
+ * Clear lead ID from session storage
+ */
+export const clearLeadIdFromSession = (): void => {
+    try {
+        sessionStorage.removeItem(LEAD_SESSION_KEY);
+        console.log('🧹 Lead ID cleared from session');
+    } catch (e) {
+        console.warn('⚠️ Failed to clear lead ID from session:', e);
+    }
+};
+
+/**
+ * Create a new lead when user submits renter info
+ * Returns the lead ID for session storage
+ */
+export const createLead = async (leadData: LeadData): Promise<SaveLeadResponse> => {
+    try {
+        console.log('💾 Creating new lead in Supabase:', leadData.email);
+
+        // Check if a lead already exists with same email and vehicle (to update instead)
         const { data: existingLead, error: fetchError } = await supabase
             .from('abandoned_leads')
             .select('id, status')
@@ -45,19 +115,18 @@ export const saveOrUpdateLead = async (leadData: LeadData): Promise<SaveLeadResp
 
         if (fetchError) {
             console.error('❌ Error checking existing lead:', fetchError);
-            // Continue anyway - we'll try to insert
         }
 
-        // If lead exists and is already recovered, don't update
-        if (existingLead?.status === 'recovered') {
-            console.log('ℹ️ Lead already recovered, skipping update');
+        // If lead exists and is already recovered, don't create new
+        if (existingLead?.status === LEAD_STATUS.RECOVERED) {
+            console.log('ℹ️ Lead already recovered, skipping');
             return { success: true, leadId: existingLead.id };
         }
 
         // Prepare lead record
         const leadRecord = {
             lead_name: leadData.lead_name,
-            email: leadData.email,
+            email: leadData.email.toLowerCase(),
             phone: leadData.phone,
             vehicle_id: leadData.vehicle_id || null,
             pickup_location: leadData.pickup_location || null,
@@ -68,16 +137,16 @@ export const saveOrUpdateLead = async (leadData: LeadData): Promise<SaveLeadResp
             rental_days: leadData.rental_days || null,
             estimated_price: leadData.estimated_price || null,
             drive_option: leadData.drive_option || null,
-            last_step: leadData.last_step,
+            last_step: leadData.last_step || LEAD_STEP.RENTER_INFO,
             drop_off_timestamp: new Date().toISOString(),
-            status: 'pending',
-            automation_status: 'not_sent',
+            status: LEAD_STATUS.PENDING,
+            automation_status: AUTOMATION_STATUS.NOT_SENT,
         };
 
         let result;
 
         if (existingLead) {
-            // Update existing lead
+            // Update existing lead (refresh timestamp)
             console.log('📝 Updating existing lead:', existingLead.id);
             result = await supabase
                 .from('abandoned_leads')
@@ -100,11 +169,18 @@ export const saveOrUpdateLead = async (leadData: LeadData): Promise<SaveLeadResp
             return { success: false, error: result.error.message };
         }
 
-        console.log('✅ Lead saved successfully:', result.data?.id);
-        return { success: true, leadId: result.data?.id };
+        const leadId = result.data?.id;
+        console.log('✅ Lead saved successfully:', leadId);
+
+        // Store in session
+        if (leadId) {
+            storeLeadIdInSession(leadId);
+        }
+
+        return { success: true, leadId };
 
     } catch (error) {
-        console.error('❌ Error in saveOrUpdateLead:', error);
+        console.error('❌ Error in createLead:', error);
         return {
             success: false,
             error: error instanceof Error ? error.message : 'Unknown error'
@@ -113,24 +189,59 @@ export const saveOrUpdateLead = async (leadData: LeadData): Promise<SaveLeadResp
 };
 
 /**
- * Mark a lead as recovered when booking is completed
+ * Update lead step (e.g., when user proceeds to payment)
  */
-export const markLeadAsRecovered = async (
-    email: string,
-    vehicleId: string,
-    bookingId: string
-): Promise<boolean> => {
+export const updateLeadStep = async (leadId: string, lastStep: LeadStep): Promise<boolean> => {
     try {
-        console.log('🎉 Marking lead as recovered:', email);
+        console.log('📝 Updating lead step:', leadId, '->', lastStep);
 
         const { error } = await supabase
             .from('abandoned_leads')
             .update({
-                status: 'recovered',
-                recovered_booking_id: bookingId,
+                last_step: lastStep,
+                drop_off_timestamp: new Date().toISOString(),
             })
-            .eq('email', email)
-            .eq('vehicle_id', vehicleId);
+            .eq('id', leadId);
+
+        if (error) {
+            console.error('❌ Error updating lead step:', error);
+            return false;
+        }
+
+        console.log('✅ Lead step updated');
+        return true;
+    } catch (error) {
+        console.error('❌ Error in updateLeadStep:', error);
+        return false;
+    }
+};
+
+/**
+ * Mark a lead as RECOVERED when booking is completed
+ */
+export const markLeadAsRecovered = async (
+    bookingId: string,
+    leadId?: string | null
+): Promise<boolean> => {
+    try {
+        // Get lead ID from session if not provided
+        const id = leadId || getLeadIdFromSession();
+
+        if (!id) {
+            console.log('ℹ️ No lead ID found, skipping recovery update');
+            return false;
+        }
+
+        console.log('🎉 Marking lead as recovered:', id, '-> booking:', bookingId);
+
+        const { error } = await supabase
+            .from('abandoned_leads')
+            .update({
+                status: LEAD_STATUS.RECOVERED,
+                recovered_booking_id: bookingId,
+                last_step: LEAD_STEP.COMPLETED,
+            })
+            .eq('id', id);
 
         if (error) {
             console.error('❌ Error marking lead as recovered:', error);
@@ -138,6 +249,10 @@ export const markLeadAsRecovered = async (
         }
 
         console.log('✅ Lead marked as recovered');
+
+        // Clear from session
+        clearLeadIdFromSession();
+
         return true;
     } catch (error) {
         console.error('❌ Error in markLeadAsRecovered:', error);
@@ -156,7 +271,7 @@ export const debouncedSaveLead = (leadData: LeadData, delayMs = 2000): void => {
     }
 
     saveTimeout = setTimeout(() => {
-        saveOrUpdateLead(leadData);
+        createLead(leadData);
     }, delayMs);
 };
 
@@ -169,3 +284,6 @@ export const cancelPendingSave = (): void => {
         saveTimeout = null;
     }
 };
+
+// Legacy export for backwards compatibility
+export const saveOrUpdateLead = createLead;

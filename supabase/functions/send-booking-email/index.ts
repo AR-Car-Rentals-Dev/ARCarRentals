@@ -24,7 +24,7 @@ interface EmailRequest {
   email: string
   bookingReference: string
   magicLink: string
-  emailType?: 'pending' | 'confirmed' | 'declined' | 'refund_completed' | 'refund_pending'  // Type of email to send
+  emailType?: 'pending' | 'confirmed' | 'declined' | 'refund_completed' | 'refund_pending' | 'abandoned_cart'  // Type of email to send
   customerName?: string
   declineReason?: string
   customMessage?: string
@@ -43,6 +43,14 @@ interface EmailRequest {
     refundReferenceId?: string
     refundProofUrl?: string
     cancellationReason?: string
+  }
+  abandonedCartDetails?: {
+    customerName: string
+    vehicleName: string
+    pickupDate?: string
+    returnDate?: string
+    estimatedPrice?: number
+    resumeLink: string
   }
 }
 
@@ -64,19 +72,19 @@ const getHeroBanner = () => `
 // Status Stepper with different flows for confirmed vs refunded
 const getStatusStepper = (currentStep: 'received' | 'confirmed' | 'refunded') => {
   // Different steps for refund flow vs normal flow
-  const steps = currentStep === 'refunded' 
+  const steps = currentStep === 'refunded'
     ? [
-        { key: 'received', label: 'Received' },
-        { key: 'reviewed', label: 'Reviewed' },
-        { key: 'refunded', label: 'Refunded' }
-      ]
+      { key: 'received', label: 'Received' },
+      { key: 'reviewed', label: 'Reviewed' },
+      { key: 'refunded', label: 'Refunded' }
+    ]
     : currentStep === 'confirmed'
-    ? [
+      ? [
         { key: 'received', label: 'Received' },
         { key: 'confirmed', label: 'Confirmed' },
         { key: 'ready', label: 'Ready' }
       ]
-    : [
+      : [
         { key: 'received', label: 'Received' },
         { key: 'confirmed', label: 'Confirmed' },
         { key: 'ready', label: 'Ready' }
@@ -85,7 +93,7 @@ const getStatusStepper = (currentStep: 'received' | 'confirmed' | 'refunded') =>
   const stepHTML = steps.map((step, index) => {
     let isActive = false;
     let isPast = false;
-    
+
     if (currentStep === 'received') {
       isActive = step.key === 'received';
       isPast = false;
@@ -97,13 +105,13 @@ const getStatusStepper = (currentStep: 'received' | 'confirmed' | 'refunded') =>
       isActive = step.key === 'refunded';
       isPast = step.key === 'received' || step.key === 'reviewed';
     }
-    
+
     // Determine icon and styling
     let iconContent = '○';
     let iconColor = '#a3a3a3';
     let bgColor = '#f5f5f5';
     let borderStyle = '2px solid #e5e5e5';
-    
+
     if (isPast) {
       iconContent = '✓';
       iconColor = '#ffffff';
@@ -115,7 +123,7 @@ const getStatusStepper = (currentStep: 'received' | 'confirmed' | 'refunded') =>
       bgColor = '#E22B2B';
       borderStyle = 'none';
     }
-    
+
     return `
       <td align="center" style="padding: 0 12px; vertical-align: top;">
         <table cellpadding="0" cellspacing="0">
@@ -182,7 +190,7 @@ const getBookingReferenceCard = (bookingReference: string) => `
 // Booking Details Card
 const getBookingDetailsCard = (vehicleName?: string, pickupDate?: string, returnDate?: string) => {
   if (!vehicleName && !pickupDate && !returnDate) return ''
-  
+
   return `
     <div style="background-color: #ffffff; border: 1px solid #e5e5e5; border-radius: 8px; padding: 24px; margin-bottom: 24px;">
       <h3 style="margin: 0 0 20px; color: #171717; font-size: 15px; font-weight: 600; padding-bottom: 12px; border-bottom: 1px solid #f5f5f5;">
@@ -906,33 +914,161 @@ const getRefundPendingEmailHTML = (
   `
 }
 
+// Email HTML template for abandoned cart / incomplete booking follow-up
+const getAbandonedCartEmailHTML = (
+  customerName: string,
+  vehicleName: string,
+  resumeLink: string,
+  pickupDate?: string,
+  returnDate?: string,
+  estimatedPrice?: number
+) => {
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="x-apple-disable-message-reformatting">
+  <title>Complete Your Booking - AR Car Rentals</title>
+  <style>
+    @media only screen and (max-width: 600px) {
+      .container { width: 100% !important; }
+      .content { padding: 24px !important; }
+    }
+  </style>
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5;">
+  <!-- Preheader text -->
+  <div style="display: none; max-height: 0; overflow: hidden; opacity: 0;">
+    Your ${vehicleName} is waiting! Complete your booking now.
+  </div>
+  
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f5f5; padding: 20px 0;">
+    <tr>
+      <td align="center">
+        <table class="container" width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);">
+          
+          ${getHeroBanner()}
+          
+          <!-- Content Area -->
+          <tr>
+            <td class="content" style="padding: 40px 32px;">
+              
+              <!-- Greeting -->
+              <h1 style="margin: 0 0 16px; color: #171717; font-size: 28px; font-weight: 700; text-align: center; line-height: 1.3;">
+                Hi ${customerName}! 👋
+              </h1>
+              <p style="margin: 0 0 24px; color: #737373; font-size: 16px; text-align: center; line-height: 1.6;">
+                We noticed you didn't complete your booking. Your ${vehicleName} is still available!
+              </p>
+              
+              <!-- Vehicle Card -->
+              <div style="background: linear-gradient(135deg, #ffffff 0%, #fafafa 100%); border: 1px solid #e5e5e5; border-radius: 12px; padding: 24px; margin-bottom: 24px;">
+                <h3 style="margin: 0 0 16px; color: #171717; font-size: 18px; font-weight: 600;">
+                  🚗 Your Selected Vehicle
+                </h3>
+                <p style="margin: 0 0 16px; color: #E22B2B; font-size: 22px; font-weight: 700;">
+                  ${vehicleName}
+                </p>
+                ${pickupDate && returnDate ? `
+                <div style="display: flex; gap: 16px; margin-bottom: 16px;">
+                  <div style="flex: 1;">
+                    <p style="margin: 0 0 4px; color: #737373; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em;">Pickup</p>
+                    <p style="margin: 0; color: #171717; font-size: 14px; font-weight: 500;">${pickupDate}</p>
+                  </div>
+                  <div style="flex: 1;">
+                    <p style="margin: 0 0 4px; color: #737373; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em;">Return</p>
+                    <p style="margin: 0; color: #171717; font-size: 14px; font-weight: 500;">${returnDate}</p>
+                  </div>
+                </div>
+                ` : ''}
+                ${estimatedPrice ? `
+                <div style="background-color: #fef2f2; border-radius: 8px; padding: 12px; text-align: center;">
+                  <p style="margin: 0; color: #E22B2B; font-size: 24px; font-weight: 700;">
+                    ₱${estimatedPrice.toLocaleString()}
+                  </p>
+                  <p style="margin: 4px 0 0; color: #737373; font-size: 12px;">Estimated Total</p>
+                </div>
+                ` : ''}
+              </div>
+              
+              <!-- CTA Button -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin: 24px 0;">
+                <tr>
+                  <td align="center">
+                    <a href="${resumeLink}" style="
+                      display: inline-block;
+                      background-color: #E22B2B;
+                      color: #ffffff;
+                      text-decoration: none;
+                      padding: 18px 48px;
+                      border-radius: 50px;
+                      font-weight: 600;
+                      font-size: 16px;
+                      box-shadow: 0 4px 12px rgba(226, 43, 43, 0.4);
+                    ">
+                      Complete Your Booking →
+                    </a>
+                  </td>
+                </tr>
+              </table>
+              
+              <!-- Why Book With Us -->
+              <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 20px; margin-top: 24px;">
+                <h3 style="margin: 0 0 16px; color: #166534; font-size: 15px; font-weight: 600;">
+                  ✓ Why Book With AR Car Rentals?
+                </h3>
+                <ul style="margin: 0; padding-left: 20px; color: #166534; font-size: 14px; line-height: 1.8;">
+                  <li>Free cancellation up to 24 hours before pickup</li>
+                  <li>Well-maintained, clean vehicles</li>
+                  <li>Friendly local support</li>
+                  <li>Competitive prices</li>
+                </ul>
+              </div>
+
+            </td>
+          </tr>
+
+          ${getEmailFooter()}
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  `
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { 
+    return new Response(null, {
       status: 204,
-      headers: corsHeaders 
+      headers: corsHeaders
     })
   }
 
   try {
     // Parse request body
-    const { 
-      email, 
-      bookingReference, 
-      magicLink, 
-      emailType = 'pending', 
+    const {
+      email,
+      bookingReference,
+      magicLink,
+      emailType = 'pending',
       bookingDetails,
-      refundDetails 
+      refundDetails,
+      abandonedCartDetails
     }: EmailRequest = await req.json()
 
     // Validate required fields
     if (!email || !bookingReference || !magicLink) {
       return new Response(
-        JSON.stringify({ 
-          error: 'Missing required fields: email, bookingReference, or magicLink' 
+        JSON.stringify({
+          error: 'Missing required fields: email, bookingReference, or magicLink'
         }),
-        { 
+        {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
@@ -944,7 +1080,7 @@ serve(async (req) => {
       console.error('RESEND_API_KEY not set')
       return new Response(
         JSON.stringify({ error: 'Email service not configured' }),
-        { 
+        {
           status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
@@ -1008,6 +1144,17 @@ serve(async (req) => {
         bookingDetails?.returnDate
       )
       subject = `Booking Confirmed - ${bookingReference} | AR Car Rentals`
+    } else if (emailType === 'abandoned_cart') {
+      // Abandoned cart / incomplete booking email
+      emailHTML = getAbandonedCartEmailHTML(
+        abandonedCartDetails?.customerName || 'Valued Customer',
+        abandonedCartDetails?.vehicleName || 'Your Selected Vehicle',
+        abandonedCartDetails?.resumeLink || 'https://arcarrentalscebu.com/browsevehicles',
+        abandonedCartDetails?.pickupDate,
+        abandonedCartDetails?.returnDate,
+        abandonedCartDetails?.estimatedPrice
+      )
+      subject = `Your ${abandonedCartDetails?.vehicleName || 'rental'} is waiting! 🚗 | AR Car Rentals`
     } else {
       // Pending booking email (default)
       emailHTML = getPendingEmailHTML(
@@ -1028,28 +1175,28 @@ serve(async (req) => {
     if (emailType === 'refund_completed' && refundDetails?.refundProofUrl) {
       try {
         console.log('📎 Fetching refund proof to attach:', refundDetails.refundProofUrl)
-        
+
         // Fetch the image from Supabase Storage
         const imageResponse = await fetch(refundDetails.refundProofUrl)
-        
+
         if (imageResponse.ok) {
           const imageBuffer = await imageResponse.arrayBuffer()
           const base64Image = btoa(String.fromCharCode(...new Uint8Array(imageBuffer)))
-          
+
           // Extract filename from URL or use booking reference
           const urlParts = refundDetails.refundProofUrl.split('/')
           const filename = urlParts[urlParts.length - 1] || `refund-proof-${bookingReference}.jpg`
-          
+
           // Determine content type from filename
           const extension = filename.split('.').pop()?.toLowerCase() || 'jpg'
           const contentType = extension === 'png' ? 'image/png' : 'image/jpeg'
-          
+
           emailBody.attachments = [{
             filename: `Refund-Proof-${bookingReference}.${extension}`,
             content: base64Image,
             content_type: contentType,
           }]
-          
+
           console.log('✅ Refund proof attached successfully')
         } else {
           console.warn('⚠️ Could not fetch refund proof image, sending email without attachment')
@@ -1076,7 +1223,7 @@ serve(async (req) => {
       console.error('❌ Resend API error:', data)
       return new Response(
         JSON.stringify({ error: data.message || 'Failed to send email' }),
-        { 
+        {
           status: response.status,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
@@ -1086,12 +1233,12 @@ serve(async (req) => {
     console.log('✅ Email sent successfully. ID:', data.id)
 
     return new Response(
-      JSON.stringify({ 
-        success: true, 
+      JSON.stringify({
+        success: true,
         messageId: data.id,
-        message: 'Email sent successfully' 
+        message: 'Email sent successfully'
       }),
-      { 
+      {
         status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
@@ -1100,10 +1247,10 @@ serve(async (req) => {
   } catch (error) {
     console.error('❌ Error:', error)
     return new Response(
-      JSON.stringify({ 
-        error: (error as Error).message || 'Internal server error' 
+      JSON.stringify({
+        error: (error as Error).message || 'Internal server error'
       }),
-      { 
+      {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }

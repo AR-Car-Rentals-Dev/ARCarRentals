@@ -4,7 +4,7 @@
  * Uses Supabase Edge Function to avoid CORS issues
  */
 
-const SUPABASE_FUNCTION_URL = import.meta.env.VITE_SUPABASE_URL 
+const SUPABASE_FUNCTION_URL = import.meta.env.VITE_SUPABASE_URL
   ? `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-booking-email`
   : 'https://dnexspoyhhqflatuyxje.supabase.co/functions/v1/send-booking-email';
 
@@ -37,9 +37,9 @@ export const sendMagicLinkEmail = async (
       console.log('📧 Email would be sent to:', email);
       console.log('📝 Booking Reference:', bookingReference);
       console.log('🔗 Magic Link:', magicLink);
-      return { 
-        success: false, 
-        error: 'Email service not configured' 
+      return {
+        success: false,
+        error: 'Email service not configured'
       };
     }
 
@@ -76,9 +76,9 @@ export const sendMagicLinkEmail = async (
 
   } catch (error) {
     console.error('❌ Error sending email:', error);
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Unknown error occurred' 
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error occurred'
     };
   }
 };
@@ -104,7 +104,7 @@ export const sendBookingConfirmedEmail = async (
     // For now, use the existing magic link function with 'confirmed' type
     // In production, you'd have a dedicated edge function endpoint
     const magicLink = `${window.location.origin}/track/${bookingReference}`;
-    
+
     return await sendMagicLinkEmail(
       email,
       bookingReference,
@@ -118,9 +118,9 @@ export const sendBookingConfirmedEmail = async (
     );
   } catch (error) {
     console.error('❌ Error sending booking confirmed email:', error);
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Unknown error occurred' 
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error occurred'
     };
   }
 };
@@ -144,16 +144,16 @@ export const sendBookingDeclinedEmail = async (
       console.warn('⚠️ Supabase not configured. Decline email not sent.');
       console.log('📧 Email would be sent to:', email);
       console.log('📝 Booking Reference:', bookingReference);
-      console.log('❌ Decline Reason:', declineReason); 
-      return {  
-        success: false,   
-        error: 'Email service not configured'   
-      };  
-    } 
+      console.log('❌ Decline Reason:', declineReason);
+      return {
+        success: false,
+        error: 'Email service not configured'
+      };
+    }
 
-    console.log('📧 Sending booking declined email to:', email);  
-    console.log('📝 Booking Reference:', bookingReference); 
-    console.log('❌ Decline Reason:', declineReason); 
+    console.log('📧 Sending booking declined email to:', email);
+    console.log('📝 Booking Reference:', bookingReference);
+    console.log('❌ Decline Reason:', declineReason);
 
     // For declined emails, create a tracking link (magic link for tracking purposes)
     const magicLink = `${window.location.origin}/track/${bookingReference}`;
@@ -190,9 +190,9 @@ export const sendBookingDeclinedEmail = async (
 
   } catch (error) {
     console.error('❌ Error sending decline email:', error);
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Unknown error occurred' 
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error occurred'
     };
   }
 };
@@ -216,9 +216,9 @@ export const sendRefundPendingEmail = async (
       console.log('📧 Email would be sent to:', email);
       console.log('📝 Booking Reference:', bookingReference);
       console.log('💰 Amount to refund: ₱', bookingDetails.totalPrice);
-      return { 
-        success: false, 
-        error: 'Email service not configured' 
+      return {
+        success: false,
+        error: 'Email service not configured'
       };
     }
 
@@ -261,9 +261,9 @@ export const sendRefundPendingEmail = async (
 
   } catch (error) {
     console.error('❌ Error sending refund pending email:', error);
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Unknown error occurred' 
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error occurred'
     };
   }
 };
@@ -290,9 +290,9 @@ export const sendRefundCompletedEmail = async (
       console.log('📝 Booking Reference:', bookingReference);
       console.log('💰 Refund Amount: ₱', refundDetails.totalPrice);
       console.log('🔢 Refund Ref:', refundDetails.refundReferenceId);
-      return { 
-        success: false, 
-        error: 'Email service not configured' 
+      return {
+        success: false,
+        error: 'Email service not configured'
       };
     }
 
@@ -335,10 +335,80 @@ export const sendRefundCompletedEmail = async (
 
   } catch (error) {
     console.error('❌ Error sending refund completed email:', error);
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Unknown error occurred' 
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error occurred'
     };
   }
 };
 
+/**
+ * Send abandoned cart email to customer who didn't complete checkout
+ * Used by cron job to recover leads
+ */
+export const sendAbandonedCartEmail = async (
+  email: string,
+  leadDetails: {
+    customerName: string;
+    vehicleName: string;
+    pickupDate?: string;
+    returnDate?: string;
+    estimatedPrice?: number;
+  }
+): Promise<EmailResponse> => {
+  try {
+    if (!SUPABASE_ANON_KEY) {
+      console.warn('⚠️ Supabase not configured. Abandoned cart email not sent.');
+      console.log('📧 Email would be sent to:', email);
+      console.log('📋 Lead Details:', leadDetails);
+      return {
+        success: false,
+        error: 'Email service not configured'
+      };
+    }
+
+    console.log('📧 Sending abandoned cart email to:', email);
+    console.log('📋 Lead Details:', leadDetails);
+
+    // Create a resume booking link
+    const resumeLink = `${window.location.origin}/browsevehicles`;
+
+    const response = await fetch(SUPABASE_FUNCTION_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'apikey': SUPABASE_ANON_KEY,
+      },
+      body: JSON.stringify({
+        email,
+        emailType: 'abandoned_cart',
+        abandonedCartDetails: {
+          customerName: leadDetails.customerName,
+          vehicleName: leadDetails.vehicleName,
+          pickupDate: leadDetails.pickupDate,
+          returnDate: leadDetails.returnDate,
+          estimatedPrice: leadDetails.estimatedPrice,
+          resumeLink,
+        }
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      console.error('❌ Failed to send abandoned cart email:', error);
+      return { success: false, error: error.error || 'Failed to send abandoned cart email' };
+    }
+
+    const data = await response.json();
+    console.log('✅ Abandoned cart email sent successfully. Message ID:', data.messageId);
+    return { success: true, messageId: data.messageId };
+
+  } catch (error) {
+    console.error('❌ Error sending abandoned cart email:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error occurred'
+    };
+  }
+};

@@ -16,6 +16,7 @@ import { Button } from '@/components/ui';
 import type { Car } from '@/types';
 import { updateStep } from '@/utils/sessionManager';
 import { createSecureBooking } from '@/services/bookingSecurityService';
+import { markLeadAsRecovered } from '@/services/leadsService';
 
 type PaymentMethod = 'gcash';
 type PaymentType = 'pay-now' | 'pay-later';
@@ -238,6 +239,10 @@ export const CheckoutPage: FC = () => {
         bookingReference: result.bookingReference,
         magicLink: result.magicLink
       });
+
+      // Mark any associated lead as RECOVERED
+      // This uses the lead ID stored in session during renter info step
+      await markLeadAsRecovered(result.bookingId);
 
       // Update session step to 'submitted'
       await updateStep('submitted');
