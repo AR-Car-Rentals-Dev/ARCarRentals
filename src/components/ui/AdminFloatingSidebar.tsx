@@ -8,7 +8,6 @@ import {
   BarChart3,
   Users,
   Globe,
-  UserCog,
   Settings,
   LogOut,
   Menu,
@@ -95,16 +94,14 @@ const AdminFloatingSidebar: React.FC = () => {
         {
           id: 'invoices',
           label: 'Invoices',
-          href: '#',
+          href: '/admin/invoices',
           icon: <FileText className="nav-icon-svg" />,
-          comingSoon: true,
         },
         {
           id: 'analytics',
           label: 'Analytics',
-          href: '#',
+          href: '/admin/analytics',
           icon: <BarChart3 className="nav-icon-svg" />,
-          comingSoon: true,
         },
       ],
     },
@@ -129,13 +126,6 @@ const AdminFloatingSidebar: React.FC = () => {
     {
       title: 'TOOLS',
       items: [
-        {
-          id: 'users',
-          label: 'User & Roles',
-          href: '#',
-          icon: <UserCog className="nav-icon-svg" />,
-          comingSoon: true,
-        },
         {
           id: 'settings',
           label: 'Settings',
@@ -177,52 +167,55 @@ const AdminFloatingSidebar: React.FC = () => {
 
         {/* Navigation Sections */}
         <div className="sidebar-content">
-          {navSections.map((section) => (
-            <div key={section.title} className="nav-section">
-              <div className="section-title">{section.title}</div>
-              <div className="section-items">
-                {section.items.map((item) => (
-                  item.comingSoon ? (
-                    <button
-                      key={item.id}
-                      onClick={handleComingSoonClick}
-                      className="nav-item coming-soon-item"
-                    >
-                      <span className="nav-icon">{item.icon}</span>
-                      <span className="nav-label">{item.label}</span>
-                    </button>
-                  ) : (
-                    <NavLink
-                      key={item.id}
-                      to={item.href}
-                      className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
-                      onClick={() => setIsMobileMenuOpen(false)}
-                    >
-                      <span className="nav-icon">{item.icon}</span>
-                      <span className="nav-label">{item.label}</span>
-                    </NavLink>
-                  )
-                ))}
+          <div className="sidebar-nav-sections">
+            {navSections.map((section) => (
+              <div key={section.title} className="nav-section">
+                <div className="section-title">{section.title}</div>
+                <div className="section-items">
+                  {section.items.map((item) => (
+                    item.comingSoon ? (
+                      <button
+                        key={item.id}
+                        onClick={handleComingSoonClick}
+                        className="nav-item coming-soon-item"
+                      >
+                        <span className="nav-icon">{item.icon}</span>
+                        <span className="nav-label">{item.label}</span>
+                      </button>
+                    ) : (
+                      <NavLink
+                        key={item.id}
+                        to={item.href}
+                        className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        <span className="nav-icon">{item.icon}</span>
+                        <span className="nav-label">{item.label}</span>
+                      </NavLink>
+                    )
+                  ))}
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
 
-          {/* Logout in TOOLS section */}
-          <div className="nav-section">
-            <div className="section-items">
-              <button
-                onClick={() => {
-                  setIsMobileMenuOpen(false);
-                  handleLogoutClick();
-                }}
-                className="nav-item logout-button"
-              >
-                <span className="nav-icon">
-                  <LogOut className="nav-icon-svg" />
-                </span>
-                <span className="nav-label">Log out</span>
-              </button>
-            </div>
+          {/* Spacer to push logout to bottom */}
+          <div className="sidebar-spacer" />
+
+          {/* Logout Button - Always at bottom */}
+          <div className="logout-section">
+            <button
+              onClick={() => {
+                setIsMobileMenuOpen(false);
+                handleLogoutClick();
+              }}
+              className="nav-item logout-button"
+            >
+              <span className="nav-icon">
+                <LogOut className="nav-icon-svg" />
+              </span>
+              <span className="nav-label">Log out</span>
+            </button>
           </div>
         </div>
 
@@ -274,11 +267,27 @@ const AdminFloatingSidebar: React.FC = () => {
           overflow-x: hidden;
           display: flex;
           flex-direction: column;
-          gap: 20px;
           padding-right: 4px;
           scrollbar-width: thin;
           scrollbar-color: #E5E7EB transparent;
           min-height: 0;
+        }
+
+        .sidebar-nav-sections {
+          display: flex;
+          flex-direction: column;
+          gap: 20px;
+        }
+
+        .sidebar-spacer {
+          flex: 1;
+          min-height: 20px;
+        }
+
+        .logout-section {
+          padding-top: 12px;
+          border-top: 1px solid #e5e7eb;
+          margin-top: auto;
         }
 
         .sidebar-content::-webkit-scrollbar {

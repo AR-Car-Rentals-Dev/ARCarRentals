@@ -232,8 +232,9 @@ export const AdminLeadsPage: FC = () => {
         const fetchLeads = async () => {
             setIsLoading(true);
             try {
+                // Use the leads_with_vehicle view for vehicle info
                 const { data, error } = await supabase
-                    .from('abandoned_leads')
+                    .from('leads_with_vehicle')
                     .select('*')
                     .order('created_at', { ascending: false });
 
@@ -241,7 +242,33 @@ export const AdminLeadsPage: FC = () => {
                     console.warn('Using mock data:', error.message);
                     setLeads(MOCK_LEADS);
                 } else if (data && data.length > 0) {
-                    setLeads(data as Lead[]);
+                    // Transform data to match Lead interface
+                    const transformedLeads: Lead[] = data.map((lead: any) => ({
+                        id: lead.id,
+                        lead_name: lead.lead_name,
+                        email: lead.email,
+                        phone: lead.phone,
+                        vehicle_id: lead.vehicle_id,
+                        vehicle_name: lead.vehicle_name || null,
+                        vehicle_image: lead.vehicle_image || null,
+                        pickup_location: lead.pickup_location,
+                        dropoff_location: lead.dropoff_location,
+                        pickup_date: lead.pickup_date,
+                        return_date: lead.return_date,
+                        estimated_price: lead.estimated_price,
+                        drive_option: lead.drive_option,
+                        last_step: lead.last_step,
+                        drop_off_timestamp: lead.drop_off_timestamp,
+                        automation_status: lead.automation_status,
+                        automation_sent_at: lead.automation_sent_at,
+                        automation_opened_at: lead.automation_opened_at,
+                        automation_clicked_at: lead.automation_clicked_at,
+                        status: lead.status,
+                        admin_notes: lead.admin_notes,
+                        created_at: lead.created_at,
+                        updated_at: lead.updated_at
+                    }));
+                    setLeads(transformedLeads);
                 } else {
                     setLeads(MOCK_LEADS);
                 }
@@ -351,56 +378,56 @@ export const AdminLeadsPage: FC = () => {
     };
 
     return (
-        <div className="min-h-screen bg-[#FAFAFA] p-6 lg:p-8" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+        <div className="min-h-screen bg-[#FAFAFA] p-4 sm:p-6 lg:p-8" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
             {/* Header Section */}
-            <div className="mb-8">
-                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+            <div className="mb-6 sm:mb-8">
+                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 sm:gap-6">
                     {/* Title and Description */}
                     <div>
-                        <h1 className="text-2xl lg:text-3xl font-bold text-neutral-900">Leads Management</h1>
-                        <p className="text-neutral-500 mt-1">Track and recover abandoned bookings.</p>
+                        <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-neutral-900">Leads Management</h1>
+                        <p className="text-sm sm:text-base text-neutral-500 mt-1">Track and recover abandoned bookings.</p>
                     </div>
 
-                    {/* Analytics Cards */}
-                    <div className="flex flex-wrap gap-4">
+                    {/* Analytics Cards - Horizontal scroll on mobile */}
+                    <div className="flex gap-3 sm:gap-4 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 sm:overflow-visible">
                         {/* Total Abandoned */}
-                        <div className="bg-white rounded-xl border border-neutral-200 px-5 py-4 min-w-[180px]">
+                        <div className="bg-white rounded-xl border border-neutral-200 px-4 sm:px-5 py-3 sm:py-4 min-w-[150px] sm:min-w-[180px] flex-shrink-0">
                             <div className="flex items-center justify-between mb-1">
-                                <span className="text-xs font-medium text-neutral-500 uppercase tracking-wide">Total Abandoned</span>
-                                <span className="flex items-center gap-1 text-xs font-medium text-red-500">
+                                <span className="text-[10px] sm:text-xs font-medium text-neutral-500 uppercase tracking-wide">Total Abandoned</span>
+                                <span className="flex items-center gap-1 text-[10px] sm:text-xs font-medium text-red-500">
                                     <TrendingUp className="w-3 h-3" />
                                     12%
                                 </span>
                             </div>
                             <div className="flex items-baseline gap-2">
-                                <span className="text-3xl font-bold text-neutral-900">{totalAbandoned}</span>
-                                <span className="text-sm text-neutral-400">last 7 days</span>
+                                <span className="text-2xl sm:text-3xl font-bold text-neutral-900">{totalAbandoned}</span>
+                                <span className="text-xs sm:text-sm text-neutral-400">last 7 days</span>
                             </div>
                         </div>
 
                         {/* Recovered Bookings */}
-                        <div className="bg-white rounded-xl border border-neutral-200 px-5 py-4 min-w-[180px]">
+                        <div className="bg-white rounded-xl border border-neutral-200 px-4 sm:px-5 py-3 sm:py-4 min-w-[150px] sm:min-w-[180px] flex-shrink-0">
                             <div className="flex items-center justify-between mb-1">
-                                <span className="text-xs font-medium text-neutral-500 uppercase tracking-wide">Recovered Bookings</span>
-                                <span className="flex items-center gap-1 text-xs font-medium text-green-500">
+                                <span className="text-[10px] sm:text-xs font-medium text-neutral-500 uppercase tracking-wide">Recovered</span>
+                                <span className="flex items-center gap-1 text-[10px] sm:text-xs font-medium text-green-500">
                                     <TrendingUp className="w-3 h-3" />
                                     5%
                                 </span>
                             </div>
                             <div className="flex items-baseline gap-2">
-                                <span className="text-3xl font-bold text-neutral-900">{recoveredCount}</span>
-                                <span className="text-sm text-neutral-400">converted</span>
+                                <span className="text-2xl sm:text-3xl font-bold text-neutral-900">{recoveredCount}</span>
+                                <span className="text-xs sm:text-sm text-neutral-400">converted</span>
                             </div>
                         </div>
 
                         {/* Conversion Rate */}
-                        <div className="bg-white rounded-xl border border-neutral-200 px-5 py-4 min-w-[180px]">
+                        <div className="bg-white rounded-xl border border-neutral-200 px-4 sm:px-5 py-3 sm:py-4 min-w-[150px] sm:min-w-[180px] flex-shrink-0">
                             <div className="flex items-center justify-between mb-1">
-                                <span className="text-xs font-medium text-neutral-500 uppercase tracking-wide">Conversion Rate</span>
-                                <Target className="w-4 h-4 text-neutral-400" />
+                                <span className="text-[10px] sm:text-xs font-medium text-neutral-500 uppercase tracking-wide">Conversion Rate</span>
+                                <Target className="w-3 sm:w-4 h-3 sm:h-4 text-neutral-400" />
                             </div>
                             <div className="flex items-baseline gap-2">
-                                <span className="text-3xl font-bold text-[#E22B2B]">{conversionRate}%</span>
+                                <span className="text-2xl sm:text-3xl font-bold text-[#E22B2B]">{conversionRate}%</span>
                             </div>
                         </div>
                     </div>
@@ -748,14 +775,14 @@ export const AdminLeadsPage: FC = () => {
             {/* Slide-out Panel */}
             {isPanelOpen && selectedLead && (
                 <>
-                    {/* Overlay with blur */}
+                    {/* Overlay with blur - z-[60] to cover sidebar (z-50) */}
                     <div
-                        className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40"
+                        className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[60]"
                         onClick={handleClosePanel}
                     />
 
-                    {/* Panel - narrower */}
-                    <div className="fixed top-0 right-0 h-full w-full max-w-sm bg-white shadow-2xl z-50 overflow-y-auto">
+                    {/* Panel - responsive width (full on mobile, 50% on tablet, 25% on desktop) */}
+                    <div className="fixed top-0 right-0 h-full w-[90vw] sm:w-[50vw] lg:w-[25vw] bg-white shadow-2xl z-[70] overflow-y-auto">
                         {/* Panel Header */}
                         <div className="sticky top-0 bg-white border-b border-neutral-200 px-6 py-4 flex items-center justify-between">
                             <h2 className="text-lg font-semibold text-neutral-900">Lead Details</h2>

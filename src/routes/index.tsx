@@ -12,6 +12,8 @@ import {
   AdminFleetPage,
   AdminBookingsPage,
   AdminLeadsPage,
+  AdminAnalyticsPage,
+  AdminInvoicesPage,
   SidebarDemoPage,
 } from '@pages/index';
 import { BookingPage, CheckoutPage, ReceiptSubmittedPage } from '@pages/BrowseVehicles';
@@ -101,6 +103,8 @@ export const routes: RouteObject[] = [
       { path: 'fleet', element: <AdminFleetPage /> },
       { path: 'bookings', element: <AdminBookingsPage /> },
       { path: 'leads', element: <AdminLeadsPage /> },
+      { path: 'analytics', element: <AdminAnalyticsPage /> },
+      { path: 'invoices', element: <AdminInvoicesPage /> },
     ],
   },
   {

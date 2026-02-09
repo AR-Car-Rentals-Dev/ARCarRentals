@@ -11,6 +11,8 @@ export { AdminDashboardPage } from './AdminDashboardPage';
 export { AdminFleetPage } from './AdminFleetPage';
 export { AdminBookingsPage } from './AdminBookingsPage';
 export { AdminLeadsPage } from './AdminLeadsPage';
+export { default as AdminAnalyticsPage } from './AdminAnalyticsPage';
+export { default as AdminInvoicesPage } from './AdminInvoicesPage';
 export { AdminCustomersPage } from './AdminCustomersPage';
 export { AdminDriversPage } from './AdminDriversPage';
 export { default as SidebarDemoPage } from './SidebarDemoPage';
