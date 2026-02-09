@@ -1,20 +1,19 @@
 import { type FC, useState, useRef, useCallback, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { 
-  Check, 
-  Lock, 
-  HelpCircle, 
+import {
+  Check,
+  Lock,
+  HelpCircle,
   Calendar,
   X,
   AlertCircle,
-  Wallet,
   Copy,
   CloudUpload,
   QrCode,
-  Building2,
-  Info,
   ArrowLeft,
-  CheckCircle
+  CheckCircle,
+  CreditCard,
+  Banknote
 } from 'lucide-react';
 import { Button } from '@/components/ui';
 import type { Car } from '@/types';
@@ -23,6 +22,7 @@ import { createSecureBooking } from '@/services/bookingSecurityService';
 
 type PaymentMethod = 'gcash';
 type PaymentType = 'pay-now' | 'pay-later';
+type PickupPaymentMethod = 'card' | 'cash';
 
 interface CheckoutState {
   vehicle: Car;
@@ -52,8 +52,6 @@ interface CheckoutState {
   bookingId: string;
 }
 
-const DOWNPAYMENT_AMOUNT = 500;
-
 // Payment method configurations
 const PAYMENT_METHODS = {
   gcash: {
@@ -82,10 +80,11 @@ export const CheckoutPage: FC = () => {
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
-  
+
   // Payment selection state
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('gcash');
   const [paymentType, setPaymentType] = useState<PaymentType>('pay-now');
+  const [pickupPaymentMethod, setPickupPaymentMethod] = useState<PickupPaymentMethod>('card');
 
   // Redirect if no checkout data
   useEffect(() => {
@@ -137,7 +136,7 @@ export const CheckoutPage: FC = () => {
     // Use security validation
     const { validateFileType } = await import('../../utils/security');
     const validation = validateFileType(file);
-    
+
     if (!validation.valid) {
       setUploadError(validation.error || 'Invalid file');
       return;
@@ -282,7 +281,7 @@ export const CheckoutPage: FC = () => {
     <div className="min-h-screen bg-[#FAFAFA]" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
       {/* Progress Steps */}
       <div className="bg-white border-b border-neutral-200">
-        <div className="max-w-5xl mx-auto px-4 py-6">
+        <div className="max-w-5xl mx-auto px-4 py-3">
           <div className="flex items-center justify-center gap-4">
             {/* Step 1 - Complete */}
             <div className="flex items-center gap-2">
@@ -318,9 +317,24 @@ export const CheckoutPage: FC = () => {
       </div>
 
       {/* Back Button */}
-      <div className="max-w-5xl mx-auto px-4 pt-4">
+      <div className="mx-auto w-full max-w-[1200px] pt-4" style={{ paddingInline: 'clamp(0.75rem, 1.5vw, 1.5rem)' }}>
         <button
-          onClick={() => navigate('/browsevehicles/booking', { state: { vehicle } })}
+          onClick={() => navigate('/browsevehicles/booking', {
+            state: {
+              vehicle,
+              prefilled: {
+                fullName: state.renterInfo?.fullName || '',
+                email: state.renterInfo?.email || '',
+                phoneNumber: state.renterInfo?.phoneNumber || '',
+                pickupLocation: searchCriteria?.location || '',
+                dropoffLocation: searchCriteria?.dropoffLocation || '',
+                pickupDate: searchCriteria?.pickupDate || '',
+                returnDate: searchCriteria?.returnDate || '',
+                pickupTime: searchCriteria?.startTime || '10:00',
+                driveOption: state.driveOption,
+              }
+            }
+          })}
           className="flex items-center gap-2 text-neutral-600 hover:text-[#E22B2B] transition-colors group"
         >
           <ArrowLeft className="h-5 w-5 group-hover:-translate-x-1 transition-transform" />
@@ -329,51 +343,144 @@ export const CheckoutPage: FC = () => {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-5xl mx-auto px-4 py-8">
+      <div className="mx-auto w-full max-w-[1200px] py-6" style={{ paddingInline: 'clamp(0.75rem, 1.5vw, 1.5rem)' }}>
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Left Column - Payment Instructions & Upload */}
           <div className="flex-1">
             <div className="bg-white rounded-2xl border border-neutral-200 p-8">
-              
+
               {/* Payment Type Selection */}
               <div className="flex items-center justify-between mb-6">
                 <span className="text-sm font-semibold text-neutral-700">Payment Option:</span>
                 <div className="flex rounded-lg border border-neutral-200 overflow-hidden">
                   <button
                     onClick={() => setPaymentType('pay-now')}
-                    className={`px-5 py-2 text-sm font-medium transition-colors ${
-                      paymentType === 'pay-now'
-                        ? 'bg-[#E22B2B] text-white'
-                        : 'bg-white text-neutral-600 hover:bg-neutral-50'
-                    }`}
+                    className={`px-5 py-2 text-sm font-medium transition-colors ${paymentType === 'pay-now'
+                      ? 'bg-[#E22B2B] text-white'
+                      : 'bg-white text-neutral-600 hover:bg-neutral-50'
+                      }`}
                   >
                     Pay Now
                   </button>
                   <button
                     onClick={() => setPaymentType('pay-later')}
-                    className={`px-5 py-2 text-sm font-medium transition-colors ${
-                      paymentType === 'pay-later'
-                        ? 'bg-[#E22B2B] text-white'
-                        : 'bg-white text-neutral-600 hover:bg-neutral-50'
-                    }`}
+                    className={`px-5 py-2 text-sm font-medium transition-colors ${paymentType === 'pay-later'
+                      ? 'bg-[#E22B2B] text-white'
+                      : 'bg-white text-neutral-600 hover:bg-neutral-50'
+                      }`}
                   >
                     Pay Later
                   </button>
                 </div>
               </div>
 
-              {/* Pay Later Notice */}
+              {/* Pay Later Section - Redesigned to match reference */}
               {paymentType === 'pay-later' && (
-                <div className="flex items-start gap-3 p-4 bg-blue-50 border border-blue-100 rounded-xl mb-6">
-                  <Info className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-sm text-blue-800 font-medium">Pay Later Selected</p>
-                    <p className="text-sm text-blue-700 mt-1">
-                      Your booking will be submitted for admin approval. You will receive a confirmation email once approved. 
-                      Full payment will be collected upon vehicle pickup.
-                    </p>
+                <>
+                  {/* Pay Later Info Banner */}
+                  <div className="flex items-start gap-3 p-4 bg-blue-50 border border-blue-100 rounded-xl mb-6">
+                    <div className="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <Check className="w-3 h-3 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-blue-800 font-semibold">Pay Later Selected</p>
+                      <p className="text-sm text-blue-700 mt-1">
+                        No payment is required today. You will pay the full amount at the rental counter when you pick up your vehicle.
+                      </p>
+                    </div>
                   </div>
-                </div>
+
+                  {/* Preferred Payment Method at Pickup */}
+                  <div className="mb-6">
+                    <h3 className="text-base font-semibold text-neutral-900 mb-4">Preferred Payment Method at Pickup</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      {/* Credit/Debit Card Option */}
+                      <button
+                        type="button"
+                        onClick={() => setPickupPaymentMethod('card')}
+                        className={`relative flex items-center gap-3 p-4 rounded-xl border-2 transition-all ${pickupPaymentMethod === 'card'
+                          ? 'border-[#E22B2B] bg-white'
+                          : 'border-neutral-200 bg-white hover:border-neutral-300'
+                          }`}
+                      >
+                        <div className={`absolute top-3 left-3 w-4 h-4 rounded-full border-2 flex items-center justify-center ${pickupPaymentMethod === 'card' ? 'border-[#E22B2B]' : 'border-neutral-300'
+                          }`}>
+                          {pickupPaymentMethod === 'card' && (
+                            <div className="w-2 h-2 rounded-full bg-[#E22B2B]" />
+                          )}
+                        </div>
+                        <div className="ml-6">
+                          <p className={`text-sm font-medium ${pickupPaymentMethod === 'card' ? 'text-[#E22B2B]' : 'text-neutral-900'
+                            }`}>Credit / Debit Card</p>
+                          <p className="text-xs text-neutral-500">Visa, Mastercard, Amex</p>
+                        </div>
+                        <CreditCard className={`w-5 h-5 ml-auto ${pickupPaymentMethod === 'card' ? 'text-[#E22B2B]' : 'text-neutral-400'
+                          }`} />
+                      </button>
+
+                      {/* Cash Payment Option */}
+                      <button
+                        type="button"
+                        onClick={() => setPickupPaymentMethod('cash')}
+                        className={`relative flex items-center gap-3 p-4 rounded-xl border-2 transition-all ${pickupPaymentMethod === 'cash'
+                          ? 'border-[#E22B2B] bg-white'
+                          : 'border-neutral-200 bg-white hover:border-neutral-300'
+                          }`}
+                      >
+                        <div className={`absolute top-3 left-3 w-4 h-4 rounded-full border-2 flex items-center justify-center ${pickupPaymentMethod === 'cash' ? 'border-[#E22B2B]' : 'border-neutral-300'
+                          }`}>
+                          {pickupPaymentMethod === 'cash' && (
+                            <div className="w-2 h-2 rounded-full bg-[#E22B2B]" />
+                          )}
+                        </div>
+                        <div className="ml-6">
+                          <p className={`text-sm font-medium ${pickupPaymentMethod === 'cash' ? 'text-[#E22B2B]' : 'text-neutral-900'
+                            }`}>Cash Payment</p>
+                          <p className="text-xs text-neutral-500">PHP Currency only</p>
+                        </div>
+                        <Banknote className={`w-5 h-5 ml-auto ${pickupPaymentMethod === 'cash' ? 'text-[#E22B2B]' : 'text-neutral-400'
+                          }`} />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Price Summary for Pay Later */}
+                  <div className="mb-6 space-y-3">
+                    <div className="flex justify-between items-center py-2">
+                      <span className="text-sm text-neutral-500">Due Now (Online)</span>
+                      <span className="text-base font-semibold text-neutral-900">₱0.00</span>
+                    </div>
+                    <div className="flex justify-between items-center py-2 border-t border-neutral-100">
+                      <span className="text-sm text-[#E22B2B] font-medium">Due at Pickup Counter</span>
+                      <span className="text-xl font-bold text-[#E22B2B]">₱{fullTotalAmount.toLocaleString()}.00</span>
+                    </div>
+                  </div>
+
+                  {/* Reservation Policy */}
+                  <div className="pt-4 border-t border-neutral-200">
+                    <h3 className="text-base font-semibold text-neutral-900 mb-4">Reservation Policy</h3>
+                    <div className="space-y-3">
+                      <div className="flex items-start gap-3">
+                        <span className="flex-shrink-0 w-5 h-5 rounded-full bg-red-100 text-[#E22B2B] text-xs font-semibold flex items-center justify-center">1</span>
+                        <p className="text-sm text-neutral-600">
+                          You must present a <span className="font-semibold text-neutral-900">valid Driver's License</span> and <span className="font-semibold text-neutral-900">Government ID</span> matching the booking name upon pickup.
+                        </p>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <span className="flex-shrink-0 w-5 h-5 rounded-full bg-red-100 text-[#E22B2B] text-xs font-semibold flex items-center justify-center">2</span>
+                        <p className="text-sm text-neutral-600">
+                          A security deposit may be required at the counter (refundable upon safe return of vehicle).
+                        </p>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <span className="flex-shrink-0 w-5 h-5 rounded-full bg-red-100 text-[#E22B2B] text-xs font-semibold flex items-center justify-center">3</span>
+                        <p className="text-sm text-neutral-600">
+                          Cancellations made less than 24 hours before pickup may be subject to a fee.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </>
               )}
 
               {/* GCash Payment Section - Only show for Pay Now */}
@@ -392,9 +499,9 @@ export const CheckoutPage: FC = () => {
                   {/* QR Code Section */}
                   <div className="flex justify-center mb-4">
                     <div className="p-3 border-2 border-[#E22B2B]/20 rounded-2xl bg-white">
-                      <img 
-                        src="/gcash-qr.png" 
-                        alt="GCash QR Code" 
+                      <img
+                        src="/gcash-qr.png"
+                        alt="GCash QR Code"
                         className="w-44 h-44 object-contain rounded-lg"
                         onError={(e) => {
                           console.error('QR image failed to load');
@@ -406,8 +513,8 @@ export const CheckoutPage: FC = () => {
 
                   {/* Scan QR Link */}
                   <div className="flex justify-center mb-8">
-                    <a 
-                      href="#" 
+                    <a
+                      href="#"
                       className="text-[#E22B2B] text-sm font-medium hover:underline flex items-center gap-1.5"
                     >
                       <span className="text-base">📱</span> Scan QR with GCash App
@@ -416,172 +523,140 @@ export const CheckoutPage: FC = () => {
                 </>
               )}
 
-              {/* Bank Transfer Details */}
-              {paymentMethod === 'bank-transfer' && paymentType === 'pay-now' && (
-                <div className="bg-neutral-50 border border-neutral-200 rounded-xl p-6 mb-8">
-                  <div className="text-center mb-4">
-                    <Building2 className="w-12 h-12 text-[#E22B2B] mx-auto mb-2" />
-                    <h3 className="font-bold text-lg text-neutral-900">Bank Transfer Details</h3>
-                  </div>
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center py-2 border-b border-neutral-200">
-                      <span className="text-sm text-neutral-500">Account Name</span>
-                      <span className="font-semibold text-neutral-900">{PAYMENT_METHODS.gcash.accountName}</span>
-                    </div>
-                    <div className="flex justify-between items-center py-2">
-                      <span className="text-sm text-neutral-500">Account Number</span>
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold text-neutral-900">{PAYMENT_METHODS.gcash.accountNumber}</span>
-                        <button 
-                          onClick={() => copyToClipboard(PAYMENT_METHODS.gcash.accountNumber.replace(/-/g, ''))}
-                          className="text-neutral-400 hover:text-[#E22B2B] transition-colors"
-                          title={isCopied ? "Copied!" : "Copy number"}
-                        >
-                          {isCopied ? (
-                            <Check className="w-4 h-4 text-green-500" />
-                          ) : (
-                            <Copy className="w-4 h-4" />
-                          )}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
+
 
               {/* Steps - Only for Pay Now */}
               {paymentType === 'pay-now' && (
-              <div className="space-y-6">
-                {/* Step 1 */}
-                <div className="flex items-start gap-4">
-                  <div className="w-8 h-8 rounded-full border-2 border-[#E22B2B]/20 text-[#E22B2B] text-sm font-bold flex items-center justify-center flex-shrink-0">
-                    1
+                <div className="space-y-6">
+                  {/* Step 1 */}
+                  <div className="flex items-start gap-4">
+                    <div className="w-8 h-8 rounded-full border-2 border-[#E22B2B]/20 text-[#E22B2B] text-sm font-bold flex items-center justify-center flex-shrink-0">
+                      1
+                    </div>
+                    <div>
+                      <p className="font-bold text-neutral-900">Scan the QR Code</p>
+                      <p className="text-sm text-neutral-500">
+                        Open your GCash app, tap "QR Pay", and scan the code above.
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-bold text-neutral-900">Scan the QR Code</p>
-                    <p className="text-sm text-neutral-500">
-                      Open your GCash app, tap "QR Pay", and scan the code above.
-                    </p>
-                  </div>
-                </div>
 
-                {/* Step 2 */}
-                <div className="flex items-start gap-4">
-                  <div className="w-8 h-8 rounded-full border-2 border-[#E22B2B]/20 text-[#E22B2B] text-sm font-bold flex items-center justify-center flex-shrink-0">
-                    2
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-bold text-neutral-900">Send Exact Amount</p>
-                    <p className="text-sm text-neutral-500 mb-4">Please ensure you send the exact total amount.</p>
-                    
-                    {/* Account Details Box */}
-                    <div className="bg-neutral-50 border border-neutral-200 rounded-xl p-4">
-                      <div className="flex justify-between items-start mb-3">
-                        <div>
-                          <p className="text-[10px] text-neutral-400 uppercase tracking-wider font-medium">GCASH ACCOUNT</p>
-                          <p className="font-semibold text-neutral-900">{PAYMENT_METHODS.gcash.accountName}</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-[10px] text-neutral-400 uppercase tracking-wider font-medium">NUMBER</p>
-                          <div className="flex items-center gap-2">
-                            <p className="font-semibold text-neutral-900">{PAYMENT_METHODS.gcash.accountNumber}</p>
-                            <button 
-                              onClick={() => copyToClipboard(PAYMENT_METHODS.gcash.accountNumber.replace(/-/g, ''))}
-                              className="relative text-neutral-400 hover:text-[#E22B2B] transition-colors"
-                              title={isCopied ? "Copied!" : "Copy number"}
-                            >
-                              {isCopied ? (
-                                <Check className="w-4 h-4 text-green-500" />
-                              ) : (
-                                <Copy className="w-4 h-4" />
-                              )}
-                            </button>
+                  {/* Step 2 */}
+                  <div className="flex items-start gap-4">
+                    <div className="w-8 h-8 rounded-full border-2 border-[#E22B2B]/20 text-[#E22B2B] text-sm font-bold flex items-center justify-center flex-shrink-0">
+                      2
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-bold text-neutral-900">Send Exact Amount</p>
+                      <p className="text-sm text-neutral-500 mb-4">Please ensure you send the exact total amount.</p>
+
+                      {/* Account Details Box */}
+                      <div className="bg-neutral-50 border border-neutral-200 rounded-xl p-4">
+                        <div className="flex justify-between items-start mb-3">
+                          <div>
+                            <p className="text-[10px] text-neutral-400 uppercase tracking-wider font-medium">GCASH ACCOUNT</p>
+                            <p className="font-semibold text-neutral-900">{PAYMENT_METHODS.gcash.accountName}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-[10px] text-neutral-400 uppercase tracking-wider font-medium">NUMBER</p>
+                            <div className="flex items-center gap-2">
+                              <p className="font-semibold text-neutral-900">{PAYMENT_METHODS.gcash.accountNumber}</p>
+                              <button
+                                onClick={() => copyToClipboard(PAYMENT_METHODS.gcash.accountNumber.replace(/-/g, ''))}
+                                className="relative text-neutral-400 hover:text-[#E22B2B] transition-colors"
+                                title={isCopied ? "Copied!" : "Copy number"}
+                              >
+                                {isCopied ? (
+                                  <Check className="w-4 h-4 text-green-500" />
+                                ) : (
+                                  <Copy className="w-4 h-4" />
+                                )}
+                              </button>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                      <div className="flex justify-between items-center pt-3 border-t border-neutral-200">
-                        <p className="text-sm text-neutral-500">Total to send:</p>
-                        <p className="text-xl font-bold text-[#E22B2B]">₱{amountToPay.toLocaleString()}.00</p>
+                        <div className="flex justify-between items-center pt-3 border-t border-neutral-200">
+                          <p className="text-sm text-neutral-500">Total to send:</p>
+                          <p className="text-xl font-bold text-[#E22B2B]">₱{amountToPay.toLocaleString()}.00</p>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
 
-                {/* Step 3 */}
-                <div className="flex items-start gap-4">
-                  <div className="w-8 h-8 rounded-full border-2 border-[#E22B2B]/20 text-[#E22B2B] text-sm font-bold flex items-center justify-center flex-shrink-0">
-                    3
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-bold text-neutral-900">Upload Receipt</p>
-                    <p className="text-sm text-neutral-500 mb-4">Take a screenshot of the confirmation receipt and upload it here.</p>
-                    
-                    {/* Upload Area */}
-                    {!receiptPreview ? (
-                      <div
-                        className={`border-2 border-dashed rounded-xl p-6 text-center transition-colors cursor-pointer ${
-                          isDragging
+                  {/* Step 3 */}
+                  <div className="flex items-start gap-4">
+                    <div className="w-8 h-8 rounded-full border-2 border-[#E22B2B]/20 text-[#E22B2B] text-sm font-bold flex items-center justify-center flex-shrink-0">
+                      3
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-bold text-neutral-900">Upload Receipt</p>
+                      <p className="text-sm text-neutral-500 mb-4">Take a screenshot of the confirmation receipt and upload it here.</p>
+
+                      {/* Upload Area */}
+                      {!receiptPreview ? (
+                        <div
+                          className={`border-2 border-dashed rounded-xl p-6 text-center transition-colors cursor-pointer ${isDragging
                             ? 'border-[#E22B2B] bg-red-50'
                             : 'border-neutral-300 hover:border-[#E22B2B]/50'
-                        }`}
-                        onDragEnter={handleDragEnter}
-                        onDragLeave={handleDragLeave}
-                        onDragOver={handleDragOver}
-                        onDrop={handleDrop}
-                        onClick={() => fileInputRef.current?.click()}
-                      >
-                        <div className="flex flex-col items-center">
-                          <CloudUpload className="w-8 h-8 text-neutral-400 mb-3" />
-                          <p className="text-sm text-neutral-700">
-                            <span className="text-[#E22B2B] font-medium hover:underline">Click to upload</span>
-                            {' '}or drag and drop
-                          </p>
-                          <p className="text-xs text-neutral-400 mt-1">PNG, JPG or GIF (MAX. 5MB)</p>
-                        </div>
-                        <input
-                          ref={fileInputRef}
-                          type="file"
-                          accept=".png,.jpg,.jpeg,.gif"
-                          onChange={handleInputChange}
-                          className="hidden"
-                        />
-                      </div>
-                    ) : (
-                      <div className="border border-neutral-200 rounded-xl p-4">
-                        <div className="flex items-center gap-4">
-                          <div className="w-16 h-16 rounded-lg overflow-hidden bg-neutral-100 flex-shrink-0">
-                            <img
-                              src={receiptPreview}
-                              alt="Receipt preview"
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="font-medium text-neutral-900 truncate text-sm">{receiptFile?.name}</p>
-                            <p className="text-xs text-neutral-500">
-                              {receiptFile && (receiptFile.size / 1024).toFixed(1)} KB
+                            }`}
+                          onDragEnter={handleDragEnter}
+                          onDragLeave={handleDragLeave}
+                          onDragOver={handleDragOver}
+                          onDrop={handleDrop}
+                          onClick={() => fileInputRef.current?.click()}
+                        >
+                          <div className="flex flex-col items-center">
+                            <CloudUpload className="w-8 h-8 text-neutral-400 mb-3" />
+                            <p className="text-sm text-neutral-700">
+                              <span className="text-[#E22B2B] font-medium hover:underline">Click to upload</span>
+                              {' '}or drag and drop
                             </p>
+                            <p className="text-xs text-neutral-400 mt-1">PNG, JPG or GIF (MAX. 5MB)</p>
                           </div>
-                          <button
-                            onClick={removeFile}
-                            className="p-2 hover:bg-neutral-100 rounded-lg transition-colors"
-                          >
-                            <X className="w-5 h-5 text-neutral-400" />
-                          </button>
+                          <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept=".png,.jpg,.jpeg,.gif"
+                            onChange={handleInputChange}
+                            className="hidden"
+                          />
                         </div>
-                      </div>
-                    )}
+                      ) : (
+                        <div className="border border-neutral-200 rounded-xl p-4">
+                          <div className="flex items-center gap-4">
+                            <div className="w-16 h-16 rounded-lg overflow-hidden bg-neutral-100 flex-shrink-0">
+                              <img
+                                src={receiptPreview}
+                                alt="Receipt preview"
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-neutral-900 truncate text-sm">{receiptFile?.name}</p>
+                              <p className="text-xs text-neutral-500">
+                                {receiptFile && (receiptFile.size / 1024).toFixed(1)} KB
+                              </p>
+                            </div>
+                            <button
+                              onClick={removeFile}
+                              className="p-2 hover:bg-neutral-100 rounded-lg transition-colors"
+                            >
+                              <X className="w-5 h-5 text-neutral-400" />
+                            </button>
+                          </div>
+                        </div>
+                      )}
 
-                    {/* Upload Error */}
-                    {uploadError && (
-                      <div className="flex items-center gap-2 mt-3 text-sm text-[#E22B2B]">
-                        <AlertCircle className="w-4 h-4" />
-                        {uploadError}
-                      </div>
-                    )}
+                      {/* Upload Error */}
+                      {uploadError && (
+                        <div className="flex items-center gap-2 mt-3 text-sm text-[#E22B2B]">
+                          <AlertCircle className="w-4 h-4" />
+                          {uploadError}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
               )}
             </div>
           </div>
@@ -699,11 +774,10 @@ export const CheckoutPage: FC = () => {
                 fullWidth
                 onClick={handleSubmit}
                 disabled={(paymentType === 'pay-now' && !receiptFile) || isSubmitting}
-                className={`py-3.5 text-base font-medium rounded-lg flex items-center justify-center gap-2 ${
-                  ((paymentType === 'pay-now' && receiptFile) || paymentType === 'pay-later') && !isSubmitting
-                    ? 'bg-[#E22B2B] hover:bg-[#c92525] border-none'
-                    : 'bg-neutral-300 cursor-not-allowed border-none'
-                }`}
+                className={`py-3.5 text-base font-medium rounded-lg flex items-center justify-center gap-2 ${((paymentType === 'pay-now' && receiptFile) || paymentType === 'pay-later') && !isSubmitting
+                  ? 'bg-[#E22B2B] hover:bg-[#c92525] border-none'
+                  : 'bg-neutral-300 cursor-not-allowed border-none'
+                  }`}
               >
                 {paymentType === 'pay-now' ? (
                   <>

@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { 
-  LayoutDashboard, 
-  Car, 
-  Calendar, 
-  FileText, 
+import {
+  LayoutDashboard,
+  Car,
+  Calendar,
+  FileText,
   BarChart3,
   Users,
   Globe,
@@ -114,9 +114,8 @@ const AdminFloatingSidebar: React.FC = () => {
         {
           id: 'leads',
           label: 'Leads',
-          href: '#',
+          href: '/admin/leads',
           icon: <Users className="nav-icon-svg" />,
-          comingSoon: true,
         },
         {
           id: 'content',
@@ -151,7 +150,7 @@ const AdminFloatingSidebar: React.FC = () => {
   return (
     <>
       {/* Mobile Menu Toggle */}
-      <button 
+      <button
         className="mobile-menu-toggle"
         onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
         aria-label="Toggle menu"
@@ -161,7 +160,7 @@ const AdminFloatingSidebar: React.FC = () => {
 
       {/* Mobile Overlay */}
       {isMobileMenuOpen && (
-        <div 
+        <div
           className="mobile-overlay"
           onClick={() => setIsMobileMenuOpen(false)}
         />
@@ -608,7 +607,7 @@ const AdminFloatingSidebar: React.FC = () => {
           }
         }
       `}</style>
-    </aside>
+      </aside>
 
       {/* Logout Confirmation Modal */}
       <LogoutModal

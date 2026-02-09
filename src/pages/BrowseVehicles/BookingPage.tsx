@@ -8,6 +8,18 @@ import { CarRentalAgreementModal } from './CarRentalAgreementModal';
 
 interface BookingState {
   vehicle: Car;
+  // Prefilled data when navigating back from checkout
+  prefilled?: {
+    fullName?: string;
+    email?: string;
+    phoneNumber?: string;
+    pickupLocation?: string;
+    dropoffLocation?: string;
+    pickupDate?: string;
+    returnDate?: string;
+    pickupTime?: string;
+    driveOption?: 'self-drive' | 'with-driver';
+  };
 }
 
 type DriveOption = 'self-drive' | 'with-driver' | '';
@@ -122,6 +134,33 @@ export const BookingPage: FC = () => {
     }
   }, [state, navigate]);
 
+  // Initialize form fields from prefilled data (when navigating back from checkout)
+  useEffect(() => {
+    if (state?.prefilled) {
+      const p = state.prefilled;
+      if (p.fullName) setFullName(p.fullName);
+      if (p.email) setEmail(p.email);
+      if (p.phoneNumber) {
+        // Extract phone number without country code
+        const phoneWithCode = p.phoneNumber;
+        // Find matching country code and extract the number
+        const matchedCountry = COUNTRY_CODES.find(c => phoneWithCode.startsWith(c.code));
+        if (matchedCountry) {
+          setSelectedCountryCode(matchedCountry);
+          setPhoneNumber(phoneWithCode.slice(matchedCountry.code.length));
+        } else {
+          setPhoneNumber(phoneWithCode);
+        }
+      }
+      if (p.pickupLocation) setPickupLocation(p.pickupLocation);
+      if (p.dropoffLocation) setDropoffLocation(p.dropoffLocation);
+      if (p.pickupDate) setPickupDate(p.pickupDate);
+      if (p.returnDate) setReturnDate(p.returnDate);
+      if (p.pickupTime) setPickupTime(p.pickupTime);
+      if (p.driveOption) setDriveOption(p.driveOption);
+    }
+  }, [state?.prefilled]);
+
   if (!state?.vehicle) {
     return null;
   }
@@ -168,12 +207,12 @@ export const BookingPage: FC = () => {
   // Format time for display
   const formatTime = (time: string) => {
     if (!time) return '10:00 AM';
-    
+
     // If time already contains AM/PM, return as-is
     if (time.includes('AM') || time.includes('PM')) {
       return time;
     }
-    
+
     // Otherwise, format from 24-hour format
     const [hours, minutes] = time.split(':');
     const hour = parseInt(hours, 10);
@@ -270,7 +309,7 @@ export const BookingPage: FC = () => {
       phoneNumber: `${selectedCountryCode.code}${phoneNumber}`,
       driversLicense: '', // Not collected anymore - verified at pickup
     });
-    
+
     // Save search criteria
     await updateSearchCriteria({
       pickupLocation,
@@ -279,12 +318,12 @@ export const BookingPage: FC = () => {
       startTime: pickupTime,
       deliveryMethod: 'pickup'
     });
-    
+
     await updateDriveOption(driveOption as 'self-drive' | 'with-driver');
-    
+
     // Mark terms as agreed and update step to checkout
     await agreeToTerms();
-    
+
     // Generate booking ID
     const bookingId = `AR-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
 
@@ -324,7 +363,7 @@ export const BookingPage: FC = () => {
     <div className="min-h-screen bg-white" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
       {/* Progress Steps */}
       <div className="border-b border-neutral-200">
-        <div className="max-w-5xl mx-auto px-4 py-6">
+        <div className="max-w-5xl mx-auto px-4 py-3">
           <div className="flex items-center justify-center gap-4">
             {/* Step 1 - Complete */}
             <div className="flex items-center gap-2">
@@ -360,7 +399,7 @@ export const BookingPage: FC = () => {
       </div>
 
       {/* Back Button */}
-      <div className="max-w-5xl mx-auto px-4 pt-4">
+      <div className="mx-auto w-full max-w-[1200px] pt-4" style={{ paddingInline: 'clamp(0.75rem, 1.5vw, 1.5rem)' }}>
         <button
           onClick={() => navigate('/browsevehicles')}
           className="flex items-center gap-2 text-neutral-600 hover:text-[#E22B2B] transition-colors group"
@@ -371,7 +410,7 @@ export const BookingPage: FC = () => {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-5xl mx-auto px-4 py-8">
+      <div className="mx-auto w-full max-w-[1200px] py-6" style={{ paddingInline: 'clamp(0.75rem, 1.5vw, 1.5rem)' }}>
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Left Column - Form */}
           <div className="flex-1 space-y-8">
@@ -398,9 +437,8 @@ export const BookingPage: FC = () => {
                       if (e.target.value.trim()) setFormErrors(prev => ({ ...prev, fullName: false }));
                     }}
                     placeholder="e.g. Juan dela Cruz"
-                    className={`w-full px-4 py-3 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#E22B2B]/20 focus:border-[#E22B2B] ${
-                      formErrors.fullName ? 'border-[#E22B2B] ring-2 ring-[#E22B2B]/20' : 'border-neutral-200'
-                    }`}
+                    className={`w-full px-4 py-3 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#E22B2B]/20 focus:border-[#E22B2B] ${formErrors.fullName ? 'border-[#E22B2B] ring-2 ring-[#E22B2B]/20' : 'border-neutral-200'
+                      }`}
                   />
                   {formErrors.fullName && (
                     <div className="flex items-center gap-1 mt-1 text-xs text-[#E22B2B]">
@@ -431,9 +469,8 @@ export const BookingPage: FC = () => {
                         }
                       }}
                       placeholder="juan@example.com"
-                      className={`w-full px-4 py-3 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#E22B2B]/20 focus:border-[#E22B2B] ${
-                        formErrors.email ? 'border-[#E22B2B] ring-2 ring-[#E22B2B]/20' : 'border-neutral-200'
-                      }`}
+                      className={`w-full px-4 py-3 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#E22B2B]/20 focus:border-[#E22B2B] ${formErrors.email ? 'border-[#E22B2B] ring-2 ring-[#E22B2B]/20' : 'border-neutral-200'
+                        }`}
                     />
                     {formErrors.email && (
                       <div className="flex items-center gap-1 mt-1 text-xs text-[#E22B2B]">
@@ -464,11 +501,10 @@ export const BookingPage: FC = () => {
                                 key={`${country.code}-${country.country}-${index}`}
                                 type="button"
                                 onClick={() => handleCountryCodeChange(country)}
-                                className={`w-full px-3 py-2 text-left text-sm hover:bg-neutral-50 flex items-center justify-between ${
-                                  selectedCountryCode.code === country.code && selectedCountryCode.country === country.country
-                                    ? 'bg-red-50 text-[#E22B2B]'
-                                    : ''
-                                }`}
+                                className={`w-full px-3 py-2 text-left text-sm hover:bg-neutral-50 flex items-center justify-between ${selectedCountryCode.code === country.code && selectedCountryCode.country === country.country
+                                  ? 'bg-red-50 text-[#E22B2B]'
+                                  : ''
+                                  }`}
                               >
                                 <span className="text-neutral-700">{country.name}</span>
                                 <span className="text-neutral-400">{country.code}</span>
@@ -488,9 +524,8 @@ export const BookingPage: FC = () => {
                         }}
                         placeholder={`${'9'.repeat(selectedCountryCode.maxLength).slice(0, 4)}...`}
                         maxLength={selectedCountryCode.maxLength}
-                        className={`flex-1 min-w-0 px-4 py-3 border rounded-r-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#E22B2B]/20 focus:border-[#E22B2B] h-[46px] ${
-                          formErrors.phoneNumber ? 'border-[#E22B2B] ring-2 ring-[#E22B2B]/20' : 'border-neutral-200'
-                        }`}
+                        className={`flex-1 min-w-0 px-4 py-3 border rounded-r-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#E22B2B]/20 focus:border-[#E22B2B] h-[46px] ${formErrors.phoneNumber ? 'border-[#E22B2B] ring-2 ring-[#E22B2B]/20' : 'border-neutral-200'
+                          }`}
                       />
                     </div>
                     <p className="mt-1 text-xs text-neutral-400">Enter {selectedCountryCode.maxLength} digits. Viber/WhatsApp supported.</p>
@@ -514,9 +549,8 @@ export const BookingPage: FC = () => {
                       setPickupLocation(e.target.value);
                       if (e.target.value) setFormErrors(prev => ({ ...prev, pickupLocation: false }));
                     }}
-                    className={`w-full px-4 py-3 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#E22B2B]/20 focus:border-[#E22B2B] appearance-none bg-white cursor-pointer ${
-                      formErrors.pickupLocation ? 'border-[#E22B2B] ring-2 ring-[#E22B2B]/20' : 'border-neutral-200'
-                    }`}
+                    className={`w-full px-4 py-3 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#E22B2B]/20 focus:border-[#E22B2B] appearance-none bg-white cursor-pointer ${formErrors.pickupLocation ? 'border-[#E22B2B] ring-2 ring-[#E22B2B]/20' : 'border-neutral-200'
+                      }`}
                     style={{ backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`, backgroundPosition: 'right 0.75rem center', backgroundRepeat: 'no-repeat', backgroundSize: '1.5em 1.5em', paddingRight: '2.5rem' }}
                   >
                     <option value="">Select pickup location</option>
@@ -550,9 +584,8 @@ export const BookingPage: FC = () => {
                       setDropoffLocation(e.target.value);
                       if (e.target.value) setFormErrors(prev => ({ ...prev, dropoffLocation: false }));
                     }}
-                    className={`w-full px-4 py-3 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#E22B2B]/20 focus:border-[#E22B2B] appearance-none bg-white cursor-pointer ${
-                      formErrors.dropoffLocation ? 'border-[#E22B2B] ring-2 ring-[#E22B2B]/20' : 'border-neutral-200'
-                    }`}
+                    className={`w-full px-4 py-3 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#E22B2B]/20 focus:border-[#E22B2B] appearance-none bg-white cursor-pointer ${formErrors.dropoffLocation ? 'border-[#E22B2B] ring-2 ring-[#E22B2B]/20' : 'border-neutral-200'
+                      }`}
                     style={{ backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`, backgroundPosition: 'right 0.75rem center', backgroundRepeat: 'no-repeat', backgroundSize: '1.5em 1.5em', paddingRight: '2.5rem' }}
                   >
                     <option value="">Select drop-off location</option>
@@ -589,9 +622,8 @@ export const BookingPage: FC = () => {
                         if (e.target.value) setFormErrors(prev => ({ ...prev, pickupDate: false }));
                       }}
                       min={new Date().toISOString().split('T')[0]}
-                      className={`w-full px-4 py-3 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#E22B2B]/20 focus:border-[#E22B2B] ${
-                        formErrors.pickupDate ? 'border-[#E22B2B] ring-2 ring-[#E22B2B]/20' : 'border-neutral-200'
-                      }`}
+                      className={`w-full px-4 py-3 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#E22B2B]/20 focus:border-[#E22B2B] ${formErrors.pickupDate ? 'border-[#E22B2B] ring-2 ring-[#E22B2B]/20' : 'border-neutral-200'
+                        }`}
                     />
                     {formErrors.pickupDate && (
                       <div className="flex items-center gap-1 mt-1 text-xs text-[#E22B2B]">
@@ -612,9 +644,8 @@ export const BookingPage: FC = () => {
                         if (e.target.value) setFormErrors(prev => ({ ...prev, returnDate: false }));
                       }}
                       min={pickupDate || new Date().toISOString().split('T')[0]}
-                      className={`w-full px-4 py-3 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#E22B2B]/20 focus:border-[#E22B2B] ${
-                        formErrors.returnDate ? 'border-[#E22B2B] ring-2 ring-[#E22B2B]/20' : 'border-neutral-200'
-                      }`}
+                      className={`w-full px-4 py-3 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#E22B2B]/20 focus:border-[#E22B2B] ${formErrors.returnDate ? 'border-[#E22B2B] ring-2 ring-[#E22B2B]/20' : 'border-neutral-200'
+                        }`}
                     />
                     {formErrors.returnDate && (
                       <div className="flex items-center gap-1 mt-1 text-xs text-[#E22B2B]">
@@ -665,11 +696,10 @@ export const BookingPage: FC = () => {
               <div className="space-y-3">
                 {/* Self-drive Option */}
                 <label
-                  className={`flex items-center gap-4 p-4 border rounded-lg cursor-pointer transition-colors ${
-                    driveOption === 'self-drive'
-                      ? 'border-[#E22B2B] bg-red-50'
-                      : 'border-neutral-200 hover:border-neutral-300'
-                  }`}
+                  className={`flex items-center gap-4 p-4 border rounded-lg cursor-pointer transition-colors ${driveOption === 'self-drive'
+                    ? 'border-[#E22B2B] bg-red-50'
+                    : 'border-neutral-200 hover:border-neutral-300'
+                    }`}
                 >
                   <input
                     type="radio"
@@ -693,11 +723,10 @@ export const BookingPage: FC = () => {
 
                 {/* With Driver Option */}
                 <label
-                  className={`flex items-center gap-4 p-4 border rounded-lg cursor-pointer transition-colors ${
-                    driveOption === 'with-driver'
-                      ? 'border-[#E22B2B] bg-red-50'
-                      : 'border-neutral-200 hover:border-neutral-300'
-                  }`}
+                  className={`flex items-center gap-4 p-4 border rounded-lg cursor-pointer transition-colors ${driveOption === 'with-driver'
+                    ? 'border-[#E22B2B] bg-red-50'
+                    : 'border-neutral-200 hover:border-neutral-300'
+                    }`}
                 >
                   <input
                     type="radio"
