@@ -294,7 +294,7 @@ export const PrivacyPolicyPage: FC = () => {
                                             <p>
                                                 Phone:{' '}
                                                 <a href="tel:+639566625224" className="text-neutral-900 underline hover:no-underline">
-                                                    +63 956 662 5224
+                                                    +63 942 394 3545
                                                 </a>
                                             </p>
                                             <p>Location: Cebu City, Cebu, Philippines</p>
