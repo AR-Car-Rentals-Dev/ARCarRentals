@@ -214,7 +214,7 @@ export const AboutUsPage: FC = () => {
               {/* CTA Button */}
               <div className="pt-4">
                 <a
-                  href="/fleet"
+                  href="/browsevehicles"
                   className="group relative inline-flex items-center gap-2 px-8 py-3 bg-[#E22B2B] text-white font-bold rounded-lg overflow-hidden shadow-lg hover:shadow-[#E22B2B]/40 transition-all duration-300"
                 >
                   <span className="absolute top-0 left-0 w-full h-full bg-white opacity-0 group-hover:opacity-20 transition-opacity duration-300"></span>

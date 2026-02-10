@@ -7,8 +7,8 @@ import {
   FileText,
   BarChart3,
   Users,
-  Globe,
-  Settings,
+  // Globe,    // Hidden - uncomment when re-enabling Website Content
+  // Settings, // Hidden - uncomment when re-enabling Settings
   LogOut,
   Menu,
   X
@@ -114,27 +114,29 @@ const AdminFloatingSidebar: React.FC = () => {
           href: '/admin/leads',
           icon: <Users className="nav-icon-svg" />,
         },
-        {
-          id: 'content',
-          label: 'Website Content',
-          href: '#',
-          icon: <Globe className="nav-icon-svg" />,
-          comingSoon: true,
-        },
+        // Hidden for now - uncomment to re-enable
+        // {
+        //   id: 'content',
+        //   label: 'Website Content',
+        //   href: '#',
+        //   icon: <Globe className="nav-icon-svg" />,
+        //   comingSoon: true,
+        // },
       ],
     },
-    {
-      title: 'TOOLS',
-      items: [
-        {
-          id: 'settings',
-          label: 'Settings',
-          href: '#',
-          icon: <Settings className="nav-icon-svg" />,
-          comingSoon: true,
-        },
-      ],
-    },
+    // Hidden for now - uncomment to re-enable
+    // {
+    //   title: 'TOOLS',
+    //   items: [
+    //     {
+    //       id: 'settings',
+    //       label: 'Settings',
+    //       href: '#',
+    //       icon: <Settings className="nav-icon-svg" />,
+    //       comingSoon: true,
+    //     },
+    //   ],
+    // },
   ];
 
   return (

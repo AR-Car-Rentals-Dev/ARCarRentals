@@ -582,15 +582,6 @@ export const ReceiptSubmittedPage: React.FC = () => {
             {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row gap-3">
               <Button
-                variant="primary"
-                fullWidth
-                className="h-11 flex items-center justify-center gap-2 bg-[#E22B2B] hover:bg-[#c92525] text-white rounded-lg font-bold transition-colors shadow-lg shadow-red-600/20 border-none"
-                onClick={() => navigate('/customer/bookings')}
-              >
-                <MapPin className="w-4 h-4" />
-                Track Booking
-              </Button>
-              <Button
                 variant="outline"
                 fullWidth
                 className="h-11 flex items-center justify-center gap-2 bg-transparent border border-neutral-300 hover:bg-neutral-50 text-neutral-900 rounded-lg font-bold transition-colors"

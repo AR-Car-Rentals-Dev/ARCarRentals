@@ -5,12 +5,12 @@ import { MessageCircle, X } from 'lucide-react';
 // Contact links
 const CONTACT_LINKS = {
   viber: 'viber://chat?number=%2B639423943545', // +63 942 394 3545
-  whatsapp: 'https://wa.me/639423943545', // +63 942 394 3545
-  messenger: 'https://www.facebook.com/arcarrentalsservicescebu', // AR Car Rentals Facebook page
+  whatsapp: 'https://api.whatsapp.com/send/?phone=639423943545&text&type=phone_number&app_absent=0', // +63 942 394 3545
+  facebook: 'https://www.facebook.com/arcarrentalsservicescebu', // AR Car Rentals Facebook page
 };
 
 /**
- * Floating contact action buttons for Viber, WhatsApp, and Messenger
+ * Floating contact action buttons for Viber, WhatsApp, and Facebook
  * Displays at bottom-right of screen
  */
 export const FloatingContactButtons: FC = () => {
@@ -60,20 +60,20 @@ export const FloatingContactButtons: FC = () => {
           </div>
         </a>
 
-        {/* Messenger */}
+        {/* Facebook */}
         <a
-          href={CONTACT_LINKS.messenger}
+          href={CONTACT_LINKS.facebook}
           target="_blank"
           rel="noopener noreferrer"
           className="group flex items-center gap-2"
-          title="Chat on Messenger"
+          title="Visit Facebook Page"
         >
           <span className="bg-white px-3 py-1.5 rounded-lg shadow-md text-sm font-medium text-neutral-700 opacity-0 group-hover:opacity-100 transition-opacity">
-            Messenger
+            Facebook
           </span>
-          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#00B2FF] to-[#006AFF] hover:from-[#00a0e6] hover:to-[#005ce6] shadow-lg flex items-center justify-center transition-all hover:scale-110 overflow-hidden">
+          <div className="w-12 h-12 rounded-full bg-[#1877F2] hover:bg-[#166fe5] shadow-lg flex items-center justify-center transition-all hover:scale-110 overflow-hidden">
             <svg viewBox="0 0 24 24" className="w-6 h-6 fill-white flex-shrink-0">
-              <path d="M12 0C5.373 0 0 4.974 0 11.111c0 3.498 1.744 6.614 4.469 8.654V24l4.088-2.242c1.092.301 2.246.464 3.443.464 6.627 0 12-4.975 12-11.111S18.627 0 12 0zm1.191 14.963l-3.055-3.26-5.963 3.26L10.732 8l3.131 3.259L19.752 8l-6.561 6.963z" />
+              <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
             </svg>
           </div>
         </a>

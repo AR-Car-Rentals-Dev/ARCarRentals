@@ -295,9 +295,9 @@ export const ContactUsPage: FC = () => {
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                                     </svg>
                                 </div>
-                                <h3 className="font-semibold text-neutral-900 mb-1">Lapu-Lapu Area</h3>
+                                <h3 className="font-semibold text-neutral-900 mb-1">Lapu-Lapu City</h3>
                                 <p className="text-neutral-500 text-xs mb-3">Resorts & Hotels</p>
-                                <p className="text-neutral-900 text-xl font-bold">₱500</p>
+                                <p className="text-neutral-900 text-xl font-bold">₱300 per way</p>
                             </div>
                         </div>
 
@@ -312,7 +312,7 @@ export const ContactUsPage: FC = () => {
                                 </div>
                                 <h3 className="font-semibold text-neutral-900 mb-1">Mandaue City</h3>
                                 <p className="text-neutral-500 text-xs mb-3">Business District</p>
-                                <p className="text-neutral-900 text-xl font-bold">₱800</p>
+                                <p className="text-neutral-900 text-xl font-bold">₱350 per way</p>
                             </div>
                         </div>
 
@@ -327,7 +327,7 @@ export const ContactUsPage: FC = () => {
                                 </div>
                                 <h3 className="font-semibold text-neutral-900 mb-1">Cebu City</h3>
                                 <p className="text-neutral-500 text-xs mb-3">Pier / SM / Ayala</p>
-                                <p className="text-neutral-900 text-xl font-bold">₱1,000</p>
+                                <p className="text-neutral-900 text-xl font-bold">₱450 per way</p>
                             </div>
                         </div>
 
@@ -342,7 +342,7 @@ export const ContactUsPage: FC = () => {
                                 </div>
                                 <h3 className="font-semibold text-neutral-900 mb-1">Talisay City</h3>
                                 <p className="text-neutral-500 text-xs mb-3">South Area</p>
-                                <p className="text-neutral-900 text-xl font-bold">₱1,500</p>
+                                <p className="text-neutral-900 text-xl font-bold">₱500 per way</p>
                             </div>
                         </div>
                     </div>
@@ -409,7 +409,7 @@ export const ContactUsPage: FC = () => {
                             </div>
                             <h3 className="text-xl font-bold text-neutral-900 mb-3">Security Deposit</h3>
                             <p className="text-neutral-600 text-sm leading-relaxed mb-4">
-                                A refundable cash security deposit of ₱3,000 - ₱5,000 depending on the vehicle type. This is returned upon safe return of the car.
+                                A refundable cash security deposit of ₱2,000. This is returned upon safe return of the car.
                             </p>
                             <p className="text-[#E22B2B] text-sm font-medium flex items-center gap-2">
                                 <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">

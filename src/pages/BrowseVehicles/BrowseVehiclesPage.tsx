@@ -28,7 +28,7 @@ const FilterSidebar: FC<{
   const carTypes = [
     { value: 'sedan', label: 'Sedan', count: allCars.filter(c => c.category === 'sedan').length },
     { value: 'suv', label: 'SUV', count: allCars.filter(c => c.category === 'suv').length },
-    { value: 'mpv', label: 'Multi-Purpose Vehicle', count: allCars.filter(c => c.category === 'mpv').length },
+    { value: 'mpv', label: 'MPV', count: allCars.filter(c => c.category === 'mpv').length },
     { value: 'van', label: 'Van', count: allCars.filter(c => c.category === 'van').length },
   ];
 

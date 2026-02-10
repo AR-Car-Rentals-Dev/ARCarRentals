@@ -131,6 +131,7 @@ export const HeroSection: FC = () => {
                       <option value="">All Types</option>
                       <option value="sedan">Sedan</option>
                       <option value="suv">SUV</option>
+                      <option value="mpv">MPV</option>
                       <option value="van">Van</option>
                     </select>
                   </div>
