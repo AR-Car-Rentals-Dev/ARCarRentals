@@ -245,8 +245,8 @@ export const TrackBookingPage = () => {
                 return (
                   <div key={step.key} className="flex flex-col items-center z-10 flex-1">
                     <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 ${isCompleted
-                        ? 'bg-[#E22B2B] text-white shadow-md shadow-red-200'
-                        : 'bg-neutral-100 text-neutral-400 border-2 border-neutral-200'
+                      ? 'bg-[#E22B2B] text-white shadow-md shadow-red-200'
+                      : 'bg-neutral-100 text-neutral-400 border-2 border-neutral-200'
                       }`}>
                       <StepIcon className="w-4 h-4" />
                     </div>
@@ -308,8 +308,8 @@ export const TrackBookingPage = () => {
               <div className="flex items-start justify-between mb-4">
                 <h3 className="text-xl font-bold text-neutral-900">{vehicleName}</h3>
                 <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold border ${booking.drive_option === 'self-drive'
-                    ? 'bg-blue-50 text-blue-600 border-blue-200'
-                    : 'bg-purple-50 text-purple-600 border-purple-200'
+                  ? 'bg-blue-50 text-blue-600 border-blue-200'
+                  : 'bg-purple-50 text-purple-600 border-purple-200'
                   }`}>
                   {booking.drive_option === 'self-drive' ? 'SELF-DRIVE' : 'WITH DRIVER'}
                 </span>
@@ -433,7 +433,7 @@ export const TrackBookingPage = () => {
             </button>
           </Link>
           <p className="text-sm text-neutral-400 mt-4">
-            Need help? <a href="mailto:info@arcarrentals.com" className="text-[#E22B2B] hover:underline font-medium">Contact Support</a>
+            Need help? <a href="mailto:info@arcarrentalscebu.com" className="text-[#E22B2B] hover:underline font-medium">Contact Support</a>
           </p>
         </div>
 

@@ -102,7 +102,7 @@ export const TrackBookingLookupPage = () => {
                 <div className="text-center mt-8">
                     <p className="text-sm text-neutral-400">
                         Can't find your reference number? Check your email or{' '}
-                        <a href="mailto:info@arcarrentals.com" className="text-[#E22B2B] hover:underline font-medium">contact support</a>
+                        <a href="mailto:info@arcarrentalscebu.com" className="text-[#E22B2B] hover:underline font-medium">contact support</a>
                     </p>
                 </div>
 

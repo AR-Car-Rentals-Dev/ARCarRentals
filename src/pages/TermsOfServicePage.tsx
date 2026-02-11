@@ -101,8 +101,8 @@ export const TermsOfServicePage: FC = () => {
                                                 key={section.id}
                                                 onClick={() => scrollToSection(section.id)}
                                                 className={`w-full text-left py-2 px-3 rounded-md text-sm transition-all duration-200 ${isActive
-                                                        ? 'text-neutral-900 font-medium bg-neutral-100'
-                                                        : 'text-neutral-500 hover:text-neutral-900 hover:bg-neutral-50'
+                                                    ? 'text-neutral-900 font-medium bg-neutral-100'
+                                                    : 'text-neutral-500 hover:text-neutral-900 hover:bg-neutral-50'
                                                     }`}
                                             >
                                                 {section.title}
@@ -321,8 +321,8 @@ export const TermsOfServicePage: FC = () => {
                                             <p><strong>AR Car Rentals & Tour Services</strong></p>
                                             <p>
                                                 Email:{' '}
-                                                <a href="mailto:info@arcarrentals.com" className="text-neutral-900 underline hover:no-underline">
-                                                    info@arcarrentals.com
+                                                <a href="mailto:arcarrentalsservices@gmail.com" className="text-neutral-900 underline hover:no-underline">
+                                                    arcarrentalsservices@gmail.com
                                                 </a>
                                             </p>
                                             <p>

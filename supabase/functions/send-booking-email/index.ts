@@ -36,6 +36,10 @@ interface EmailRequest {
     customerName?: string
     declineReason?: string
     customMessage?: string
+    phoneNumber?: string
+    rentalDays?: number
+    amountPaid?: number
+    pickupLocation?: string
   }
   refundDetails?: {
     vehicleName?: string
@@ -278,7 +282,7 @@ const getEmailFooter = () => `
           <strong style="color: #171717;">📞 Phone:</strong> +63 956 662 5224
         </p>
         <p style="margin: 0 0 8px; color: #525252; font-size: 14px;">
-          <strong style="color: #171717;">📧 Email:</strong> <a href="mailto:info@arcarrentals.com" style="color: #E22B2B; text-decoration: none;">info@arcarrentals.com</a>
+          <strong style="color: #171717;">📧 Email:</strong> <a href="mailto:info@arcarrentalscebu.com" style="color: #E22B2B; text-decoration: none;">info@arcarrentalscebu.com</a>
         </p>
         <p style="margin: 0 0 20px; color: #525252; font-size: 14px;">
           <strong style="color: #171717;">⏰ Hours:</strong> Monday - Sunday | Open 24 Hours
@@ -597,7 +601,7 @@ const getDeclinedEmailHTML = (
                 </p>
                 <p style="margin: 0; color: #525252; font-size: 14px; line-height: 1.8;">
                   📞 <strong>Phone:</strong> +63 956 662 5224<br>
-                  📧 <strong>Email:</strong> info@arcarrentals.com<br>
+                  📧 <strong>Email:</strong> info@arcarrentalscebu.com<br>
                   ⏰ <strong>Hours:</strong> Monday - Sunday | Open 24 Hours
                 </p>
               </div>
@@ -883,7 +887,7 @@ const getRefundPendingEmailHTML = (
                 </p>
                 <p style="margin: 0; color: #525252; font-size: 14px; line-height: 1.8;">
                   📞 <strong>Phone:</strong> +63 956 662 5224<br>
-                  📧 <strong>Email:</strong> info@arcarrentals.com<br>
+                  📧 <strong>Email:</strong> info@arcarrentalscebu.com<br>
                   ⏰ <strong>Hours:</strong> Monday - Sunday | Open 24 Hours
                 </p>
               </div>
@@ -1047,6 +1051,185 @@ const getAbandonedCartEmailHTML = (
   `
 }
 
+// Email HTML template for Admin Notification (New Booking)
+const getNewBookingAdminNotificationHTML = (
+  bookingReference: string,
+  customerEmail: string,
+  vehicleName?: string,
+  pickupDate?: string,
+  returnDate?: string,
+  totalPrice?: number,
+  customerName?: string,
+  phoneNumber?: string,
+  rentalDays?: number,
+  amountPaid?: number,
+  pickupLocation?: string
+) => {
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>New Booking Alert</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f5f5f5;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f5f5; padding: 40px 20px;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+          
+          <!-- Header -->
+          <tr>
+            <td style="background-color: #171717; padding: 30px; text-align: center;">
+              <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: 700;">
+                New Booking Received
+              </h1>
+              <p style="margin: 8px 0 0; color: #a3a3a3; font-size: 14px;">
+                Action Required: Review Payment Receipt & Approve
+              </p>
+            </td>
+          </tr>
+
+          <!-- Content -->
+          <tr>
+            <td style="padding: 40px;">
+
+              <!-- Booking Reference -->
+              <div style="background-color: #fafafa; border: 1px solid #e5e5e5; border-radius: 8px; padding: 24px; margin-bottom: 32px; text-align: center;">
+                <p style="margin: 0 0 4px; color: #737373; font-size: 12px; text-transform: uppercase; font-weight: 600;">Booking Reference</p>
+                <p style="margin: 0; color: #E22B2B; font-size: 28px; font-weight: 700; font-family: monospace;">${bookingReference}</p>
+              </div>
+
+              <!-- Customer Details -->
+              <div style="margin-bottom: 32px;">
+                <h3 style="margin: 0 0 16px; color: #171717; font-size: 16px; font-weight: 600; border-bottom: 1px solid #e5e5e5; padding-bottom: 8px;">
+                  👤 Customer Details
+                </h3>
+                <table width="100%" cellpadding="0" cellspacing="0">
+                  <tr>
+                    <td style="padding: 8px 0; color: #737373; font-size: 14px; width: 120px;">Name</td>
+                    <td style="padding: 8px 0; color: #171717; font-size: 14px; font-weight: 600;">${customerName || 'Guest'}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0; color: #737373; font-size: 14px;">Email</td>
+                    <td style="padding: 8px 0; color: #171717; font-size: 14px; font-weight: 600;">
+                      <a href="mailto:${customerEmail}" style="color: #171717; text-decoration: none;">${customerEmail}</a>
+                    </td>
+                  </tr>
+                  ${phoneNumber ? `
+                  <tr>
+                    <td style="padding: 8px 0; color: #737373; font-size: 14px;">Phone</td>
+                    <td style="padding: 8px 0; color: #171717; font-size: 14px; font-weight: 600;">${phoneNumber}</td>
+                  </tr>
+                  ` : ''}
+                </table>
+              </div>
+
+              <!-- Booking Details -->
+              <div style="margin-bottom: 32px;">
+                <h3 style="margin: 0 0 16px; color: #171717; font-size: 16px; font-weight: 600; border-bottom: 1px solid #e5e5e5; padding-bottom: 8px;">
+                  🚗 Rental Details
+                </h3>
+                <table width="100%" cellpadding="0" cellspacing="0">
+                  ${vehicleName ? `
+                  <tr>
+                    <td style="padding: 8px 0; color: #737373; font-size: 14px; width: 120px;">Vehicle</td>
+                    <td style="padding: 8px 0; color: #171717; font-size: 14px; font-weight: 600;">${vehicleName}</td>
+                  </tr>
+                  ` : ''}
+                  ${rentalDays ? `
+                  <tr>
+                    <td style="padding: 8px 0; color: #737373; font-size: 14px;">Duration</td>
+                    <td style="padding: 8px 0; color: #171717; font-size: 14px; font-weight: 600;">${rentalDays} Days</td>
+                  </tr>
+                  ` : ''}
+                  ${pickupDate ? `
+                  <tr>
+                    <td style="padding: 8px 0; color: #737373; font-size: 14px;">Pickup</td>
+                    <td style="padding: 8px 0; color: #171717; font-size: 14px; font-weight: 600;">${pickupDate}</td>
+                  </tr>
+                  ` : ''}
+                  ${returnDate ? `
+                  <tr>
+                    <td style="padding: 8px 0; color: #737373; font-size: 14px;">Return</td>
+                    <td style="padding: 8px 0; color: #171717; font-size: 14px; font-weight: 600;">${returnDate}</td>
+                  </tr>
+                  ` : ''}
+                  ${pickupLocation ? `
+                  <tr>
+                    <td style="padding: 8px 0; color: #737373; font-size: 14px;">Location</td>
+                    <td style="padding: 8px 0; color: #171717; font-size: 14px; font-weight: 600;">${pickupLocation}</td>
+                  </tr>
+                  ` : ''}
+                </table>
+              </div>
+
+              <!-- Payment Details -->
+              <div style="margin-bottom: 32px;">
+                <h3 style="margin: 0 0 16px; color: #171717; font-size: 16px; font-weight: 600; border-bottom: 1px solid #e5e5e5; padding-bottom: 8px;">
+                  💰 Payment Information
+                </h3>
+                <table width="100%" cellpadding="0" cellspacing="0">
+                  ${totalPrice ? `
+                  <tr>
+                    <td style="padding: 8px 0; color: #737373; font-size: 14px; width: 120px;">Total Amount</td>
+                    <td style="padding: 8px 0; color: #171717; font-size: 14px; font-weight: 600;">₱${totalPrice.toLocaleString()}</td>
+                  </tr>
+                  ` : ''}
+                  ${amountPaid !== undefined ? `
+                  <tr>
+                    <td style="padding: 8px 0; color: #737373; font-size: 14px;">Amount Paid</td>
+                    <td style="padding: 8px 0; color: ${amountPaid > 0 ? '#166534' : '#ca8a04'}; font-size: 14px; font-weight: 600;">
+                      ₱${amountPaid.toLocaleString()} ${amountPaid === 0 ? '(Pay Later)' : ''}
+                    </td>
+                  </tr>
+                  ` : ''}
+                </table>
+              </div>
+
+              <!-- CTA -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-top: 24px;">
+                <tr>
+                  <td align="center">
+                    <a href="https://arcarrentalscebu.com/admin/leads" style="
+                      display: inline-block;
+                      background-color: #171717;
+                      color: #ffffff;
+                      text-decoration: none;
+                      padding: 16px 32px;
+                      border-radius: 8px;
+                      font-weight: 600;
+                      font-size: 15px;
+                      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                    ">
+                      Open Admin Dashboard
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+            </td>
+          </tr>
+          
+          <!-- Footer -->
+          <tr>
+            <td style="background-color: #fafafa; padding: 24px; text-align: center; border-top: 1px solid #e5e5e5;">
+              <p style="margin: 0; color: #a3a3a3; font-size: 11px;">
+                This automated notification was sent to ${bookingReference}
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  `
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -1097,7 +1280,7 @@ serve(async (req) => {
     console.log('📝 Booking Reference:', bookingReference)
     console.log('📋 Email Type:', emailType)
 
-    // Prepare email body
+    // Prepare email body for Customer
     const emailBody: any = {
       from: 'AR Car Rentals <info@arcarrentalscebu.com>',
       to: [email],
@@ -1162,7 +1345,7 @@ serve(async (req) => {
       )
       subject = `Your ${abandonedCartDetails?.vehicleName || 'rental'} is waiting! 🚗 | AR Car Rentals`
     } else {
-      // Pending booking email (default)
+      // Pending booking email (default) -> THIS IS THE NEW BOOKING
       emailHTML = getPendingEmailHTML(
         bookingReference,
         magicLink,
@@ -1171,9 +1354,53 @@ serve(async (req) => {
         bookingDetails?.returnDate
       )
       subject = `Booking Received - ${bookingReference} (Awaiting Confirmation) | AR Car Rentals`
+
+      // ---------------------------------------------------------
+      // SEND ADMIN NOTIFICATION (Parallel Email)
+      // ---------------------------------------------------------
+      try {
+        console.log('🔔 Sending Admin Notification for new booking...')
+        const adminEmailHTML = getNewBookingAdminNotificationHTML(
+          bookingReference,
+          email,
+          bookingDetails?.vehicleName,
+          bookingDetails?.pickupDate,
+          bookingDetails?.returnDate,
+          bookingDetails?.totalPrice,
+          bookingDetails?.customerName,
+          bookingDetails?.phoneNumber,
+          bookingDetails?.rentalDays,
+          bookingDetails?.amountPaid,
+          bookingDetails?.pickupLocation
+        )
+
+        const adminEmailBody = {
+          from: 'AR Car Rentals <info@arcarrentalscebu.com>',
+          to: ['arcarrentalsservices@gmail.com'],
+          reply_to: email, // Reply to customer
+          subject: `New Booking Alert: ${bookingReference}`,
+          html: adminEmailHTML
+        }
+
+        // Send Admin Email (Fire and forget, but log error)
+        fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${RESEND_API_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(adminEmailBody),
+        }).then(res => {
+          if (res.ok) console.log('✅ Admin notification sent successfully')
+          else console.error('❌ Admin notification failed', res.statusText)
+        }).catch(err => console.error('❌ Admin notification error:', err))
+
+      } catch (adminEmailError) {
+        console.error('❌ Error preparing admin notification:', adminEmailError)
+      }
     }
 
-    // Set subject and HTML
+    // Set subject and HTML for the main customer email
     emailBody.subject = subject
     emailBody.html = emailHTML
 

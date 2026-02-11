@@ -182,7 +182,13 @@ export const createSecureBooking = async (payload: BookingPayload): Promise<Book
           month: 'long',
           day: 'numeric',
           year: 'numeric'
-        })
+        }),
+        customerName: payload.renterInfo.fullName,
+        phoneNumber: payload.renterInfo.phoneNumber,
+        rentalDays: days,
+        totalAmount: totalAmount,
+        amountPaid: amountPaid,
+        pickupLocation: payload.searchCriteria.pickupLocation
       },
       'pending' // Email type: pending admin approval
     );

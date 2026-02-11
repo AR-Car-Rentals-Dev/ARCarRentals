@@ -237,6 +237,7 @@ export const AdminLeadsPage: FC = () => {
                     .from('leads_with_vehicle')
                     .select('*')
                     .neq('status', 'recovered')  // Exclude recovered leads
+                    .neq('status', 'pending')    // Exclude pending leads
                     .order('created_at', { ascending: false });
 
                 if (error) {

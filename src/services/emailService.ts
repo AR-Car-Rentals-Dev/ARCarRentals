@@ -27,6 +27,12 @@ export const sendMagicLinkEmail = async (
     vehicleName?: string;
     pickupDate?: string;
     returnDate?: string;
+    customerName?: string;
+    phoneNumber?: string;
+    rentalDays?: number;
+    totalAmount?: number;
+    amountPaid?: number;
+    pickupLocation?: string;
   },
   emailType: 'pending' | 'confirmed' = 'pending'
 ): Promise<EmailResponse> => {

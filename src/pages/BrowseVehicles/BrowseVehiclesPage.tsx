@@ -58,14 +58,14 @@ const FilterSidebar: FC<{
   const toggleCarType = (type: string) => {
     const currentTypes = [...filters.carTypes];
     const index = currentTypes.indexOf(type);
-    
+
     if (index > -1) {
       currentTypes.splice(index, 1);
     } else {
       currentTypes.push(type);
     }
-    
-    onFilterChange({ 
+
+    onFilterChange({
       carTypes: currentTypes,
       transmissions: [...filters.transmissions],
       seats: [...filters.seats],
@@ -76,14 +76,14 @@ const FilterSidebar: FC<{
   const toggleTransmission = (trans: string) => {
     const currentTrans = [...filters.transmissions];
     const index = currentTrans.indexOf(trans);
-    
+
     if (index > -1) {
       currentTrans.splice(index, 1);
     } else {
       currentTrans.push(trans);
     }
-    
-    onFilterChange({ 
+
+    onFilterChange({
       carTypes: [...filters.carTypes],
       transmissions: currentTrans,
       seats: [...filters.seats],
@@ -94,14 +94,14 @@ const FilterSidebar: FC<{
   const toggleSeats = (seatRange: string) => {
     const currentSeats = [...filters.seats];
     const index = currentSeats.indexOf(seatRange);
-    
+
     if (index > -1) {
       currentSeats.splice(index, 1);
     } else {
       currentSeats.push(seatRange);
     }
-    
-    onFilterChange({ 
+
+    onFilterChange({
       carTypes: [...filters.carTypes],
       transmissions: [...filters.transmissions],
       seats: currentSeats,
@@ -130,7 +130,7 @@ const FilterSidebar: FC<{
             </svg>
             <span className="font-bold text-[#1f1f1f]">Filters</span>
           </div>
-          <button 
+          <button
             onClick={resetFilters}
             className="text-[#e53935] text-sm font-semibold hover:text-[#c62828] transition-colors"
           >
@@ -148,8 +148,8 @@ const FilterSidebar: FC<{
             {carTypes.map((type) => {
               const isChecked = filters.carTypes.includes(type.value);
               return (
-                <div 
-                  key={type.value} 
+                <div
+                  key={type.value}
                   className="flex items-center gap-3 cursor-pointer group"
                   onClick={() => toggleCarType(type.value)}
                   role="checkbox"
@@ -163,11 +163,10 @@ const FilterSidebar: FC<{
                   }}
                 >
                   <div
-                    className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${
-                      isChecked 
-                        ? 'bg-[#e53935] border-[#e53935]' 
+                    className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${isChecked
+                        ? 'bg-[#e53935] border-[#e53935]'
                         : 'bg-white border-[#d1d5db] group-hover:border-[#9ca3af]'
-                    }`}
+                      }`}
                   >
                     {isChecked && (
                       <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -193,8 +192,8 @@ const FilterSidebar: FC<{
             {transmissions.map((trans) => {
               const isChecked = filters.transmissions.includes(trans.value);
               return (
-                <div 
-                  key={trans.value} 
+                <div
+                  key={trans.value}
                   className="flex items-center gap-3 cursor-pointer group"
                   onClick={() => toggleTransmission(trans.value)}
                   role="checkbox"
@@ -208,11 +207,10 @@ const FilterSidebar: FC<{
                   }}
                 >
                   <div
-                    className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${
-                      isChecked 
-                        ? 'bg-[#e53935] border-[#e53935]' 
+                    className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${isChecked
+                        ? 'bg-[#e53935] border-[#e53935]'
                         : 'bg-white border-[#d1d5db] group-hover:border-[#9ca3af]'
-                    }`}
+                      }`}
                   >
                     {isChecked && (
                       <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -238,8 +236,8 @@ const FilterSidebar: FC<{
             {seatOptions.map((seatOpt) => {
               const isChecked = filters.seats.includes(seatOpt.value);
               return (
-                <div 
-                  key={seatOpt.value} 
+                <div
+                  key={seatOpt.value}
                   className="flex items-center gap-3 cursor-pointer group"
                   onClick={() => toggleSeats(seatOpt.value)}
                   role="checkbox"
@@ -253,11 +251,10 @@ const FilterSidebar: FC<{
                   }}
                 >
                   <div
-                    className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${
-                      isChecked 
-                        ? 'bg-[#e53935] border-[#e53935]' 
+                    className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${isChecked
+                        ? 'bg-[#e53935] border-[#e53935]'
                         : 'bg-white border-[#d1d5db] group-hover:border-[#9ca3af]'
-                    }`}
+                      }`}
                   >
                     {isChecked && (
                       <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -283,8 +280,8 @@ const FilterSidebar: FC<{
             <input
               type="number"
               value={filters.priceRange.min}
-              onChange={(e) => onFilterChange({ 
-                ...filters, 
+              onChange={(e) => onFilterChange({
+                ...filters,
                 priceRange: { ...filters.priceRange, min: Number(e.target.value) }
               })}
               className="w-full px-3 py-2.5 border border-[#eaeaf0] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#e53935]/20 focus:border-[#e53935]"
@@ -294,8 +291,8 @@ const FilterSidebar: FC<{
             <input
               type="number"
               value={filters.priceRange.max}
-              onChange={(e) => onFilterChange({ 
-                ...filters, 
+              onChange={(e) => onFilterChange({
+                ...filters,
                 priceRange: { ...filters.priceRange, max: Number(e.target.value) }
               })}
               className="w-full px-3 py-2.5 border border-[#eaeaf0] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#e53935]/20 focus:border-[#e53935]"
@@ -311,7 +308,7 @@ const FilterSidebar: FC<{
           {/* Red Call Agent Icon */}
           <div className="flex-shrink-0">
             <svg className="h-10 w-10 text-[#e53935]" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/>
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z" />
             </svg>
           </div>
           <div className="flex-1">
@@ -319,11 +316,11 @@ const FilterSidebar: FC<{
             <p className="text-[#6b7280] text-xs mb-2">
               Call our team for custom requests and inquiries.
             </p>
-            <a 
-              href="tel:+639177234567" 
+            <a
+              href="tel:+639177234567"
               className="text-[#e53935] font-semibold text-sm hover:text-[#c62828] transition-colors"
             >
-              +63 917 723 4567
+              +63 956 662 5224
             </a>
           </div>
         </div>
@@ -338,11 +335,11 @@ const FilterSidebar: FC<{
 export const BrowseVehiclesPage: FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
-  
+
   // Vehicle state
   const [allCars, setAllCars] = useState<Car[]>([]);
   const [isLoadingVehicles, setIsLoadingVehicles] = useState(true);
-  
+
   // Modal state
   const [isVehicleDetailsModalOpen, setIsVehicleDetailsModalOpen] = useState(false);
   const [selectedCar, setSelectedCar] = useState<Car | null>(null);
@@ -362,7 +359,7 @@ export const BrowseVehiclesPage: FC = () => {
     const loadVehicles = async () => {
       setIsLoadingVehicles(true);
       const { data, error } = await vehicleService.getAvailableForBrowse();
-      
+
       if (error) {
         console.error('Failed to load vehicles:', error);
         // Keep loading state to show error or empty state
@@ -370,32 +367,32 @@ export const BrowseVehiclesPage: FC = () => {
         setAllCars(data || []);
         console.log('✅ Loaded vehicles from database:', data?.length || 0);
       }
-      
+
       setIsLoadingVehicles(false);
     };
-    
+
     loadVehicles();
   }, []);
 
   // Handle filter changes and sync with URL
   const handleFilterChange = (newFilters: FilterState) => {
     setFilters(newFilters);
-    
+
     // Update URL parameters
     const params = new URLSearchParams();
-    
+
     if (newFilters.carTypes.length === 1) {
       params.set('carType', newFilters.carTypes[0]);
     }
-    
+
     if (newFilters.transmissions.length === 1) {
       params.set('transmission', newFilters.transmissions[0]);
     }
-    
+
     if (newFilters.seats.length === 1) {
       params.set('seats', newFilters.seats[0]);
     }
-    
+
     setSearchParams(params);
   };
 
@@ -408,10 +405,10 @@ export const BrowseVehiclesPage: FC = () => {
   // Proceed to booking page from vehicle details modal
   const handleProceedToBooking = async () => {
     if (!selectedCar) return;
-    
+
     // Save vehicle to session
     await updateVehicle(selectedCar);
-    
+
     // Close modal
     setIsVehicleDetailsModalOpen(false);
 
@@ -484,7 +481,7 @@ export const BrowseVehiclesPage: FC = () => {
     // Filter by seats
     if (filters.seats.length > 0) {
       let matchesSeats = false;
-      
+
       // Helper function to get numeric seat value from car.seats
       const getCarSeatValue = (seats: number | string): number => {
         if (typeof seats === 'number') return seats;
@@ -497,9 +494,9 @@ export const BrowseVehiclesPage: FC = () => {
         }
         return 0;
       };
-      
+
       const carSeatValue = getCarSeatValue(car.seats);
-      
+
       for (const range of filters.seats) {
         if (range === '2-5' && carSeatValue >= 2 && carSeatValue <= 5) {
           matchesSeats = true;
@@ -514,7 +511,7 @@ export const BrowseVehiclesPage: FC = () => {
           break;
         }
       }
-      
+
       if (!matchesSeats) {
         return false;
       }
@@ -573,9 +570,9 @@ export const BrowseVehiclesPage: FC = () => {
       </div>
 
       {/* White Overlapping Container */}
-      <div 
+      <div
         className="relative bg-white rounded-[20px] shadow-[0_8px_24px_rgba(0,0,0,0.08)] mx-auto"
-        style={{ 
+        style={{
           maxWidth: '1380px',
           marginTop: '-80px',
           marginLeft: 'auto',
@@ -632,7 +629,7 @@ export const BrowseVehiclesPage: FC = () => {
                 <Button
                   variant="outline"
                   fullWidth
-                  onClick={() => {/* TODO: Open mobile filter modal */}}
+                  onClick={() => {/* TODO: Open mobile filter modal */ }}
                   className="border-[#eaeaf0]"
                 >
                   <svg className="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -643,8 +640,8 @@ export const BrowseVehiclesPage: FC = () => {
               </div>
 
               {/* Cars Grid - 4 columns on large screens */}
-              <div 
-                id="cars-section" 
+              <div
+                id="cars-section"
                 className="grid gap-5"
                 style={{
                   gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',

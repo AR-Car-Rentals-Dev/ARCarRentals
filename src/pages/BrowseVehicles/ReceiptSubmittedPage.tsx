@@ -206,7 +206,7 @@ export const ReceiptSubmittedPage: React.FC = () => {
 
     // Contact info on right
     addText('+63 956 662 5224', pageWidth - margin, 12, { fontSize: 8, color: [255, 255, 255], align: 'right' });
-    addText('info@arcarrentals.com', pageWidth - margin, 17, { fontSize: 8, color: [255, 255, 255], align: 'right' });
+    addText('info@arcarrentalscebu.com', pageWidth - margin, 17, { fontSize: 8, color: [255, 255, 255], align: 'right' });
     addText('Cebu City, Philippines', pageWidth - margin, 22, { fontSize: 8, color: [255, 255, 255], align: 'right' });
 
     y = 38;
@@ -372,7 +372,7 @@ export const ReceiptSubmittedPage: React.FC = () => {
     y += 4;
     addText('• Please present this receipt along with a valid ID upon vehicle pickup.', margin, y, { fontSize: 7, color: [100, 100, 100] });
     y += 4;
-    addText('• For inquiries, contact us at +63 956 662 5224 or info@arcarrentals.com', margin, y, { fontSize: 7, color: [100, 100, 100] });
+    addText('• For inquiries, contact us at +63 956 662 5224 or info@arcarrentalscebu.com', margin, y, { fontSize: 7, color: [100, 100, 100] });
 
     // ============ FOOTER BAR ============
     doc.setFillColor(40, 40, 40);

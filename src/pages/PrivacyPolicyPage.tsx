@@ -236,8 +236,8 @@ export const PrivacyPolicyPage: FC = () => {
                                     </ul>
                                     <p className="text-neutral-600 mt-4">
                                         To exercise any of these rights, please contact us at{' '}
-                                        <a href="mailto:info@arcarrentals.com" className="text-neutral-900 underline hover:no-underline">
-                                            info@arcarrentals.com
+                                        <a href="mailto:info@arcarrentalscebu.com" className="text-neutral-900 underline hover:no-underline">
+                                            info@arcarrentalscebu.com
                                         </a>.
                                     </p>
                                 </section>
@@ -287,8 +287,8 @@ export const PrivacyPolicyPage: FC = () => {
                                             <p><strong>AR Car Rentals & Tour Services</strong></p>
                                             <p>
                                                 Email:{' '}
-                                                <a href="mailto:info@arcarrentals.com" className="text-neutral-900 underline hover:no-underline">
-                                                    info@arcarrentals.com
+                                                <a href="mailto:info@arcarrentalscebu.com" className="text-neutral-900 underline hover:no-underline">
+                                                    info@arcarrentalscebu.com
                                                 </a>
                                             </p>
                                             <p>
