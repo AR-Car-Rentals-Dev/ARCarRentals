@@ -70,6 +70,7 @@ export interface Testimonial {
   comment: string;
   location?: string;
   verified: boolean;
+  reviewUrl?: string;
 }
 
 // User types

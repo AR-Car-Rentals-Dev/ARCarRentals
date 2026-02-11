@@ -10,6 +10,10 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { authService, type User as UserType } from '@services/authService';
 import { supabase } from '@services/supabase';
 import { AdminPageSkeleton } from '@components/ui/AdminPageSkeleton';
+import { AddReviewModal } from '@components/ui/AddReviewModal';
+import { Toast } from '@components/ui/Toast';
+
+// ... (KpiCard, StatusBadge, FleetStatusItem components remain unchanged)
 
 interface KpiCardProps {
   title: string;
@@ -107,7 +111,12 @@ export const AdminDashboardPage: FC = () => {
   // Chart data - dynamically loaded from database
   const [chartData, setChartData] = useState<Array<{ month: string; bookings: number }>>([]);
 
+  // Modal and Toast state
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const [showToast, setShowToast] = useState(false);
+
   useEffect(() => {
+    // ... (fetchUser logic remains unchanged)
     const fetchUser = async () => {
       const currentUser = await authService.getCurrentUser();
       if (!currentUser) {
@@ -124,9 +133,11 @@ export const AdminDashboardPage: FC = () => {
   }, [navigate]);
 
   useEffect(() => {
+    // ... (fetchDashboardData logic remains unchanged)
     const fetchDashboardData = async () => {
       setIsLoading(true);
       try {
+        // ... (data fetching logic)
         // 1. Fetch total fleet count
         const { count: totalFleet } = await supabase
           .from('vehicles')
@@ -279,6 +290,12 @@ export const AdminDashboardPage: FC = () => {
             <p className="text-sm sm:text-base text-neutral-500 mt-1">Overview of your car rental business performance.</p>
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
+            <button
+              onClick={() => setIsReviewModalOpen(true)}
+              className="px-3 sm:px-4 py-2 sm:py-2.5 bg-neutral-900 text-white rounded-lg text-xs sm:text-sm font-medium hover:bg-neutral-800 transition-colors"
+            >
+              Add Review
+            </button>
             <button className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-white border border-neutral-200 rounded-lg text-xs sm:text-sm font-medium text-neutral-700 hover:bg-neutral-50">
               <Calendar className="w-4 h-4" />
               <span className="hidden sm:inline">This Month</span>
@@ -286,6 +303,8 @@ export const AdminDashboardPage: FC = () => {
             </button>
           </div>
         </div>
+
+        {/* ... (KPI Cards Row, Analytics Row, Recent Bookings Table remain unchanged) */}
 
         {/* KPI Cards Row */}
         <div className="kpi-grid">
@@ -420,6 +439,24 @@ export const AdminDashboardPage: FC = () => {
             )}
           </div>
         </div>
+
+        {/* Add Review Modal */}
+        <AddReviewModal
+          isOpen={isReviewModalOpen}
+          onClose={() => setIsReviewModalOpen(false)}
+          onSuccess={() => {
+            setIsReviewModalOpen(false);
+            setShowToast(true);
+          }}
+        />
+
+        {/* Toast Notification */}
+        <Toast
+          message="Review added successfully!"
+          type="success"
+          isVisible={showToast}
+          onClose={() => setShowToast(false)}
+        />
       </div>
 
       <style>{`
@@ -873,5 +910,3 @@ export const AdminDashboardPage: FC = () => {
     </>
   );
 };
-
-export default AdminDashboardPage;

@@ -29,3 +29,4 @@ export { BookingDetailsViewModal } from './BookingDetailsViewModal';
 export { SmartDeclineModal } from './SmartDeclineModal';
 export { VehicleDetailsModal } from './VehicleDetailsModal';
 export { MultiImageUpload, type ImageUploadItem } from './MultiImageUpload';
+export { Toast } from './Toast';

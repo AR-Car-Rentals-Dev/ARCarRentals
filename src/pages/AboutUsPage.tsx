@@ -1,5 +1,6 @@
 import { type FC, useState } from 'react';
 import { ChevronDown } from 'lucide-react';
+import { AboutUsReviewsSection } from '@/components/sections/AboutUsReviewsSection';
 
 // FAQ data
 const faqs = [
@@ -22,31 +23,6 @@ const faqs = [
   {
     question: 'Does AR Car Rental offer coverage products for purchase with my rental?',
     answer: 'Yes, all our rentals include basic insurance coverage. We also offer additional comprehensive coverage options for extra peace of mind during your trip. Our team can explain all coverage options during booking.'
-  }
-];
-
-// Testimonials data
-const testimonials = [
-  {
-    name: 'Alex Donovan',
-    vehicle: 'Rented Mitsubishi Montero',
-    rating: 5,
-    quote: 'The Mitsubishi Montero was in perfect condition. The pickup process was incredibly smooth, and the staff at the airport desk were friendly and efficient.',
-    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuA9TEuZ1p9FdG_3J_lt2aIxzrQV8tu_HHBAMIfPmoA6ebx3YSVxmJEGHpn81v7EXpzWoTQwQlFcCfeLS_cqGlnHm_YEYQyemfDb-DpdKt5DjLJjtg87OZpcl9adWOTIRW3XOQZCwzuWV2-y8lCc_zBin6YWmK_5Mzhl3uAMIM7fM3-P23zw5bXVQmMz5jZgPsuYyRkDEhNrlHdhIX0AeFqQufx0SQrdX6iHE3la6IpoJLY7hMdzxrAok2gwVb20zH2B-M0CkH4YvdUy'
-  },
-  {
-    name: 'Sarah Lewis',
-    vehicle: 'Rented Toyota Corolla',
-    rating: 4.5,
-    quote: 'Best rates I found for a weekend getaway. The car was fuel-efficient and clean. I highly recommend AR Car Rentals for anyone visiting the coast.',
-    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDctw1GIG0vuix19oFbWSqAmLTbGcr3OLHf955P2Wjr9VbIEJ5K5_5gavDCGnnRIIvoLzX46d73_aDZzak2TZzkr4cA9O37WtJqdgR1g_viq5uZIx0Vjvae10kaVrXyhtsSH9xAkvO_O2m-CXoGSSosu8lWFD0ImJazY2mSbSv6nS-NoFvs_r5XNMAOfVJeTcoQ5_ViuncRkurNC6KStwqfWEcY0kWfk23DbGya6bjJhEnZgdeHiY5o1W3nX_s_l1VTFUyjr-g8Wcxw'
-  },
-  {
-    name: 'Michael Brown',
-    vehicle: 'Rented Ford Mustang',
-    rating: 5,
-    quote: 'Customer service was exceptional. They upgraded me for free when my original booking wasn\'t available. The Ford Mustang was a dream to drive!',
-    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDlVO2Yt0PIDcW4xnWTAUpcIhSiXBcGHTrYYg4J0nuSyCEsqj1j9eHMdL6h-vei2E2A0xzl4oR1bkcWgt6qtDBfEBFQsaKHsqn72p6m2cZDpe5XlDNy3MEtkg3kr7xV9Tzy_Nakz2adenkH0MgA26DsM647MM-Kcf3ZB5549fbmGKO4Et9pDSIJlxsQcYWmXTT6tNrsNyWaaociykvGklvN_57MavFypQ5jH3N0SL_Gm2cyrPj7HPeBqvNpJX-NS8J5cAVv_y2x5VrY'
   }
 ];
 
@@ -233,103 +209,7 @@ export const AboutUsPage: FC = () => {
 
 
       {/* Fourth Section - Customer Reviews */}
-      <section className="py-20 px-4 md:px-8 bg-white relative overflow-hidden">
-        {/* Background decorative elements */}
-        <div className="absolute top-0 left-0 w-64 h-64 bg-[#E22B2B]/5 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2"></div>
-        <div className="absolute bottom-0 right-0 w-96 h-96 bg-[#E22B2B]/5 rounded-full blur-3xl translate-x-1/3 translate-y-1/3"></div>
-
-        <div className="max-w-[1600px] mx-auto relative z-10">
-          {/* Header */}
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-extrabold text-neutral-900 mb-4">
-              What Our Customers Say
-            </h2>
-            {/* Decorative Underline */}
-            <div className="w-24 h-1 bg-[#E22B2B] mx-auto rounded-full mb-4"></div>
-            <p className="text-gray-500 max-w-2xl mx-auto text-lg">
-              Trusted by thousands of travelers worldwide for their journeys.
-            </p>
-          </div>
-
-          {/* Cards Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 pb-4">
-            {testimonials.map((testimonial, index) => (
-              <div
-                key={index}
-                className="bg-white rounded-xl p-8 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 border border-gray-100 flex flex-col h-full"
-              >
-                {/* Rating */}
-                <div className="flex text-yellow-400 mb-6">
-                  {[...Array(5)].map((_, i) => (
-                    <svg
-                      key={i}
-                      className={`w-5 h-5 ${i < Math.floor(testimonial.rating) ? 'text-yellow-400' : i < testimonial.rating ? 'text-yellow-400' : 'text-gray-300'}`}
-                      fill="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      {i < Math.floor(testimonial.rating) ? (
-                        <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
-                      ) : i < testimonial.rating ? (
-                        <path d="M22 9.24l-7.19-.62L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21 12 17.27 18.18 21l-1.63-7.03L22 9.24zM12 15.4V6.1l1.71 5.24 5.49.47-4.18 3.62 1.25 5.37L12 17.77V15.4z" />
-                      ) : (
-                        <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
-                      )}
-                    </svg>
-                  ))}
-                </div>
-
-                {/* Quote */}
-                <p className="text-gray-600 mb-8 flex-grow leading-relaxed italic relative">
-                  <span className="absolute -top-4 -left-2 text-6xl text-[#E22B2B]/10 font-serif leading-none">"</span>
-                  {testimonial.quote}
-                </p>
-
-                {/* User Info */}
-                <div className="flex items-center gap-4 mt-auto border-t border-gray-100 pt-6">
-                  <div className="relative">
-                    <img
-                      className="w-12 h-12 rounded-full object-cover ring-2 ring-[#E22B2B]/20"
-                      src={testimonial.image}
-                      alt={`Portrait of ${testimonial.name}`}
-                    />
-                    <div className="absolute -bottom-1 -right-1 bg-[#E22B2B] text-white rounded-full p-0.5">
-                      <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                      </svg>
-                    </div>
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-neutral-900 text-sm">{testimonial.name}</h4>
-                    <p className="text-[#E22B2B] text-xs font-semibold mt-0.5 uppercase tracking-wide">{testimonial.vehicle}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Trust Badges */}
-          <div className="mt-16 pt-8 border-t border-gray-200 flex flex-wrap justify-center gap-8 md:gap-16 opacity-60 grayscale hover:grayscale-0 transition-all duration-500">
-            <div className="flex items-center gap-2">
-              <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z" />
-              </svg>
-              <span className="font-bold text-lg">TripAdvisor</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
-              </svg>
-              <span className="font-bold text-lg">Trustpilot</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M1 21h4V9H1v12zm22-11c0-1.1-.9-2-2-2h-6.31l.95-4.57.03-.32c0-.41-.17-.79-.44-1.06L14.17 1 7.59 7.59C7.22 7.95 7 8.45 7 9v10c0 1.1.9 2 2 2h9c.83 0 1.54-.5 1.84-1.22l3.02-7.05c.09-.23.14-.47.14-.73v-2z" />
-              </svg>
-              <span className="font-bold text-lg">Google Reviews</span>
-            </div>
-          </div>
-        </div>
-      </section>
+      <AboutUsReviewsSection />
 
       {/* Fifth Section - FAQs */}
       <section className="py-20 bg-white">
@@ -372,7 +252,7 @@ export const AboutUsPage: FC = () => {
         </div>
       </section>
 
-      {/* Fifth Section - CTA Banner */}
+      {/* Sixth Section - CTA Banner */}
       <section className="py-20 bg-neutral-50">
         <div className="mx-auto w-full max-w-[1600px]" style={{ paddingInline: 'clamp(1.5rem, 3vw, 3rem)' }}>
           <div className="bg-neutral-900 rounded-2xl shadow-2xl overflow-hidden relative">

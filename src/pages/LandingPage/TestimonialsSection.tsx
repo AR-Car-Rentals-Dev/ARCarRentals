@@ -1,68 +1,80 @@
-import { type FC, useState } from 'react';
-import { ChevronLeft, ChevronRight, CheckCircle2 } from 'lucide-react';
+import { type FC, useState, useEffect } from 'react';
+import { ChevronLeft, ChevronRight, CheckCircle2, ExternalLink } from 'lucide-react';
 import { Rating } from '@/components/ui';
 import type { Testimonial } from '@/types';
+import { supabase } from '@/services/supabase';
 
-// Extended testimonial data with time posted and avatar URLs
-const testimonials: Testimonial[] = [
-  {
-    id: '1',
-    name: 'Mark Santos',
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face',
-    rating: 5,
-    comment:
-      'Excellent service! The car was brand new and the transaction was seamless. Highly recommended to anyone visiting Cebu.',
-    location: '2 days ago',
-    verified: true,
-  },
-  {
-    id: '2',
-    name: 'Emily Clarke',
-    avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop&crop=face',
-    rating: 5,
-    comment:
-      'We booked the Bohol tour package and it was amazing. The driver was very professional and knew all the best spots!',
-    location: '1 week ago',
-    verified: true,
-  },
-  {
-    id: '3',
-    name: 'John D.',
-    avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face',
-    rating: 5,
-    comment:
-      'Best rates in Cebu City. The SUV was clean and powerful enough for our mountain trip. Will definitely book again.',
-    location: '1 month ago',
-    verified: true,
-  },
-  {
-    id: '4',
-    name: 'Sarah Johnson',
-    avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&crop=face',
-    rating: 5,
-    comment:
-      'Amazing experience! The team was very accommodating and the car was in perfect condition. Highly recommended!',
-    location: '2 weeks ago',
-    verified: true,
-  },
-  {
-    id: '5',
-    name: 'David Lee',
-    avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop&crop=face',
-    rating: 5,
-    comment:
-      'Great service and very affordable rates. The booking process was smooth and hassle-free.',
-    location: '3 days ago',
-    verified: true,
-  },
-];
+// Helper to generate deterministic color from string
+const stringToColor = (str: string) => {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const colors = [
+    'bg-red-500', 'bg-orange-500', 'bg-amber-500',
+    'bg-green-500', 'bg-emerald-500', 'bg-teal-500',
+    'bg-cyan-500', 'bg-blue-500', 'bg-indigo-500',
+    'bg-violet-500', 'bg-purple-500', 'bg-fuchsia-500',
+    'bg-pink-500', 'bg-rose-500'
+  ];
+  return colors[Math.abs(hash) % colors.length];
+};
 
 /**
  * Testimonials section with customer reviews carousel
  */
 export const TestimonialsSection: FC = () => {
+  const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
-  
+
+  useEffect(() => {
+    const fetchReviews = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('reviews')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          console.error('Error fetching reviews:', error);
+          return;
+        }
+
+        if (data) {
+          const formattedReviews: Testimonial[] = data.map((review) => ({
+            id: review.id,
+            name: review.name,
+            avatar: review.photo_url || '',
+            rating: review.rating,
+            comment: review.comment,
+            location: review.is_verified ? 'Verified Customer' : '',
+            verified: review.is_verified,
+            reviewUrl: review.review_url,
+          }));
+
+          // Sort: Reviews with photos first, then by date (which is already implicit from DB order, but we preserve it)
+          const sortedReviews = formattedReviews.sort((a, b) => {
+            // If a has avatar and b doesn't, a comes first (-1)
+            if (a.avatar && !b.avatar) return -1;
+            // If b has avatar and a doesn't, b comes first (1)
+            if (!a.avatar && b.avatar) return 1;
+            // Otherwise keep original order (by date)
+            return 0;
+          });
+
+          setTestimonials(sortedReviews.slice(0, 10)); // Limit to top 10 after sorting
+        }
+      } catch (err) {
+        console.error('Unexpected error fetching reviews:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchReviews();
+  }, []);
+
   // Responsive cards to show
   const getCardsToShow = () => {
     if (typeof window !== 'undefined') {
@@ -72,16 +84,16 @@ export const TestimonialsSection: FC = () => {
     }
     return 3;
   };
-  
+
   const [cardsToShow, setCardsToShow] = useState(getCardsToShow());
   const maxIndex = Math.max(0, testimonials.length - cardsToShow);
 
   // Update cards to show on resize
-  useState(() => {
+  useEffect(() => {
     const handleResize = () => setCardsToShow(getCardsToShow());
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  });
+  }, []);
 
   const handlePrev = () => {
     setCurrentIndex((prev) => Math.max(0, prev - 1));
@@ -94,14 +106,14 @@ export const TestimonialsSection: FC = () => {
   const visibleTestimonials = testimonials.slice(currentIndex, currentIndex + cardsToShow);
 
   return (
-    <section 
+    <section
       className="bg-white"
-      style={{ 
+      style={{
         minHeight: '400px',
         fontFamily: "'Plus Jakarta Sans', sans-serif",
       }}
     >
-      <div className="h-full mx-auto w-full max-w-[1600px] py-16 sm:py-20 flex flex-col" style={{ paddingInline: 'clamp(1.5rem, 3vw, 3rem)' }}>
+      <div className="h-full mx-auto w-full max-w-[1600px] py-10 sm:py-12 flex flex-col" style={{ paddingInline: 'clamp(1.5rem, 3vw, 3rem)' }}>
         {/* Section Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 sm:mb-8 gap-4">
           <div>
@@ -114,73 +126,131 @@ export const TestimonialsSection: FC = () => {
             </div>
           </div>
 
-          {/* Navigation Arrows */}
-          <div className="flex items-center gap-3">
-            <button
-              onClick={handlePrev}
-              disabled={currentIndex === 0}
-              className={`p-2 rounded-full border transition-all ${
-                currentIndex === 0
+          {/* Navigation Arrows - Only show if we have reviews and not loading */}
+          {!isLoading && testimonials.length > cardsToShow && (
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handlePrev}
+                disabled={currentIndex === 0}
+                className={`p-2 rounded-full border transition-all ${currentIndex === 0
                   ? 'border-neutral-300 text-neutral-300 cursor-not-allowed'
                   : 'border-neutral-400 text-neutral-600 hover:bg-white hover:border-neutral-500'
-              }`}
-              aria-label="Previous testimonials"
-            >
-              <ChevronLeft className="h-5 w-5" />
-            </button>
-            <button
-              onClick={handleNext}
-              disabled={currentIndex >= maxIndex}
-              className={`p-2 rounded-full transition-all ${
-                currentIndex >= maxIndex
+                  }`}
+                aria-label="Previous testimonials"
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </button>
+              <button
+                onClick={handleNext}
+                disabled={currentIndex >= maxIndex}
+                className={`p-2 rounded-full transition-all ${currentIndex >= maxIndex
                   ? 'bg-neutral-400 text-neutral-200 cursor-not-allowed'
                   : 'bg-neutral-900 text-white hover:bg-neutral-800'
-              }`}
-              aria-label="Next testimonials"
-            >
-              <ChevronRight className="h-5 w-5" />
-            </button>
-          </div>
+                  }`}
+                aria-label="Next testimonials"
+              >
+                <ChevronRight className="h-5 w-5" />
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Testimonials Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 flex-1">
-          {visibleTestimonials.map((testimonial) => (
-            <div 
-              key={testimonial.id} 
-              className="bg-[#F9FAFB] border border-[#F3F4F6] rounded-xl p-4 sm:p-6 flex flex-col"
-            >
-              {/* User Info */}
-              <div className="flex items-center gap-3 mb-1">
-                <img 
-                  src={testimonial.avatar} 
-                  alt={testimonial.name}
-                  className="w-10 h-10 rounded-full object-cover"
-                />
-                <div className="flex-1">
-                  <div className="flex items-center gap-1.5">
-                    <h4 className="font-semibold text-neutral-900 text-sm">
-                      {testimonial.name}
-                    </h4>
-                    {testimonial.verified && (
-                      <CheckCircle2 className="h-4 w-4 text-blue-500 fill-blue-500" />
-                    )}
+          {isLoading ? (
+            // Loading skeletons
+            Array.from({ length: cardsToShow }).map((_, i) => (
+              <div key={i} className="bg-white border border-gray-100 rounded-xl p-6 flex flex-col h-full animate-pulse shadow-sm">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-full bg-gray-200" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 w-24 bg-gray-200 rounded" />
+                    <div className="h-3 w-16 bg-gray-200 rounded" />
                   </div>
-                  <p className="text-xs text-neutral-400">{testimonial.location}</p>
+                </div>
+                <div className="h-4 w-20 bg-gray-200 rounded mb-4" />
+                <div className="space-y-2">
+                  <div className="h-3 w-full bg-gray-200 rounded" />
+                  <div className="h-3 w-3/4 bg-gray-200 rounded" />
                 </div>
               </div>
+            ))
+          ) : testimonials.length > 0 ? (
+            visibleTestimonials.map((testimonial) => {
+              const bgColor = stringToColor(testimonial.name);
+              const CardContent = (
+                <>
+                  {/* User Info */}
+                  <div className="flex items-center gap-3 mb-1">
+                    {testimonial.avatar ? (
+                      <img
+                        src={testimonial.avatar}
+                        alt={testimonial.name}
+                        className="w-10 h-10 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className={`w-10 h-10 rounded-full ${bgColor} flex items-center justify-center text-white font-semibold text-sm shadow-sm`}>
+                        {testimonial.name.charAt(0)}
+                      </div>
+                    )}
+                    <div className="flex-1">
+                      <div className="flex items-center gap-1.5">
+                        <h4 className="font-semibold text-neutral-900 text-sm">
+                          {testimonial.name}
+                        </h4>
+                        {testimonial.verified && (
+                          <CheckCircle2 className="h-4 w-4 text-blue-500 fill-blue-500" />
+                        )}
+                      </div>
+                      {testimonial.location && (
+                        <p className="text-xs text-neutral-400">{testimonial.location}</p>
+                      )}
+                    </div>
+                    {testimonial.reviewUrl && (
+                      <ExternalLink className="w-4 h-4 text-neutral-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    )}
+                  </div>
 
-              {/* Rating */}
-              <div className="mb-4">
-                <Rating value={testimonial.rating} size="sm" />
-              </div>
+                  {/* Rating */}
+                  <div className="mb-4">
+                    <Rating value={testimonial.rating} size="sm" />
+                  </div>
 
-              {/* Comment */}
-              <p className="text-neutral-600 text-sm leading-relaxed">
-                "{testimonial.comment}"
-              </p>
+                  {/* Comment */}
+                  <p className="text-neutral-600 text-sm leading-relaxed line-clamp-4">
+                    "{testimonial.comment}"
+                  </p>
+                </>
+              );
+
+              if (testimonial.reviewUrl) {
+                return (
+                  <a
+                    key={testimonial.id}
+                    href={testimonial.reviewUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="group bg-[#F9FAFB] border border-[#F3F4F6] rounded-xl p-4 sm:p-6 flex flex-col hover:border-blue-200 hover:shadow-md transition-all cursor-pointer block h-full"
+                  >
+                    {CardContent}
+                  </a>
+                );
+              }
+
+              return (
+                <div
+                  key={testimonial.id}
+                  className="bg-[#F9FAFB] border border-[#F3F4F6] rounded-xl p-4 sm:p-6 flex flex-col h-full"
+                >
+                  {CardContent}
+                </div>
+              );
+            })
+          ) : (
+            <div className="col-span-full py-12 text-center text-gray-500">
+              No reviews available yet.
             </div>
-          ))}
+          )}
         </div>
       </div>
     </section>
