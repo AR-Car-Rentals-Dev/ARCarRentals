@@ -198,10 +198,6 @@ export const generateContactPageSchema = () => {
         url: `${SITE_URL}/contact`,
         name: 'Contact Us - AR Car Rentals',
         description: 'Get in touch with AR Car Rentals for bookings, inquiries, and customer support.',
-        mainEntity: {
-            '@type': 'LocalBusiness',
-            '@id': `${SITE_URL}/#organization`,
-        },
     };
 };
 
@@ -216,10 +212,6 @@ export const generateAboutPageSchema = () => {
         url: `${SITE_URL}/about`,
         name: 'About Us - AR Car Rentals',
         description: 'Learn about AR Car Rentals, our mission, values, and commitment to providing excellent car rental services in Cebu.',
-        mainEntity: {
-            '@type': 'Organization',
-            '@id': `${SITE_URL}/#organization`,
-        },
     };
 };
 
@@ -238,10 +230,6 @@ export const generateWebPageSchema = (page: {
         url: page.url,
         name: page.name,
         description: page.description,
-        isPartOf: {
-            '@type': 'WebSite',
-            '@id': `${SITE_URL}/#website`,
-        },
     };
 };
 
@@ -256,10 +244,6 @@ export const generateWebSiteSchema = () => {
         url: SITE_URL,
         name: BUSINESS_NAME,
         description: 'Premium car rental and tour services in Cebu, Philippines',
-        publisher: {
-            '@type': 'Organization',
-            '@id': `${SITE_URL}/#organization`,
-        },
         potentialAction: {
             '@type': 'SearchAction',
             target: {
