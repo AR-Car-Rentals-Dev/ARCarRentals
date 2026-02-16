@@ -1,0 +1,45 @@
+# AR Car Rentals - Robots.txt
+# This file tells search engines which pages they can and cannot crawl
+
+# Allow all search engines to crawl the entire site
+User-agent: *
+Allow: /
+
+# Disallow admin pages (keep them private)
+Disallow: /admin
+Disallow: /admin/*
+Disallow: /login
+
+# Disallow API endpoints
+Disallow: /api/
+
+# Allow crawling of public assets
+Allow: /assets/
+Allow: /*.css$
+Allow: /*.js$
+Allow: /*.png$
+Allow: /*.jpg$
+Allow: /*.jpeg$
+Allow: /*.gif$
+Allow: /*.svg$
+Allow: /*.webp$
+
+# Sitemap location
+Sitemap: https://arcarrentalscebu.com/sitemap.xml
+
+# Crawl delay (optional - prevents overloading server)
+# Crawl-delay: 1
+
+# Specific bots
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+# Block bad bots (optional - uncomment to use)
+# User-agent: AhrefsBot
+# Disallow: /
+
+# User-agent: SemrushBot
+# Disallow: /

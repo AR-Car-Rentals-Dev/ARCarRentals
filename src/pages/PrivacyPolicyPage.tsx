@@ -1,5 +1,7 @@
 import { type FC, useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { SEO } from '@/components/SEO';
+import { generateWebPageSchema, generateBreadcrumbSchema, combineSchemas } from '@/utils/seoSchemas';
 
 // Privacy policy sections for navigation
 const sections = [
@@ -49,8 +51,38 @@ export const PrivacyPolicyPage: FC = () => {
         }
     };
 
+    // SEO structured data
+    const structuredData = combineSchemas([
+        generateWebPageSchema({
+            url: 'https://arcarrentalscebu.com/privacy',
+            name: 'Privacy Policy - AR Car Rentals',
+            description: 'Privacy policy for AR Car Rentals. Learn how we collect, use, and protect your personal information.',
+        }),
+        generateBreadcrumbSchema([
+            { name: 'Home', url: 'https://arcarrentalscebu.com' },
+            { name: 'Privacy Policy', url: 'https://arcarrentalscebu.com/privacy' },
+        ]),
+    ]);
+
     return (
-        <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }} className="bg-white min-h-screen">
+        <>
+            <SEO
+                title="Privacy Policy"
+                description="Privacy policy for AR Car Rentals in Cebu, Philippines. Learn how we collect, use, protect, and handle your personal information when you use our car rental services."
+                keywords={[
+                    'privacy policy',
+                    'data protection',
+                    'personal information',
+                    'GDPR',
+                    'data privacy',
+                    'customer data',
+                    'car rental privacy',
+                    'information security',
+                ]}
+                canonical="https://arcarrentalscebu.com/privacy"
+                structuredData={structuredData}
+            />
+            <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }} className="bg-white min-h-screen">
             {/* Header Section - Minimalist */}
             <section className="border-b border-neutral-200 py-12">
                 <div className="mx-auto w-full max-w-[1200px]" style={{ paddingInline: 'clamp(1.5rem, 3vw, 3rem)' }}>
@@ -308,6 +340,7 @@ export const PrivacyPolicyPage: FC = () => {
                 </div>
             </section>
         </div>
+        </>
     );
 };
 

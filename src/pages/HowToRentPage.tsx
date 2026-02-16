@@ -1,13 +1,63 @@
 import { type FC } from 'react';
 import { ArrowRight, Car, CreditCard, ShieldCheck, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui';
+import { SEO } from '@/components/SEO';
+import { generateWebPageSchema, generateBreadcrumbSchema, generateFAQSchema, combineSchemas } from '@/utils/seoSchemas';
 
 /**
  * How to Rent Page - Simple 4-step guide to renting a car
  */
 export const HowToRentPage: FC = () => {
+  // SEO structured data
+  const structuredData = combineSchemas([
+    generateWebPageSchema({
+      url: 'https://arcarrentalscebu.com/how-to-rent',
+      name: 'How to Rent - AR Car Rentals',
+      description: 'Learn how to rent a car from AR Car Rentals in 4 easy steps. Browse vehicles, book online, verify your booking, and pick up your car in Cebu.',
+    }),
+    generateBreadcrumbSchema([
+      { name: 'Home', url: 'https://arcarrentalscebu.com' },
+      { name: 'How to Rent', url: 'https://arcarrentalscebu.com/how-to-rent' },
+    ]),
+    generateFAQSchema([
+      {
+        question: 'Do I need to pay a security deposit?',
+        answer: 'Yes, a refundable security deposit is required upon vehicle pickup. This will be returned to you when the vehicle is returned in the same condition.',
+      },
+      {
+        question: 'Is fuel included in the rental?',
+        answer: 'Vehicles are provided with a full tank of fuel and must be returned with a full tank. Otherwise, refueling charges will apply.',
+      },
+      {
+        question: 'Can I drive the car outside of Cebu City?',
+        answer: 'Yes, you can drive anywhere within the island of Cebu. If you plan to take the vehicle via RORO to neighboring islands, prior approval is required.',
+      },
+      {
+        question: 'What if I return the car late?',
+        answer: 'Late returns are subject to additional charges based on our hourly or daily rates. Please contact us if you need to extend your rental period.',
+      },
+    ]),
+  ]);
+
   return (
-    <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+    <>
+      <SEO
+        title="How to Rent"
+        description="Rent a car in Cebu in 4 easy steps with AR Car Rentals. Browse vehicles, book online, verify your details, and pick up your car. Simple, fast, and hassle-free car rental process."
+        keywords={[
+          'how to rent car Cebu',
+          'car rental process',
+          'rent a car steps',
+          'booking guide',
+          'car rental Cebu',
+          'rental requirements',
+          'vehicle pickup',
+          'easy car rental',
+        ]}
+        canonical="https://arcarrentalscebu.com/how-to-rent"
+        structuredData={structuredData}
+      />
+      <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
       {/* Hero Header */}
       <header className="relative bg-gradient-to-br from-neutral-900 to-neutral-800 overflow-hidden">
         {/* Background Image with Overlay */}
@@ -312,7 +362,8 @@ export const HowToRentPage: FC = () => {
           </div>
         </div>
       </section>
-    </div>
+      </div>
+    </>
   );
 };
 

@@ -1,6 +1,8 @@
 import { type FC, useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
+import { SEO } from '@/components/SEO';
+import { generateWebPageSchema, generateBreadcrumbSchema, combineSchemas } from '@/utils/seoSchemas';
 
 // Terms of service sections for navigation
 const sections = [
@@ -27,6 +29,19 @@ export const TermsOfServicePage: FC = () => {
     const handleGoBack = () => {
         navigate(-1);
     };
+
+    // SEO structured data
+    const structuredData = combineSchemas([
+        generateWebPageSchema({
+            url: 'https://arcarrentalscebu.com/terms',
+            name: 'Terms of Service - AR Car Rentals',
+            description: 'Terms and conditions for using AR Car Rentals services in Cebu, Philippines. Learn about booking policies, payment terms, cancellation, and your responsibilities.',
+        }),
+        generateBreadcrumbSchema([
+            { name: 'Home', url: 'https://arcarrentalscebu.com' },
+            { name: 'Terms of Service', url: 'https://arcarrentalscebu.com/terms' },
+        ]),
+    ]);
 
     // Update active section based on scroll position
     useEffect(() => {
@@ -57,7 +72,24 @@ export const TermsOfServicePage: FC = () => {
     };
 
     return (
-        <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }} className="bg-white min-h-screen">
+        <>
+            <SEO
+                title="Terms of Service"
+                description="Terms and conditions for using AR Car Rentals services in Cebu, Philippines. Learn about booking policies, payment terms, cancellation, refunds, and your responsibilities as a customer."
+                keywords={[
+                    'terms of service',
+                    'car rental terms',
+                    'rental agreement',
+                    'booking policy',
+                    'cancellation policy',
+                    'rental conditions',
+                    'Cebu car rental',
+                    'customer agreement',
+                ]}
+                canonical="https://arcarrentalscebu.com/terms"
+                structuredData={structuredData}
+            />
+            <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }} className="bg-white min-h-screen">
             {/* Header Section - Minimalist */}
             <section className="border-b border-neutral-200 py-12">
                 <div className="mx-auto w-full max-w-[1200px]" style={{ paddingInline: 'clamp(1.5rem, 3vw, 3rem)' }}>
@@ -341,7 +373,8 @@ export const TermsOfServicePage: FC = () => {
                     </div>
                 </div>
             </section>
-        </div>
+            </div>
+        </>
     );
 };
 
