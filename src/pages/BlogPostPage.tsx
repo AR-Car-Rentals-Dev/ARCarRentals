@@ -1,9 +1,9 @@
 import type { FC } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Helmet } from 'react-helmet-async';
 import { motion } from 'framer-motion';
 import { Calendar, ArrowLeft, User } from 'lucide-react';
 import { useBlogPost } from '@hooks/useBlog';
+import { SEO } from '@/components/SEO';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -50,32 +50,15 @@ export const BlogPostPage: FC = () => {
 
     return (
         <>
-            {/* Dynamic SEO Head */}
-            {post && (
-                <Helmet>
-                    <title>{pageTitle} | AR Car Rental Services</title>
-                    <meta name="description" content={pageDescription} />
-
-                    {/* Open Graph */}
-                    <meta property="og:type" content="article" />
-                    <meta property="og:title" content={pageTitle} />
-                    <meta property="og:description" content={pageDescription} />
-                    {ogImageUrl && <meta property="og:image" content={ogImageUrl} />}
-                    <meta property="og:url" content={`https://arcarrentalscebu.com/blogs/${post.slug.current}`} />
-
-                    {/* Twitter Card */}
-                    <meta name="twitter:card" content="summary_large_image" />
-                    <meta name="twitter:title" content={pageTitle} />
-                    <meta name="twitter:description" content={pageDescription} />
-                    {ogImageUrl && <meta name="twitter:image" content={ogImageUrl} />}
-
-                    {/* Article metadata */}
-                    {post.publishedAt && (
-                        <meta property="article:published_time" content={post.publishedAt} />
-                    )}
-                    {post.author && <meta property="article:author" content={post.author} />}
-                </Helmet>
-            )}
+            <SEO
+                title={pageTitle}
+                description={pageDescription}
+                ogType="article"
+                ogImage={ogImageUrl || undefined}
+                canonical={`https://arcarrentalscebu.com/blogs/${post?.slug?.current || ''}`}
+                articlePublishedTime={post?.publishedAt || undefined}
+                author={post?.author || undefined}
+            />
 
             {/* Back link */}
             <div className="mx-auto max-w-4xl px-4 pt-8">

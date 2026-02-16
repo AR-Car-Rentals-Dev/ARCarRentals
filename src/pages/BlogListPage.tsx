@@ -1,9 +1,9 @@
 import type { FC } from 'react';
 import { Link } from 'react-router-dom';
-import { Helmet } from 'react-helmet-async';
 import { motion } from 'framer-motion';
 import { Calendar, ArrowRight } from 'lucide-react';
 import { useBlogPosts } from '@hooks/useBlog';
+import { SEO } from '@/components/SEO';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -43,19 +43,12 @@ export const BlogListPage: FC = () => {
 
     return (
         <>
-            <Helmet>
-                <title>Blog | AR Car Rental Services</title>
-                <meta
-                    name="description"
-                    content="Tips, guides, and stories about car rentals, tours, and travel in Cebu City, Philippines."
-                />
-                <meta property="og:title" content="Blog | AR Car Rental Services" />
-                <meta
-                    property="og:description"
-                    content="Tips, guides, and stories about car rentals, tours, and travel in Cebu City, Philippines."
-                />
-                <meta property="og:type" content="website" />
-            </Helmet>
+            <SEO
+                title="Blog"
+                description="Tips, guides, and stories about car rentals, tours, and travel in Cebu City, Philippines."
+                keywords={['Cebu travel blog', 'car rental tips', 'Cebu tours guide']}
+                canonical="https://arcarrentalscebu.com/blogs"
+            />
 
             {/* Hero Banner */}
             <section className="relative overflow-hidden h-[340px] md:h-[400px]">
