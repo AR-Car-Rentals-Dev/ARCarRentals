@@ -1,4 +1,5 @@
 import { type FC, useRef, useEffect, useState, useCallback } from 'react';
+import { motion } from 'framer-motion';
 
 interface ImageData {
   src: string;
@@ -10,6 +11,8 @@ interface InfiniteScrollGalleryProps {
   images?: ImageData[];
   scrollSpeed?: number;
 }
+
+// ... (keep existing interfaces and constants) ...
 
 // Customer memory photos from public/memories folder
 const MEMORY_IMAGES: ImageData[] = [
@@ -226,12 +229,25 @@ export const InfiniteScrollGallerySection: FC = () => {
     >
       <div className="mx-auto w-full" style={{ maxWidth: '100vw' }}>
         {/* Section Header */}
-        <h2 className="text-3xl sm:text-4xl font-bold text-white mb-16 text-center px-6">
+        <motion.h2
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: '-50px' }}
+          transition={{ duration: 0.6 }}
+          className="text-3xl sm:text-4xl font-bold text-white mb-16 text-center px-6"
+        >
           Memories From Our Satisfied Customers
-        </h2>
+        </motion.h2>
 
         {/* Infinite Scroll Gallery with Flashlight Effect */}
-        <InfiniteScrollGallery />
+        <motion.div
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true, margin: '-50px' }}
+          transition={{ duration: 1, delay: 0.2 }}
+        >
+          <InfiniteScrollGallery />
+        </motion.div>
       </div>
     </section>
   );

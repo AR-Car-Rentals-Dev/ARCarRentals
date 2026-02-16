@@ -1,4 +1,5 @@
 import { type FC } from 'react';
+import { motion } from 'framer-motion';
 
 /**
  * Stats Section - Showcasing company achievements and metrics
@@ -27,7 +28,13 @@ export const StatsSection: FC = () => {
     <section className="py-16 sm:py-24 bg-white min-h-[60vh] flex items-center">
       <div className="mx-auto w-full max-w-[1600px]" style={{ paddingInline: 'clamp(1.5rem, 3vw, 3rem)' }}>
         {/* Container with stroke */}
-        <div className="border-2 border-neutral-200 rounded-3xl p-8 sm:p-12 bg-white">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          viewport={{ once: true, margin: '-50px' }}
+          transition={{ duration: 0.8, ease: "easeOut" }}
+          className="border-2 border-neutral-200 rounded-3xl p-8 sm:p-12 bg-white"
+        >
           {/* Header - Two Column Layout */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-8">
             {/* Column 1 - Title */}
@@ -66,7 +73,7 @@ export const StatsSection: FC = () => {
               </div>
             ))}
           </div>
-        </div>
+        </motion.div>
       </div>
     </section>
   );

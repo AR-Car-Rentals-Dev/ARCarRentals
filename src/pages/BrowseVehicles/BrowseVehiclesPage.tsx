@@ -1,5 +1,6 @@
 import { type FC, useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { ChevronDown } from 'lucide-react';
 import { Button, CarCard, VehicleDetailsModal } from '@/components/ui';
 import type { Car } from '@/types';
@@ -164,8 +165,8 @@ const FilterSidebar: FC<{
                 >
                   <div
                     className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${isChecked
-                        ? 'bg-[#e53935] border-[#e53935]'
-                        : 'bg-white border-[#d1d5db] group-hover:border-[#9ca3af]'
+                      ? 'bg-[#e53935] border-[#e53935]'
+                      : 'bg-white border-[#d1d5db] group-hover:border-[#9ca3af]'
                       }`}
                   >
                     {isChecked && (
@@ -208,8 +209,8 @@ const FilterSidebar: FC<{
                 >
                   <div
                     className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${isChecked
-                        ? 'bg-[#e53935] border-[#e53935]'
-                        : 'bg-white border-[#d1d5db] group-hover:border-[#9ca3af]'
+                      ? 'bg-[#e53935] border-[#e53935]'
+                      : 'bg-white border-[#d1d5db] group-hover:border-[#9ca3af]'
                       }`}
                   >
                     {isChecked && (
@@ -252,8 +253,8 @@ const FilterSidebar: FC<{
                 >
                   <div
                     className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${isChecked
-                        ? 'bg-[#e53935] border-[#e53935]'
-                        : 'bg-white border-[#d1d5db] group-hover:border-[#9ca3af]'
+                      ? 'bg-[#e53935] border-[#e53935]'
+                      : 'bg-white border-[#d1d5db] group-hover:border-[#9ca3af]'
                       }`}
                   >
                     {isChecked && (
@@ -640,11 +641,23 @@ export const BrowseVehiclesPage: FC = () => {
               </div>
 
               {/* Cars Grid - 4 columns on large screens */}
-              <div
+              <motion.div
                 id="cars-section"
+                key={isLoadingVehicles ? 'loading' : 'loaded'}
                 className="grid gap-5"
                 style={{
                   gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+                }}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true, margin: "-50px" }}
+                variants={{
+                  hidden: {},
+                  visible: {
+                    transition: {
+                      staggerChildren: 0.1
+                    }
+                  }
                 }}
               >
                 {isLoadingVehicles ? (
@@ -653,14 +666,21 @@ export const BrowseVehiclesPage: FC = () => {
                   </div>
                 ) : (
                   visibleCars.map((car) => (
-                    <CarCard
+                    <motion.div
                       key={car.id}
-                      car={car}
-                      onBookNow={handleBookNow}
-                    />
+                      variants={{
+                        hidden: { opacity: 0, y: 20 },
+                        visible: { opacity: 1, y: 0, transition: { duration: 0.5 } }
+                      }}
+                    >
+                      <CarCard
+                        car={car}
+                        onBookNow={handleBookNow}
+                      />
+                    </motion.div>
                   ))
                 )}
-              </div>
+              </motion.div>
 
               {/* Load More Button */}
               {hasMore && (

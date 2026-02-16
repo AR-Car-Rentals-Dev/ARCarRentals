@@ -12,6 +12,9 @@ import {
   LoginPage,
   AdminDashboardPage,
   AdminFleetPage,
+  AdminBlogsPage,
+  AdminBlogEditorPage,
+  AdminBlogPreviewPage,
   AdminBookingsPage,
   AdminLeadsPage,
   AdminAnalyticsPage,
@@ -19,6 +22,8 @@ import {
   SidebarDemoPage,
 } from '@pages/index';
 import { BookingPage, CheckoutPage, ReceiptSubmittedPage } from '@pages/BrowseVehicles';
+import { BlogListPage } from '@pages/BlogListPage';
+import { BlogPostPage } from '@pages/BlogPostPage';
 import { TrackBookingPage } from '@pages/TrackBookingPage';
 import { TrackBookingLookupPage } from '@pages/TrackBookingLookupPage';
 import { BookingRouteGuard } from '@components/BookingRouteGuard';
@@ -91,6 +96,14 @@ export const routes: RouteObject[] = [
     element: <MainLayout><ContactUsPage /></MainLayout>,
   },
   {
+    path: '/blogs',
+    element: <MainLayout><BlogListPage /></MainLayout>,
+  },
+  {
+    path: '/blogs/:slug',
+    element: <MainLayout><BlogPostPage /></MainLayout>,
+  },
+  {
     path: '/privacy-policy',
     element: <MainLayout><PrivacyPolicyPage /></MainLayout>,
   },
@@ -116,6 +129,10 @@ export const routes: RouteObject[] = [
     children: [
       { path: 'dashboard', element: <AdminDashboardPage /> },
       { path: 'fleet', element: <AdminFleetPage /> },
+      { path: 'blogs', element: <AdminBlogsPage /> },
+      { path: 'blogs/new', element: <AdminBlogEditorPage /> },
+      { path: 'blogs/:id', element: <AdminBlogEditorPage /> },
+      { path: 'blogs/:id/preview', element: <AdminBlogPreviewPage /> },
       { path: 'bookings', element: <AdminBookingsPage /> },
       { path: 'leads', element: <AdminLeadsPage /> },
       { path: 'analytics', element: <AdminAnalyticsPage /> },

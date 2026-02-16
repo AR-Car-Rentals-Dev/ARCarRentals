@@ -1,5 +1,6 @@
 import { type FC, useState } from 'react';
 import { Search, CreditCard, ShieldCheck, KeyRound } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 interface Step {
   id: number;
@@ -47,30 +48,36 @@ export const HowItWorksSection: FC = () => {
   const [activeStep, setActiveStep] = useState(1);
 
   const currentStep = steps.find(step => step.id === activeStep) || steps[0];
-  
+
   // Get thumbnail images in rotation order (next 3 steps after active, wrapping around)
   const getThumbnailSteps = () => {
     const activeIndex = steps.findIndex(step => step.id === activeStep);
     const thumbnails = [];
-    
+
     for (let i = 1; i <= 3; i++) {
       const nextIndex = (activeIndex + i) % steps.length;
       thumbnails.push(steps[nextIndex]);
     }
-    
+
     return thumbnails;
   };
-  
+
   const thumbnailSteps = getThumbnailSteps();
 
   return (
-    <section 
+    <section
       className="bg-white flex items-center"
       style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", minHeight: '70vh' }}
     >
       <div className="mx-auto w-full max-w-[1600px]" style={{ paddingInline: 'clamp(1.5rem, 3vw, 3rem)' }}>
         {/* Two Column Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: '-50px' }}
+          transition={{ duration: 0.7 }}
+          className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16"
+        >
           {/* Left Column - Title and Images */}
           <div className="flex flex-col">
             {/* Title */}
@@ -130,69 +137,69 @@ export const HowItWorksSection: FC = () => {
 
             {/* Steps List */}
             <div className="space-y-5">
-            {steps.map((step) => {
-              const Icon = step.icon;
-              const isActive = activeStep === step.id;
+              {steps.map((step) => {
+                const Icon = step.icon;
+                const isActive = activeStep === step.id;
 
-              return (
-                <button
-                  key={step.id}
-                  onClick={() => setActiveStep(step.id)}
-                  className={`
+                return (
+                  <button
+                    key={step.id}
+                    onClick={() => setActiveStep(step.id)}
+                    className={`
                     w-full text-left p-6 rounded-2xl transition-all duration-300
-                    ${isActive 
-                      ? 'bg-[#E22B2B]' 
-                      : 'bg-white hover:bg-neutral-50'
-                    }
+                    ${isActive
+                        ? 'bg-[#E22B2B]'
+                        : 'bg-white hover:bg-neutral-50'
+                      }
                   `}
-                >
-                  <div className="flex items-center gap-5">
-                    {/* Icon */}
-                    <div 
-                      className={`
+                  >
+                    <div className="flex items-center gap-5">
+                      {/* Icon */}
+                      <div
+                        className={`
                         flex-shrink-0 w-14 h-14 rounded-2xl flex items-center justify-center
                         transition-colors duration-300
-                        ${isActive 
-                          ? 'bg-white/20' 
-                          : 'bg-neutral-100'
-                        }
+                        ${isActive
+                            ? 'bg-white/20'
+                            : 'bg-neutral-100'
+                          }
                       `}
-                    >
-                      <Icon 
-                        className={`
+                      >
+                        <Icon
+                          className={`
                           w-7 h-7 transition-colors duration-300
                           ${isActive ? 'text-white' : 'text-neutral-900'}
                         `}
-                        strokeWidth={1.5}
-                      />
-                    </div>
+                          strokeWidth={1.5}
+                        />
+                      </div>
 
-                    {/* Content */}
-                    <div className="flex-1 min-w-0">
-                      <h3 
-                        className={`
+                      {/* Content */}
+                      <div className="flex-1 min-w-0">
+                        <h3
+                          className={`
                           text-lg sm:text-xl font-bold mb-2 transition-colors duration-300
                           ${isActive ? 'text-white' : 'text-neutral-900'}
                         `}
-                      >
-                        {step.title}
-                      </h3>
-                      <p 
-                        className={`
+                        >
+                          {step.title}
+                        </h3>
+                        <p
+                          className={`
                           text-sm sm:text-base leading-relaxed transition-colors duration-300
                           ${isActive ? 'text-white/90' : 'text-neutral-600'}
                         `}
-                      >
-                        {step.description}
-                      </p>
+                        >
+                          {step.description}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                </button>
-              );
-            })}
+                  </button>
+                );
+              })}
             </div>
           </div>
-        </div>
+        </motion.div>
       </div>
     </section>
   );

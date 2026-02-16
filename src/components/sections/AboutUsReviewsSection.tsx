@@ -1,4 +1,5 @@
 import { type FC, useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { useReviews, stringToColor } from '@/hooks/useReviews';
 import { Rating } from '@/components/ui';
 import { CheckCircle2, ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react';
@@ -85,7 +86,15 @@ export const AboutUsReviewsSection: FC = () => {
                 </div>
 
                 {/* Carousel Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 pb-4">
+                <motion.div
+                    className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 pb-4"
+                    initial="hidden"
+                    whileInView="visible"
+                    viewport={{ once: true, margin: "-50px" }}
+                    variants={{
+                        visible: { transition: { staggerChildren: 0.1 } }
+                    }}
+                >
                     {isLoading ? (
                         // Loading skeletons
                         Array.from({ length: cardsToShow }).map((_, i) => (
@@ -159,25 +168,33 @@ export const AboutUsReviewsSection: FC = () => {
 
                             if (review.reviewUrl) {
                                 return (
-                                    <a
+                                    <motion.a
                                         key={review.id}
                                         href={review.reviewUrl}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="bg-white rounded-xl p-8 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 border border-gray-100 flex flex-col h-full cursor-pointer group"
+                                        variants={{
+                                            hidden: { opacity: 0, y: 20 },
+                                            visible: { opacity: 1, y: 0 }
+                                        }}
                                     >
                                         {CardContent}
-                                    </a>
+                                    </motion.a>
                                 );
                             }
 
                             return (
-                                <div
+                                <motion.div
                                     key={review.id}
                                     className="bg-white rounded-xl p-8 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 border border-gray-100 flex flex-col h-full"
+                                    variants={{
+                                        hidden: { opacity: 0, y: 20 },
+                                        visible: { opacity: 1, y: 0 }
+                                    }}
                                 >
                                     {CardContent}
-                                </div>
+                                </motion.div>
                             );
                         })
                     ) : (
@@ -185,7 +202,7 @@ export const AboutUsReviewsSection: FC = () => {
                             No reviews available yet.
                         </div>
                     )}
-                </div>
+                </motion.div>
 
                 {/* Trust Badges */}
                 <div className="mt-16 pt-8 border-t border-gray-200 flex flex-wrap justify-center gap-8 md:gap-16 opacity-60 grayscale hover:grayscale-0 transition-all duration-500">

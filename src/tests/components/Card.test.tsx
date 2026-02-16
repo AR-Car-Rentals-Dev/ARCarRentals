@@ -1,15 +1,15 @@
 import { describe, it, expect } from 'vitest';
-import { render, screen } from '../test-utils';
+import { render } from '../test-utils';
 import { Card } from '@components/ui/Card';
 
 describe('Card Component', () => {
   it('renders children correctly', () => {
-    render(
+    const { getByText } = render(
       <Card>
         <p>Card content</p>
       </Card>
     );
-    expect(screen.getByText('Card content')).toBeInTheDocument();
+    expect(getByText('Card content')).toBeInTheDocument();
   });
 
   it('applies default styles', () => {

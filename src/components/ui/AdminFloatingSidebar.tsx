@@ -11,7 +11,8 @@ import {
   // Settings, // Hidden - uncomment when re-enabling Settings
   LogOut,
   Menu,
-  X
+  X,
+  BookOpen
 } from 'lucide-react';
 import { authService } from '@services/authService';
 import { LogoutModal } from './LogoutModal';
@@ -108,6 +109,12 @@ const AdminFloatingSidebar: React.FC = () => {
     {
       title: 'WEBSITE',
       items: [
+        {
+          id: 'blogs',
+          label: 'Blogs',
+          href: '/admin/blogs',
+          icon: <BookOpen className="nav-icon-svg" />,
+        },
         {
           id: 'leads',
           label: 'Leads',

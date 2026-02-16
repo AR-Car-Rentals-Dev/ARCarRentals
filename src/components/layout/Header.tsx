@@ -29,6 +29,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   { label: 'Home', href: '/' },
   { label: 'Vehicles', href: '/browsevehicles' },
+  { label: 'Blogs', href: '/blogs' },
   { label: 'About Us', href: '/aboutus' },
   { label: 'Contact Us', href: '/contact' },
 ];
@@ -40,14 +41,14 @@ const navItems: NavItem[] = [
 const TopBar: FC = () => (
   <div className="relative h-[40px] bg-white overflow-hidden hidden lg:block">
     {/* Red gradient section - extends from left edge, ends at center of Browse Vehicles nav item */}
-    <div 
+    <div
       className="absolute left-0 top-0 h-full lg:w-[54%] xl:w-[48%]"
       style={{
         background: 'linear-gradient(to right, #FB3030 0%, #480E0E 100%)',
         clipPath: 'polygon(0 0, 96% 0, 100% 100%, 0 100%)',
       }}
     />
-    
+
     {/* Content container - aligns with navigation */}
     <div className="relative h-full mx-auto w-full max-w-[1600px] flex items-center justify-between" style={{ paddingInline: 'clamp(1.5rem, 3vw, 3rem)' }}>
       {/* Business hours and location - inside gradient */}
@@ -61,7 +62,7 @@ const TopBar: FC = () => (
           <span className="whitespace-nowrap">{config.contact.location}</span>
         </div>
       </div>
-      
+
       {/* Social icons on the right - black icons */}
       <div className="flex items-center gap-4">
         <a
@@ -114,16 +115,16 @@ export const Header: FC = () => {
   const { isScrolled } = useScroll({ threshold: 50 });
   const isMobile = useIsMobile();
   const location = useLocation();
-  
+
   // Check if we're on the browse vehicles page
   const isBrowseVehiclesPage = location.pathname === '/browsevehicles';
-  
+
   // Check if we're on the booking, checkout, or receipt submitted page - disable animations
   const isBookingPage = location.pathname === '/browsevehicles/booking';
   const isCheckoutPage = location.pathname === '/browsevehicles/checkout';
   const isReceiptSubmittedPage = location.pathname === '/browsevehicles/receipt-submitted';
   const disableHeaderAnimation = isBookingPage || isCheckoutPage || isReceiptSubmittedPage;
-  
+
   // Animation controls for header visibility
   const controls = useAnimationControls();
   const lastScrollY = useRef(0);
@@ -132,11 +133,11 @@ export const Header: FC = () => {
   useEffect(() => {
     // Skip scroll animations on booking/checkout pages
     if (disableHeaderAnimation) return;
-    
+
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
       const scrollingUp = currentScrollY < lastScrollY.current;
-      
+
       // At top of page - always show header
       if (currentScrollY <= 50) {
         if (isHidden.current) {
@@ -146,7 +147,7 @@ export const Header: FC = () => {
             transition: { duration: 0.5, ease: 'easeOut' }
           });
         }
-      } 
+      }
       // Scrolling up - show header
       else if (scrollingUp && isHidden.current) {
         isHidden.current = false;
@@ -154,7 +155,7 @@ export const Header: FC = () => {
           y: 0,
           transition: { duration: 0.5, ease: 'easeOut' }
         });
-      } 
+      }
       // Scrolling down - hide header
       else if (!scrollingUp && !isHidden.current && currentScrollY > 50) {
         isHidden.current = true;
@@ -163,12 +164,12 @@ export const Header: FC = () => {
           transition: { duration: 0.6, ease: 'easeInOut' }
         });
       }
-      
+
       lastScrollY.current = currentScrollY;
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
-    
+
     return () => {
       window.removeEventListener('scroll', handleScroll);
     };
@@ -192,7 +193,7 @@ export const Header: FC = () => {
   };
 
   return (
-    <motion.header 
+    <motion.header
       className="fixed top-0 left-0 right-0 z-50 bg-[#121212]"
       initial={{ y: 0 }}
       animate={disableHeaderAnimation ? { y: 0 } : controls}
@@ -213,9 +214,9 @@ export const Header: FC = () => {
               className="flex items-center gap-2 sm:gap-3 flex-shrink-0"
               onClick={closeMobileMenu}
             >
-              <img 
-                src="/ARCarRentals.png" 
-                alt="AR Car Rentals Logo" 
+              <img
+                src="/ARCarRentals.png"
+                alt="AR Car Rentals Logo"
                 className="h-10 sm:h-14 w-auto"
               />
               <span className="font-semibold text-sm sm:text-lg text-white tracking-wide whitespace-nowrap">
@@ -243,7 +244,7 @@ export const Header: FC = () => {
 
             {/* Desktop CTA - Need Help Button */}
             <div className="hidden lg:flex items-center flex-shrink-0">
-              <a 
+              <a
                 href="tel:+639566625224"
                 className="flex items-center gap-3 px-4 py-2 rounded-md hover:opacity-90 transition-opacity"
               >
@@ -299,8 +300,8 @@ export const Header: FC = () => {
                   </NavLink>
                 ))}
                 <div className="mt-2 px-4">
-                  <Button 
-                    variant="primary" 
+                  <Button
+                    variant="primary"
                     fullWidth
                     onClick={() => {
                       closeMobileMenu();

@@ -1,4 +1,5 @@
 import type { FC } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { HeroSection } from './HeroSection';
 import { TestimonialsSection } from './TestimonialsSection';
 import { FeaturedFleetSection } from './FeaturedFleetSection';
@@ -14,6 +15,9 @@ import { FloatingContactButtons } from '@/components/ui/FloatingContactButtons';
 export const LandingPage: FC = () => {
   return (
     <>
+      <Helmet>
+        <title>AR Car Rental Services | Best Car Rental & Tour Services in Cebu City</title>
+      </Helmet>
       <HeroSection />
       <TestimonialsSection />
       <FeaturedFleetSection />

@@ -1,6 +1,7 @@
 import { type FC, useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { CarCard, VehicleDetailsModal } from '@/components/ui';
 import { supabase } from '@services/supabase';
 import type { Car } from '@/types';
@@ -98,10 +99,10 @@ export const FeaturedFleetSection: FC = () => {
 
   const handleProceedToBooking = async () => {
     if (!selectedCar) return;
-    
+
     // Save vehicle to session
     await updateVehicle(selectedCar);
-    
+
     // Close modal
     setIsVehicleDetailsModalOpen(false);
 
@@ -119,13 +120,19 @@ export const FeaturedFleetSection: FC = () => {
   };
 
   return (
-    <section 
+    <section
       className="bg-white py-16 sm:py-24"
       style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
     >
       <div className="mx-auto w-full max-w-[1600px]" style={{ paddingInline: 'clamp(1.5rem, 3vw, 3rem)' }}>
         {/* Section Header */}
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-6 sm:mb-10 gap-4">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: '-50px' }}
+          transition={{ duration: 0.6 }}
+          className="flex flex-col sm:flex-row sm:items-end justify-between mb-6 sm:mb-10 gap-4"
+        >
           <div>
             <h2 className="text-3xl sm:text-4xl font-bold text-neutral-900">
               Discover Your Perfect Ride Today
@@ -138,7 +145,7 @@ export const FeaturedFleetSection: FC = () => {
             View All
             <ArrowRight className="h-4 w-4" />
           </Link>
-        </div>
+        </motion.div>
 
         {/* Cars Grid - responsive */}
         {isLoading ? (
@@ -159,16 +166,22 @@ export const FeaturedFleetSection: FC = () => {
             </Link>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-50px' }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4"
+          >
             {featuredCars.map((car) => (
-              <CarCard 
-                key={car.id} 
-                car={car} 
+              <CarCard
+                key={car.id}
+                car={car}
                 onBookNow={handleBookNow}
                 showAvailability
               />
             ))}
-          </div>
+          </motion.div>
         )}
       </div>
 

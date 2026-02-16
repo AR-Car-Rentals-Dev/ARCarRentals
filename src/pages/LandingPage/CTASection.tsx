@@ -1,5 +1,6 @@
 import type { FC } from 'react';
 import { ArrowRight } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { Button } from '@/components/ui';
 
 /**
@@ -8,7 +9,14 @@ import { Button } from '@/components/ui';
 export const CTASection: FC = () => {
   return (
     <section className="py-20 bg-neutral-50">
-      <div className="mx-auto w-full max-w-[1600px] bg-neutral-900 rounded-2xl shadow-2xl overflow-hidden relative" style={{ paddingInline: 'clamp(1.5rem, 3vw, 3rem)' }}>
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 30 }}
+        whileInView={{ opacity: 1, scale: 1, y: 0 }}
+        viewport={{ once: true, margin: '-50px' }}
+        transition={{ duration: 0.8, ease: "easeOut" }}
+        className="mx-auto w-full max-w-[1600px] bg-neutral-900 rounded-2xl shadow-2xl overflow-hidden relative"
+        style={{ paddingInline: 'clamp(1.5rem, 3vw, 3rem)' }}
+      >
         {/* Background Image */}
         <div className="absolute inset-0 bg-[url('/CCLEXOverlay.png')] bg-cover bg-center opacity-40"></div>
         <div className="absolute inset-0 bg-gradient-to-r from-black via-black/80 to-transparent"></div>
@@ -33,7 +41,7 @@ export const CTASection: FC = () => {
             </Button>
           </div>
         </div>
-      </div>
+      </motion.div>
     </section>
   );
 };

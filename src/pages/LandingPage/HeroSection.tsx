@@ -1,5 +1,6 @@
 import { type FC, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { Search, Car as CarIcon, Cog, Users } from 'lucide-react';
 import { Button } from '@/components/ui';
 import type { CarCategory, TransmissionType } from '@/types';
@@ -69,7 +70,10 @@ export const HeroSection: FC = () => {
 
         {/* Layer 4: Header text (centered) */}
         <div className="absolute inset-0 flex items-start justify-center pt-4 sm:pt-8 md:pt-16 z-10 px-4">
-          <h1
+          <motion.h1
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
             className="text-center font-extrabold leading-[100.4%] text-[22px] sm:text-4xl md:text-5xl lg:text-[67.5px]"
             style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
           >
@@ -97,12 +101,15 @@ export const HeroSection: FC = () => {
             >
               CEBU CITY
             </span>
-          </h1>
+          </motion.h1>
         </div>
 
         {/* Layer 5: Hero image (top layer) - positioned to show more of the car on mobile */}
         <div className="absolute inset-0 flex items-end justify-center z-20 pointer-events-none">
-          <img
+          <motion.img
+            initial={{ x: 100, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            transition={{ duration: 0.8, ease: "easeOut" }}
             src="/fortuner.png"
             alt="Premium car"
             className="w-[100%] sm:w-[80%] md:w-[50%] lg:w-[38%] h-auto object-contain translate-y-[5%] sm:translate-y-0"
@@ -111,7 +118,13 @@ export const HeroSection: FC = () => {
       </div>
 
       {/* Search Form - Below Hero */}
-      <div className="relative z-30 -mt-8 sm:-mt-12 pb-8 sm:pb-16 mx-auto w-full max-w-[1600px]" style={{ paddingInline: 'clamp(1.5rem, 3vw, 3rem)' }}>
+      <motion.div
+        initial={{ y: 50, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.8, delay: 0.6, ease: "easeOut" }}
+        className="relative z-30 -mt-8 sm:-mt-12 pb-8 sm:pb-16 mx-auto w-full max-w-[1600px]"
+        style={{ paddingInline: 'clamp(1.5rem, 3vw, 3rem)' }}
+      >
         <div className="max-w-[1400px] mx-auto">
           <form onSubmit={handleSearch}>
             <div className="bg-white rounded-2xl shadow-xl p-4 md:p-6">
@@ -192,7 +205,7 @@ export const HeroSection: FC = () => {
             </div>
           </form>
         </div>
-      </div>
+      </motion.div>
     </section>
   );
 };

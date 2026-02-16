@@ -1,5 +1,6 @@
 import { type FC, useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, CheckCircle2, ExternalLink } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { Rating } from '@/components/ui';
 import type { Testimonial } from '@/types';
 import { supabase } from '@/services/supabase';
@@ -115,7 +116,13 @@ export const TestimonialsSection: FC = () => {
     >
       <div className="h-full mx-auto w-full max-w-[1600px] py-10 sm:py-12 flex flex-col" style={{ paddingInline: 'clamp(1.5rem, 3vw, 3rem)' }}>
         {/* Section Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 sm:mb-8 gap-4">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: '-50px' }}
+          transition={{ duration: 0.6 }}
+          className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 sm:mb-8 gap-4"
+        >
           <div>
             <h2 className="text-xl sm:text-2xl font-bold text-neutral-900 mb-1">
               Trusted by 500+ Travelers
@@ -153,10 +160,16 @@ export const TestimonialsSection: FC = () => {
               </button>
             </div>
           )}
-        </div>
+        </motion.div>
 
         {/* Testimonials Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 flex-1">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: '-50px' }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 flex-1"
+        >
           {isLoading ? (
             // Loading skeletons
             Array.from({ length: cardsToShow }).map((_, i) => (
@@ -251,9 +264,9 @@ export const TestimonialsSection: FC = () => {
               No reviews available yet.
             </div>
           )}
-        </div>
+        </motion.div>
       </div>
-    </section>
+    </section >
   );
 };
 

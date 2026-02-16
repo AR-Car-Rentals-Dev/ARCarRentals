@@ -1,4 +1,6 @@
 import { type FC, useState } from 'react';
+import { Helmet } from 'react-helmet-async';
+import { motion } from 'framer-motion';
 import { ChevronDown } from 'lucide-react';
 import { AboutUsReviewsSection } from '@/components/sections/AboutUsReviewsSection';
 
@@ -38,9 +40,18 @@ export const AboutUsPage: FC = () => {
 
   return (
     <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }} className="bg-white">
+      <Helmet>
+        <title>About Us | AR Car Rental Services</title>
+      </Helmet>
       {/* First Section - Hero Image + 3 Column Content */}
       <section className="pt-8 pb-16 bg-white">
-        <div className="mx-auto w-full max-w-[1600px]" style={{ paddingInline: 'clamp(1.5rem, 3vw, 3rem)' }}>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="mx-auto w-full max-w-[1600px]"
+          style={{ paddingInline: 'clamp(1.5rem, 3vw, 3rem)' }}
+        >
           {/* Hero Image - Centered with Rounded Corners */}
           <div className="mb-16">
             <img
@@ -91,11 +102,12 @@ export const AboutUsPage: FC = () => {
               </div>
             </div>
           </div>
-        </div>
+        </motion.div>
       </section>
 
       {/* Second Section - Why Choose Us (Two Column with Slant Design) */}
       <section className="relative py-20 lg:py-28 overflow-hidden bg-[#f8f5f5]">
+        {/* ... (keep existing background content) ... */}
         {/* Decorative Background Element */}
         <div className="absolute top-0 right-0 w-1/3 h-full bg-[#E22B2B]/5 -skew-x-12 transform origin-top translate-x-1/2 z-0 hidden lg:block"></div>
 
@@ -151,9 +163,20 @@ export const AboutUsPage: FC = () => {
               </div>
 
               {/* Trust Pillars */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
+              <motion.div
+                className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4"
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true, margin: "-50px" }}
+                variants={{
+                  visible: { transition: { staggerChildren: 0.15 } }
+                }}
+              >
                 {/* Pillar 1 - Trusted & Reliable */}
-                <div className="flex flex-col items-start p-4 rounded-xl bg-white border border-gray-100 shadow-sm hover:shadow-md transition-shadow duration-300">
+                <motion.div
+                  variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}
+                  className="flex flex-col items-start p-4 rounded-xl bg-white border border-gray-100 shadow-sm hover:shadow-md transition-shadow duration-300"
+                >
                   <div className="w-12 h-12 rounded-full bg-[#E22B2B]/10 flex items-center justify-center mb-4">
                     <svg className="w-6 h-6 text-[#E22B2B]" fill="currentColor" viewBox="0 0 24 24">
                       <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
@@ -161,10 +184,13 @@ export const AboutUsPage: FC = () => {
                   </div>
                   <h3 className="font-bold text-neutral-900 text-lg">Trusted & Reliable</h3>
                   <p className="text-sm text-gray-500 mt-1">Top-rated service backed by thousands of happy clients.</p>
-                </div>
+                </motion.div>
 
                 {/* Pillar 2 - 24/7 Support */}
-                <div className="flex flex-col items-start p-4 rounded-xl bg-white border border-gray-100 shadow-sm hover:shadow-md transition-shadow duration-300">
+                <motion.div
+                  variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}
+                  className="flex flex-col items-start p-4 rounded-xl bg-white border border-gray-100 shadow-sm hover:shadow-md transition-shadow duration-300"
+                >
                   <div className="w-12 h-12 rounded-full bg-[#E22B2B]/10 flex items-center justify-center mb-4">
                     <svg className="w-6 h-6 text-[#E22B2B]" fill="currentColor" viewBox="0 0 24 24">
                       <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
@@ -173,10 +199,13 @@ export const AboutUsPage: FC = () => {
                   </div>
                   <h3 className="font-bold text-neutral-900 text-lg">24/7 Support</h3>
                   <p className="text-sm text-gray-500 mt-1">Our dedicated team is ready to assist you anytime, anywhere.</p>
-                </div>
+                </motion.div>
 
                 {/* Pillar 3 - Affordable Rates */}
-                <div className="flex flex-col items-start p-4 rounded-xl bg-white border border-gray-100 shadow-sm hover:shadow-md transition-shadow duration-300">
+                <motion.div
+                  variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}
+                  className="flex flex-col items-start p-4 rounded-xl bg-white border border-gray-100 shadow-sm hover:shadow-md transition-shadow duration-300"
+                >
                   <div className="w-12 h-12 rounded-full bg-[#E22B2B]/10 flex items-center justify-center mb-4">
                     <svg className="w-6 h-6 text-[#E22B2B]" fill="currentColor" viewBox="0 0 24 24">
                       <path d="M21.41 11.58l-9-9C12.05 2.22 11.55 2 11 2H4c-1.1 0-2 .9-2 2v7c0 .55.22 1.05.59 1.42l9 9c.36.36.86.58 1.41.58.55 0 1.05-.22 1.41-.59l7-7c.37-.36.59-.86.59-1.41 0-.55-.23-1.06-.59-1.42zM5.5 7C4.67 7 4 6.33 4 5.5S4.67 4 5.5 4 7 4.67 7 5.5 6.33 7 5.5 7z" />
@@ -184,8 +213,8 @@ export const AboutUsPage: FC = () => {
                   </div>
                   <h3 className="font-bold text-neutral-900 text-lg">Affordable Rates</h3>
                   <p className="text-sm text-gray-500 mt-1">Premium vehicles at competitive market prices.</p>
-                </div>
-              </div>
+                </motion.div>
+              </motion.div>
 
               {/* CTA Button */}
               <div className="pt-4">

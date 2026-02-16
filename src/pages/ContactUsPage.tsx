@@ -1,4 +1,6 @@
 import { type FC, useState, useEffect } from 'react';
+import { Helmet } from 'react-helmet-async';
+import { motion } from 'framer-motion';
 import { Search, Phone, Mail, MapPin, Clock, Car as CarIcon, Cog, Users, ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui';
@@ -78,12 +80,20 @@ export const ContactUsPage: FC = () => {
 
     return (
         <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }} className="bg-white">
+            <Helmet>
+                <title>Contact Us | AR Car Rental Services</title>
+            </Helmet>
             {/* Section 1 - Quick Booking: Form Left (30%) + Image Carousel Right (70%) */}
-            <section className="pt-8 pb-12 bg-white">
+            <section className="pt-8 pb-12 bg-white text-left">
                 <div className="mx-auto w-full max-w-[1600px]" style={{ paddingInline: 'clamp(1.5rem, 3vw, 3rem)' }}>
                     <div className="grid grid-cols-1 lg:grid-cols-10 gap-8 lg:gap-8 items-stretch">
                         {/* Left Column - Light Booking Form Card (30%) - Matching Landing Page Style */}
-                        <div className="lg:col-span-3 bg-white rounded-2xl shadow-xl p-6 min-h-[400px] flex flex-col">
+                        <motion.div 
+                            initial={{ opacity: 0, x: -50 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ duration: 0.6 }}
+                            className="lg:col-span-3 bg-white rounded-2xl shadow-xl p-6 min-h-[400px] flex flex-col"
+                        >
                             <h2 className="text-xl font-bold text-neutral-900 mb-5">Find Your Car</h2>
 
                             <form onSubmit={handleSearch} className="space-y-4 flex-1 flex flex-col">
@@ -159,10 +169,15 @@ export const ContactUsPage: FC = () => {
                                     </Button>
                                 </div>
                             </form>
-                        </div>
+                        </motion.div>
 
                         {/* Right Column - Image Carousel (70%) */}
-                        <div className="lg:col-span-7 rounded-2xl overflow-hidden min-h-[400px] relative">
+                        <motion.div 
+                            initial={{ opacity: 0, x: 50 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ duration: 0.6 }}
+                            className="lg:col-span-7 rounded-2xl overflow-hidden min-h-[400px] relative"
+                        >
                             {/* Images */}
                             {cebuImages.map((image, index) => (
                                 <div
@@ -179,7 +194,7 @@ export const ContactUsPage: FC = () => {
                                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20"></div>
 
                                     {/* Caption */}
-                                    <div className="absolute bottom-6 left-6 right-6 text-white">
+                                    <div className="absolute bottom-6 left-6 right-6 text-white text-left">
                                         <p className="text-2xl font-bold mb-1">{image.caption}</p>
                                         <p className="text-sm text-white/80 flex items-center gap-1">
                                             <MapPin className="h-4 w-4" />
@@ -200,7 +215,7 @@ export const ContactUsPage: FC = () => {
                                     />
                                 ))}
                             </div>
-                        </div>
+                        </motion.div>
                     </div>
                 </div>
             </section>
