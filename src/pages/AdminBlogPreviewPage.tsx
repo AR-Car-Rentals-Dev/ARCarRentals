@@ -1,7 +1,8 @@
-import { type FC } from 'react';
+import { type FC, useState, useEffect } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
-import { ArrowLeft, Edit, Calendar, User, Tag } from 'lucide-react';
+import { ArrowLeft, Edit, User, Clock } from 'lucide-react';
 import { Button } from '@components/ui';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface PreviewState {
     title: string;
@@ -10,23 +11,57 @@ interface PreviewState {
     author: string;
     category: string;
     imageUrl: string;
+    headerImages?: string[];
     isPublished: boolean;
     slug: string;
 }
 
-const formatDate = (): string => {
-    return new Date().toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-    });
-};
+
+
+const READING_TIME_WPM = 200;
 
 export const AdminBlogPreviewPage: FC = () => {
     const navigate = useNavigate();
     const { id } = useParams<{ id: string }>();
     const location = useLocation();
     const state = location.state as PreviewState | null;
+
+    // Carousel State
+    const [currentImageIndex, setCurrentImageIndex] = useState(0);
+    const [progress, setProgress] = useState(0);
+
+    // Derived Data
+    const headerImages = state?.headerImages && state.headerImages.length > 0
+        ? state.headerImages
+        : (state?.imageUrl ? [state.imageUrl] : []);
+
+    const hasMultipleImages = headerImages.length > 1;
+
+    // Carousel Timer
+    useEffect(() => {
+        if (!hasMultipleImages) return;
+
+        const duration = 5000; // 5 seconds per slide
+        const interval = 50; // Update progress every 50ms
+
+        let timer = 0;
+
+        const intervalId = setInterval(() => {
+            timer += interval;
+            const newProgress = (timer / duration) * 100;
+
+            if (newProgress >= 100) {
+                setCurrentImageIndex((prev) => (prev + 1) % headerImages.length);
+                timer = 0;
+                setProgress(0);
+            } else {
+                setProgress(newProgress);
+            }
+        }, interval);
+
+        return () => clearInterval(intervalId);
+    }, [hasMultipleImages, headerImages.length, currentImageIndex]);
+
 
     if (!state) {
         return (
@@ -41,101 +76,163 @@ export const AdminBlogPreviewPage: FC = () => {
         );
     }
 
+    const readingTime = state.body ? Math.max(1, Math.ceil(state.body.replace(/(<([^>]+)>)/gi, "").split(/\s+/).length / READING_TIME_WPM)) : 1;
+
     return (
-        <div className="font-sans">
+        <div className="bg-white min-h-screen font-sans">
             {/* Status Banner */}
-            <div className={`px-6 py-3 flex items-center justify-between rounded-xl mb-6 ${state.isPublished ? 'bg-green-50 border border-green-200' : 'bg-amber-50 border border-amber-200'}`}>
-                <div className="flex items-center gap-3">
-                    <div className={`w-2.5 h-2.5 rounded-full ${state.isPublished ? 'bg-green-500' : 'bg-amber-500'} animate-pulse`}></div>
-                    <span className={`text-sm font-bold uppercase tracking-wider ${state.isPublished ? 'text-green-700' : 'text-amber-700'}`}>
-                        {state.isPublished ? '● Published' : '● Draft — Preview Mode'}
-                    </span>
-                </div>
-                <div className="flex items-center gap-2">
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => navigate(id ? `/admin/blogs/${id}` : '/admin/blogs')}
-                        className="text-neutral-600 hover:bg-white"
-                    >
-                        <ArrowLeft size={14} className="mr-1.5" />
-                        Back
-                    </Button>
-                    <Button
-                        size="sm"
-                        onClick={() => navigate(id ? `/admin/blogs/${id}` : '/admin/blogs')}
-                        className="bg-red-600 hover:bg-red-700 text-white gap-1.5"
-                    >
-                        <Edit size={14} />
-                        Edit Post
-                    </Button>
-                </div>
+            <div className={`fixed top-20 right-6 z-50 px-4 py-2 flex items-center gap-3 rounded-full shadow-lg border backdrop-blur-md ${state.isPublished ? 'bg-green-50/90 border-green-200 text-green-700' : 'bg-amber-50/90 border-amber-200 text-amber-700'}`}>
+                <div className={`w-2 h-2 rounded-full ${state.isPublished ? 'bg-green-500' : 'bg-amber-500'} animate-pulse`}></div>
+                <span className="text-xs font-bold uppercase tracking-wider">
+                    {state.isPublished ? 'Published' : 'Preview Mode'}
+                </span>
+                <div className="h-4 w-px bg-current opacity-20 mx-1"></div>
+                <button
+                    onClick={() => navigate(id ? `/admin/blogs/${id}` : '/admin/blogs')}
+                    className="flex items-center gap-1 hover:underline text-xs font-bold uppercase tracking-wider"
+                >
+                    <Edit size={12} /> Edit
+                </button>
             </div>
 
-            {/* Article Preview */}
-            <article className="max-w-4xl mx-auto">
-                {/* Hero Image */}
-                {state.imageUrl && (
-                    <div className="mb-8 overflow-hidden rounded-2xl shadow-lg">
-                        <img
-                            src={state.imageUrl}
-                            alt={state.title}
-                            className="w-full max-h-[400px] object-cover"
-                        />
+            {/* ─── HERO SECTION ──────────────────────────────────────────────── */}
+            <div className="relative w-full h-[70vh] md:h-[80vh] bg-neutral-900 overflow-hidden flex items-center justify-center">
+
+                {/* Image Carousel Background */}
+                <AnimatePresence mode="wait">
+                    <motion.div
+                        key={currentImageIndex}
+                        className="absolute inset-0 w-full h-full"
+                        initial={{ opacity: 0, scale: 1.05 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 1, ease: "easeInOut" }}
+                    >
+                        {headerImages.length > 0 && (
+                            <img
+                                src={headerImages[currentImageIndex]}
+                                alt={state.title}
+                                className="w-full h-full object-cover opacity-60"
+                            />
+                        )}
+                        {/* Gradient Overlay for Text Readability */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/30" />
+                    </motion.div>
+                </AnimatePresence>
+
+                {/* Hero Content (Centered Overlay) */}
+                <div className="relative z-10 max-w-4xl mx-auto px-4 text-center text-white space-y-6 mt-16">
+                    {/* Category (Glass Card) */}
+                    <div className="flex justify-center mb-6">
+                        <span className="px-6 py-2 rounded-full border border-white/30 bg-white/10 backdrop-blur-md text-sm font-bold tracking-widest text-white uppercase shadow-sm">
+                            {state.category || 'General'}
+                        </span>
+                    </div>
+
+                    {/* Title */}
+                    <h1 className="text-4xl md:text-5xl lg:text-7xl font-extrabold tracking-tight leading-tight" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+                        {state.title || 'Untitled Post'}
+                    </h1>
+
+                    {/* Meta Row: Author • Date • Read Time */}
+                    <div className="flex items-center justify-center gap-3 text-sm md:text-base text-white/90 font-medium pt-4">
+                        {/* Author */}
+                        <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-full bg-white/10 backdrop-blur flex items-center justify-center text-white border border-white/20">
+                                <User size={14} />
+                            </div>
+                            <span>{state.author || 'AR Car Rentals'}</span>
+                        </div>
+
+                        {/* Red Dot */}
+                        <span className="text-red-500 text-xs">●</span>
+
+                        {/* Date */}
+                        <span>
+                            {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </span>
+
+                        {/* Red Dot */}
+                        <span className="text-red-500 text-xs">●</span>
+
+                        {/* Read Time */}
+                        <div className="flex items-center gap-1.5">
+                            <Clock size={16} className="text-red-500" />
+                            <span>{readingTime} {readingTime === 1 ? 'min' : 'mins'} read</span>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Progress Indicators (Bottom Right inside Image) */}
+                {hasMultipleImages && (
+                    <div className="absolute bottom-8 right-8 z-20 flex flex-col items-end gap-3">
+                        {/* Text Counter */}
+                        <div className="bg-black/40 backdrop-blur-md px-3 py-1 rounded-full border border-white/10 text-white/90 text-[10px] font-bold tracking-widest uppercase shadow-sm">
+                            {currentImageIndex + 1} / {headerImages.length}
+                        </div>
+
+                        {/* Progress Bar Container */}
+                        <div className="flex gap-1.5 w-32">
+                            {headerImages.map((_, idx) => (
+                                <div key={idx} className="h-1 flex-1 bg-white/20 rounded-full overflow-hidden backdrop-blur-sm">
+                                    {idx === currentImageIndex && (
+                                        <motion.div
+                                            className="h-full bg-red-600 shadow-[0_0_8px_rgba(220,38,38,0.8)]"
+                                            initial={{ width: "0%" }}
+                                            animate={{ width: `${progress}%` }}
+                                            transition={{ ease: "linear", duration: 0.05 }}
+                                        />
+                                    )}
+                                    {idx < currentImageIndex && <div className="h-full w-full bg-white/80" />}
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 )}
 
-                {/* Title */}
-                <h1
-                    className="mb-6 text-3xl font-extrabold tracking-tight text-neutral-900 md:text-4xl lg:text-5xl"
-                    style={{ fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif" }}
+                {/* Back Button */}
+                <button
+                    onClick={() => navigate(id ? `/admin/blogs/${id}` : '/admin/blogs')}
+                    className="absolute top-8 left-8 z-30 flex items-center gap-2 text-white/70 hover:text-white transition-colors bg-black/20 hover:bg-black/40 backdrop-blur-md px-4 py-2 rounded-full border border-white/10 text-sm font-medium group"
                 >
-                    {state.title || 'Untitled Post'}
-                </h1>
+                    <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" /> Back to Editor
+                </button>
+            </div>
 
-                {/* Meta Row */}
-                <div className="mb-8 flex flex-wrap items-center gap-4 text-sm text-neutral-500">
-                    {state.author && (
-                        <span className="flex items-center gap-1.5">
-                            <User size={14} />
-                            {state.author}
-                        </span>
-                    )}
-                    <span className="flex items-center gap-1.5">
-                        <Calendar size={14} />
-                        {formatDate()}
-                    </span>
-                    {state.category && (
-                        <span className="flex items-center gap-1.5 text-red-600 bg-red-50 px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider">
-                            <Tag size={12} />
-                            {state.category}
-                        </span>
-                    )}
-                </div>
-
-                {/* Excerpt */}
+            {/* ─── CONTENT SECTION ───────────────────────────────────────────── */}
+            <article className="max-w-4xl mx-auto px-6 md:px-12 py-16 md:py-24 relative z-10 mb-20">
+                {/* Excerpt (SEO Description) */}
                 {state.excerpt && (
-                    <p className="mb-8 text-lg text-neutral-600 italic border-l-4 border-red-300 pl-4">
+                    <p className="text-xl md:text-2xl text-neutral-600 leading-relaxed font-medium mb-12 border-l-4 border-red-500 pl-6 italic">
                         {state.excerpt}
                     </p>
                 )}
 
                 {/* Body Content */}
                 <div
-                    className="prose prose-lg prose-red mx-auto max-w-none
-                        prose-headings:text-neutral-900 prose-headings:font-bold
-                        prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl
-                        prose-p:my-4 prose-p:leading-relaxed prose-p:text-neutral-700
-                        prose-a:text-red-600 prose-a:underline hover:prose-a:text-red-700
-                        prose-blockquote:border-l-4 prose-blockquote:border-red-300 prose-blockquote:pl-4 prose-blockquote:italic prose-blockquote:text-neutral-600
-                        prose-ul:list-disc prose-ul:pl-6 prose-ol:list-decimal prose-ol:pl-6
-                        prose-code:bg-neutral-100 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-sm prose-code:font-mono
-                        prose-img:rounded-lg prose-img:shadow-md prose-img:max-w-full"
-                    dangerouslySetInnerHTML={{ __html: state.body || '<p>No content yet.</p>' }}
+                    className="prose prose-lg md:prose-xl prose-neutral max-w-none 
+                        font-serif
+                        prose-headings:font-sans prose-headings:font-bold prose-headings:text-neutral-900 
+                        prose-h1:text-4xl prose-h2:text-3xl prose-h3:text-2xl
+                        prose-p:text-neutral-600 prose-p:leading-relaxed prose-p:mb-6
+                        prose-a:text-red-600 prose-a:no-underline hover:prose-a:underline
+                        prose-strong:text-neutral-900 prose-strong:font-bold
+                        prose-img:rounded-2xl prose-img:shadow-xl prose-img:my-10
+                        prose-blockquote:border-l-4 prose-blockquote:border-red-500 prose-blockquote:bg-red-50/50 prose-blockquote:py-6 prose-blockquote:px-8 prose-blockquote:not-italic prose-blockquote:rounded-r-xl prose-blockquote:my-8
+                        prose-ul:marker:text-red-500 prose-ol:marker:text-red-500
+                    "
+                    dangerouslySetInnerHTML={{ __html: state.body || '<p>Start typing your content...</p>' }}
                 />
 
-                {/* Bottom CTA */}
-                <div className="mt-16 border-t border-neutral-200 pt-8 text-center">
+                {/* Share/Tags Section could go here */}
+                <div className="mt-16 pt-8 border-t border-neutral-100 flex justify-center">
+                    <p className="text-sm text-neutral-400 italic">
+                        Published in <span className="text-neutral-600 font-medium not-italic">{state.category || 'General'}</span>
+                    </p>
+                </div>
+
+                {/* Preview Disclaimer Footer */}
+                <div className="mt-16 border-t border-neutral-200 pt-8 text-center pb-20">
                     <p className="mb-4 text-neutral-500 text-sm">This is a preview. The post has not been published yet.</p>
                     <Button
                         onClick={() => navigate(id ? `/admin/blogs/${id}` : '/admin/blogs')}

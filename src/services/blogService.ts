@@ -11,6 +11,7 @@ export interface BlogPost {
   author: string;
   categories: string[];
   isPublished?: boolean; // Optional for compatibility
+  headerImages?: string[];
 }
 
 export type BlogPostSummary = BlogPost;
@@ -95,6 +96,7 @@ export const createPost = async (post: Omit<BlogPost, 'id' | 'publishedAt'>): Pr
     author: post.author,
     category: post.categories[0] || 'Uncategorized', // Schema uses single string for now
     main_image: post.mainImage,
+    header_images: post.headerImages,
     is_published: false,
     // published_at is managed by DB or update logic
   };
@@ -123,6 +125,7 @@ export const updatePost = async (id: string, updates: Partial<BlogPost>): Promis
   if (updates.author !== undefined) dbUpdates.author = updates.author;
   if (updates.categories !== undefined) dbUpdates.category = updates.categories[0];
   if (updates.mainImage !== undefined) dbUpdates.main_image = updates.mainImage;
+  if (updates.headerImages !== undefined) dbUpdates.header_images = updates.headerImages;
   if (updates.isPublished !== undefined) {
     dbUpdates.is_published = updates.isPublished;
     if (updates.isPublished) {
@@ -171,7 +174,8 @@ const mapSupabaseToBlogPost = (data: any): BlogPost => {
     body: data.body,
     author: data.author || 'Anonymous',
     categories: data.category ? [data.category] : [],
-    isPublished: data.is_published
+    isPublished: data.is_published,
+    headerImages: data.header_images || []
   };
 };
 

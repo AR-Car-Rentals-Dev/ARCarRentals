@@ -28,6 +28,9 @@ import {
 import { createPost, updatePost, getAllPosts, uploadBlogImage } from '@services/blogService';
 import { Button, Modal } from '@components/ui';
 import { ImageCropModal } from '@components/ui/ImageCropModal';
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, rectSortingStrategy } from '@dnd-kit/sortable';
+import { SortableImageItem } from '@components/ui/SortableImageItem';
 
 // ─── Rich Text Toolbar Button ─────────────────────────────────────────────────
 
@@ -76,7 +79,8 @@ export const AdminBlogEditorPage: FC = () => {
     const [excerpt, setExcerpt] = useState('');
     const [author, setAuthor] = useState('Alex Johnson');
     const [category, setCategory] = useState('Travel Guides');
-    const [imageUrl, setImageUrl] = useState('');
+
+    const [headerImages, setHeaderImages] = useState<string[]>([]);
     const [isPublished, setIsPublished] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -104,6 +108,27 @@ export const AdminBlogEditorPage: FC = () => {
     const [activeFormats, setActiveFormats] = useState<Record<string, boolean>>({});
     const [currentBlock, setCurrentBlock] = useState('p');
     const bodyRef = useRef(body); // Keep a ref in sync to avoid stale closures
+
+    // Dnd Kit Sensors
+    const sensors = useSensors(
+        useSensor(PointerSensor),
+        useSensor(KeyboardSensor, {
+            coordinateGetter: sortableKeyboardCoordinates,
+        })
+    );
+
+    const handleDragEnd = (event: any) => {
+        const { active, over } = event;
+
+        if (active.id !== over.id) {
+            setHeaderImages((items) => {
+                const oldIndex = items.indexOf(active.id);
+                const newIndex = items.indexOf(over.id);
+                return arrayMove(items, oldIndex, newIndex);
+            });
+            setIsDirty(true);
+        }
+    };
 
     // Stats
     const textContent = editorRef.current?.textContent || '';
@@ -159,7 +184,12 @@ export const AdminBlogEditorPage: FC = () => {
                     setAuthor(post.author);
                     setIsPublished(post.isPublished || false);
                     if (post.categories && post.categories.length > 0) setCategory(post.categories[0]);
-                    setImageUrl(post.mainImage || '');
+                    // Combine mainImage and headerImages if needed, or just use headerImages source of truth
+                    // If headerImages exists, use it. If not, and mainImage exists (legacy), put it in headerImages.
+                    const initialImages = post.headerImages && post.headerImages.length > 0
+                        ? post.headerImages
+                        : (post.mainImage ? [post.mainImage] : []);
+                    setHeaderImages(initialImages);
                     setLastSync(new Date(post.publishedAt || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
                     setIsDirty(false);
                     // Set the editor content after state is loaded
@@ -223,10 +253,11 @@ export const AdminBlogEditorPage: FC = () => {
                     title,
                     slug: { current: slug || title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '') },
                     author,
-                    mainImage: imageUrl || null,
+                    mainImage: headerImages.length > 0 ? headerImages[0] : null,
                     excerpt: excerpt || (bodyRef.current ? bodyRef.current.replace(/<[^>]*>?/gm, '').substring(0, 150) + '...' : ''),
                     body: bodyRef.current,
                     categories: [category],
+                    headerImages,
                 };
 
                 if (id) {
@@ -244,7 +275,7 @@ export const AdminBlogEditorPage: FC = () => {
         return () => {
             if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
         };
-    }, [title, slug, body, excerpt, author, category, imageUrl, id, isDirty]);
+    }, [title, slug, body, excerpt, author, category, headerImages, id, isDirty]);
 
     // ─── Selection change listener ────────────────────────────────────
 
@@ -349,21 +380,32 @@ export const AdminBlogEditorPage: FC = () => {
         }
     };
 
-    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
+
+
+    const handleHeaderImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = e.target.files;
+        if (!files || files.length === 0) return;
 
         setIsUploading(true);
         try {
-            const url = await uploadBlogImage(file);
-            setImageUrl(url);
+            const newImages: string[] = [];
+            for (let i = 0; i < files.length; i++) {
+                const url = await uploadBlogImage(files[i]);
+                newImages.push(url);
+            }
+            setHeaderImages(prev => [...prev, ...newImages]);
             setIsDirty(true);
         } catch (error) {
-            console.error('Upload failed:', error);
-            alert('Failed to upload image. Please try again.');
+            console.error('Header upload failed:', error);
+            alert('Failed to upload header images.');
         } finally {
             setIsUploading(false);
         }
+    };
+
+    const removeHeaderImage = (index: number) => {
+        setHeaderImages(prev => prev.filter((_, i) => i !== index));
+        setIsDirty(true);
     };
 
     const handleSubmit = async (publish = false) => {
@@ -374,10 +416,11 @@ export const AdminBlogEditorPage: FC = () => {
                 title,
                 slug: { current: slug || title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '') },
                 author,
-                mainImage: imageUrl || null,
+                mainImage: headerImages.length > 0 ? headerImages[0] : null,
                 excerpt: excerpt || currentBody.replace(/<[^>]*>?/gm, '').substring(0, 150) + '...',
                 body: currentBody,
                 categories: [category],
+                headerImages,
                 isPublished: publish
             };
 
@@ -414,7 +457,7 @@ export const AdminBlogEditorPage: FC = () => {
                 title,
                 slug: { current: slug || title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '') },
                 author,
-                mainImage: imageUrl || null,
+                mainImage: headerImages.length > 0 ? headerImages[0] : null,
                 excerpt: excerpt || currentBody.replace(/<[^>]*>?/gm, '').substring(0, 150) + '...',
                 body: currentBody,
                 categories: [category],
@@ -446,7 +489,7 @@ export const AdminBlogEditorPage: FC = () => {
                     title,
                     slug: { current: slug || title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '') },
                     author,
-                    mainImage: imageUrl || null,
+                    mainImage: headerImages.length > 0 ? headerImages[0] : null,
                     excerpt: excerpt || currentBody.replace(/<[^>]*>?/gm, '').substring(0, 150) + '...',
                     body: currentBody,
                     categories: [category],
@@ -468,7 +511,8 @@ export const AdminBlogEditorPage: FC = () => {
                 excerpt,
                 author,
                 category,
-                imageUrl,
+                imageUrl: headerImages.length > 0 ? headerImages[0] : '',
+                headerImages,
                 isPublished,
                 slug: slug || title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, ''),
             }
@@ -696,54 +740,71 @@ export const AdminBlogEditorPage: FC = () => {
                         </div>
                     </div>
 
-                    {/* Image Upload Card */}
+                    {/* Header Gallery (Unified) */}
                     <div className="bg-white p-6 rounded-xl shadow-sm border border-neutral-200 space-y-4">
-                        <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-900 flex items-center gap-2 mb-2">
-                            <ImageIcon size={16} className="text-red-600" /> Media Assets
-                        </h3>
-                        <div className="space-y-2">
-                            <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Header Image</label>
-                            <div className="relative">
-                                <input
-                                    type="file"
-                                    accept="image/*"
-                                    onChange={handleImageUpload}
-                                    className="hidden"
-                                    id="image-upload"
-                                    disabled={isUploading}
-                                />
-                                <label
-                                    htmlFor="image-upload"
-                                    className={`group relative rounded-lg overflow-hidden border-2 border-dashed ${isUploading ? 'border-red-400 bg-red-50' : 'border-neutral-200 hover:border-red-500/50'} transition-all aspect-video flex flex-col items-center justify-center bg-neutral-50 cursor-pointer`}
-                                >
-                                    {isUploading ? (
-                                        <div className="flex flex-col items-center animate-pulse">
-                                            <Cloud size={24} className="text-red-500 mb-2" />
-                                            <p className="text-xs font-medium text-red-600">Uploading...</p>
-                                        </div>
-                                    ) : imageUrl ? (
-                                        <>
-                                            <img src={imageUrl} alt="Preview" className="w-full h-full object-cover" />
-                                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                                <p className="text-white text-xs font-bold uppercase tracking-wider flex items-center gap-2">
-                                                    <ImageIcon size={14} /> Change Image
-                                                </p>
-                                            </div>
-                                        </>
-                                    ) : (
-                                        <div className="text-center p-4">
-                                            <Cloud size={24} className="text-neutral-400 mb-2 mx-auto group-hover:text-red-500 transition-colors" />
-                                            <p className="text-xs font-medium text-neutral-400 group-hover:text-red-600 transition-colors">Click to upload image</p>
-                                        </div>
-                                    )}
-                                </label>
-                            </div>
-                            {imageUrl && (
-                                <p className="text-[10px] text-neutral-400 truncate mt-1">
-                                    Current: {imageUrl.split('/').pop()}
-                                </p>
-                            )}
+                        <div className="flex items-center justify-between">
+                            <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-900 flex items-center gap-2">
+                                <ImageIcon size={16} className="text-red-600" /> Header Gallery
+                            </h3>
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-400 bg-neutral-100 px-2 py-0.5 rounded-full">
+                                {headerImages.length} Images
+                            </span>
                         </div>
+
+                        <div className="bg-blue-50 border border-blue-100 rounded-lg p-3">
+                            <p className="text-xs text-blue-700 leading-relaxed">
+                                <span className="font-bold">Tip:</span> The <strong>first image</strong> (Main Cover) will be used as the blog thumbnail and initial header.
+                                Drag and drop images to reorder them. If you upload multiple, they will appear as a carousel.
+                            </p>
+                        </div>
+
+                        <DndContext
+                            sensors={sensors}
+                            collisionDetection={closestCenter}
+                            onDragEnd={handleDragEnd}
+                        >
+                            <SortableContext
+                                items={headerImages}
+                                strategy={rectSortingStrategy}
+                            >
+                                <div className="grid grid-cols-2 gap-3">
+                                    {headerImages.map((img, idx) => (
+                                        <SortableImageItem
+                                            key={img}
+                                            id={img}
+                                            url={img}
+                                            index={idx}
+                                            onRemove={() => removeHeaderImage(idx)}
+                                        />
+                                    ))}
+
+                                    {/* Upload Button */}
+                                    <label className={`relative aspect-video rounded-lg overflow-hidden border-2 border-dashed ${isUploading ? 'border-red-400 bg-red-50' : 'border-neutral-200 hover:border-red-500/50'} transition-all flex flex-col items-center justify-center bg-neutral-50 cursor-pointer group`}>
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            multiple
+                                            onChange={handleHeaderImageUpload}
+                                            className="hidden"
+                                            disabled={isUploading}
+                                        />
+                                        {isUploading ? (
+                                            <div className="flex flex-col items-center animate-pulse">
+                                                <Cloud size={20} className="text-red-500 mb-1" />
+                                                <span className="text-[10px] font-bold text-red-600 uppercase tracking-wide">Uploading...</span>
+                                            </div>
+                                        ) : (
+                                            <>
+                                                <div className="w-8 h-8 rounded-full bg-white border border-neutral-200 flex items-center justify-center mb-2 group-hover:border-red-200 group-hover:scale-110 transition-all shadow-sm">
+                                                    <Cloud size={14} className="text-neutral-400 group-hover:text-red-500 transition-colors" />
+                                                </div>
+                                                <span className="text-[10px] font-bold text-neutral-400 group-hover:text-red-600 uppercase tracking-wide transition-colors">Add Images</span>
+                                            </>
+                                        )}
+                                    </label>
+                                </div>
+                            </SortableContext>
+                        </DndContext>
                     </div>
 
                     {/* Publishing Card */}
@@ -752,12 +813,12 @@ export const AdminBlogEditorPage: FC = () => {
                             <BookOpen size={16} className="text-red-600" /> Publishing
                         </h3>
                         <div className="space-y-4">
-                            <label className="flex items-center gap-3 cursor-pointer group" onClick={() => setPublishMode('immediately')}>
-                                <div className={`w-4 h-4 rounded-full ${publishMode === 'immediately' ? 'border-[5px] border-red-600 shadow-sm' : 'border-2 border-neutral-300'}`}></div>
+                            <label className="flex items-center gap-3 cursor-pointer group hover:bg-neutral-50 p-2 rounded-lg transition-colors" onClick={() => setPublishMode('immediately')}>
+                                <div className={`w-4 h-4 shrink-0 rounded-full ${publishMode === 'immediately' ? 'border-[5px] border-red-600 shadow-sm' : 'border-2 border-neutral-300'}`}></div>
                                 <span className="text-sm font-medium text-neutral-900">Immediately</span>
                             </label>
-                            <label className="flex items-center gap-3 cursor-pointer group" onClick={() => setPublishMode('scheduled')}>
-                                <div className={`w-4 h-4 rounded-full ${publishMode === 'scheduled' ? 'border-[5px] border-red-600 shadow-sm' : 'border-2 border-neutral-300'}`}></div>
+                            <label className="flex items-center gap-3 cursor-pointer group hover:bg-neutral-50 p-2 rounded-lg transition-colors" onClick={() => setPublishMode('scheduled')}>
+                                <div className={`w-4 h-4 shrink-0 rounded-full ${publishMode === 'scheduled' ? 'border-[5px] border-red-600 shadow-sm' : 'border-2 border-neutral-300'}`}></div>
                                 <span className="text-sm font-medium text-neutral-900">Schedule for later</span>
                             </label>
                             {publishMode === 'scheduled' && (
@@ -795,48 +856,51 @@ export const AdminBlogEditorPage: FC = () => {
             </div>
 
             {/* ─── Unsaved Changes Dialog ──────────────────────────────────── */}
-            {blocker.state === 'blocked' && (
-                <Modal isOpen={true} onClose={() => blocker.reset && blocker.reset()} size="sm">
-                    <div className="text-center">
-                        {/* Icon */}
-                        <div className="mx-auto w-16 h-16 rounded-full flex items-center justify-center bg-red-100 text-red-600 mb-4">
-                            <AlertTriangle className="h-8 w-8" />
+
+            {
+                blocker.state === 'blocked' && (
+                    <Modal isOpen={true} onClose={() => blocker.reset && blocker.reset()} size="sm">
+                        <div className="text-center">
+                            {/* Icon */}
+                            <div className="mx-auto w-16 h-16 rounded-full flex items-center justify-center bg-red-100 text-red-600 mb-4">
+                                <AlertTriangle className="h-8 w-8" />
+                            </div>
+
+                            {/* Title */}
+                            <h3 className="text-xl font-bold text-neutral-900 mb-2">Unsaved Changes</h3>
+
+                            {/* Message */}
+                            <p className="text-neutral-500 mb-6">You have unsaved changes. What would you like to do?</p>
+
+                            {/* Actions — 3 buttons */}
+                            <div className="flex flex-col gap-2">
+                                <Button
+                                    onClick={handleSaveDraftAndLeave}
+                                    className="w-full bg-red-600 hover:bg-red-700 text-white gap-2"
+                                >
+                                    <Save size={16} />
+                                    Save Draft & Leave
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    onClick={() => blocker.proceed && blocker.proceed()}
+                                    className="w-full"
+                                >
+                                    <X size={16} />
+                                    Discard & Leave
+                                </Button>
+                                <Button
+                                    variant="ghost"
+                                    onClick={() => blocker.reset && blocker.reset()}
+                                    className="w-full text-neutral-500"
+                                >
+                                    Stay on Page
+                                </Button>
+                            </div>
                         </div>
-
-                        {/* Title */}
-                        <h3 className="text-xl font-bold text-neutral-900 mb-2">Unsaved Changes</h3>
-
-                        {/* Message */}
-                        <p className="text-neutral-500 mb-6">You have unsaved changes. What would you like to do?</p>
-
-                        {/* Actions — 3 buttons */}
-                        <div className="flex flex-col gap-2">
-                            <Button
-                                onClick={handleSaveDraftAndLeave}
-                                className="w-full bg-red-600 hover:bg-red-700 text-white gap-2"
-                            >
-                                <Save size={16} />
-                                Save Draft & Leave
-                            </Button>
-                            <Button
-                                variant="outline"
-                                onClick={() => blocker.proceed && blocker.proceed()}
-                                className="w-full"
-                            >
-                                <X size={16} />
-                                Discard & Leave
-                            </Button>
-                            <Button
-                                variant="ghost"
-                                onClick={() => blocker.reset && blocker.reset()}
-                                className="w-full text-neutral-500"
-                            >
-                                Stay on Page
-                            </Button>
-                        </div>
-                    </div>
-                </Modal>
-            )}
+                    </Modal>
+                )
+            }
             {/* ─── Image Crop Modal ──────────────────────────────────────── */}
             <ImageCropModal
                 isOpen={cropModalOpen}
@@ -845,7 +909,7 @@ export const AdminBlogEditorPage: FC = () => {
                 onCropComplete={handleCropComplete}
                 fileName={cropFileName}
             />
-        </div>
+        </div >
     );
 };
 

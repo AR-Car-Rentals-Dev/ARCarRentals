@@ -1,6 +1,6 @@
-import type { FC } from 'react';
+import { type FC, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Calendar, ArrowRight } from 'lucide-react';
 import { useBlogPosts } from '@hooks/useBlog';
 import { SEO } from '@/components/SEO';
@@ -40,6 +40,15 @@ const BlogCardSkeleton: FC = () => (
 
 export const BlogListPage: FC = () => {
     const { data: posts, isLoading, isError } = useBlogPosts();
+    const [selectedCategory, setSelectedCategory] = useState('All');
+
+    const categories = ['All', 'Travel Tips', 'Rental Guides', 'Destinations', 'News'];
+
+    const filteredPosts = posts?.filter(post => {
+        const isPublished = post.isPublished;
+        const matchesCategory = selectedCategory === 'All' || (post.categories && post.categories.includes(selectedCategory));
+        return isPublished && matchesCategory;
+    });
 
     return (
         <>
@@ -103,10 +112,11 @@ export const BlogListPage: FC = () => {
                         transition={{ duration: 0.5, delay: 0.2 }}
                         className="flex flex-wrap justify-center gap-2"
                     >
-                        {['All', 'Travel Tips', 'Rental Guides', 'Destinations', 'News'].map((tag) => (
+                        {categories.map((tag) => (
                             <button
                                 key={tag}
-                                className={`px-5 py-2 rounded-full text-xs font-bold transition-all duration-200 backdrop-blur-sm ${tag === 'All'
+                                onClick={() => setSelectedCategory(tag)}
+                                className={`px-5 py-2 rounded-full text-xs font-bold transition-all duration-200 backdrop-blur-sm ${selectedCategory === tag
                                     ? 'bg-white text-neutral-900 shadow-xl scale-105'
                                     : 'bg-white/10 text-white hover:bg-white/20 hover:scale-105 border border-white/10'
                                     }`}
@@ -134,70 +144,90 @@ export const BlogListPage: FC = () => {
                     </div>
                 )}
 
-                {posts && posts.length === 0 && (
+                {filteredPosts && filteredPosts.length === 0 && !isLoading && !isError && (
                     <div className="rounded-xl border border-gray-200 bg-gray-50 p-12 text-center">
-                        <p className="text-lg text-gray-500">No blog posts yet. Check back soon!</p>
+                        <p className="text-lg text-gray-500">No blog posts found for <span className="font-bold">"{selectedCategory}"</span>.</p>
+                        <button
+                            onClick={() => setSelectedCategory('All')}
+                            className="mt-4 text-sm font-bold text-red-600 hover:underline"
+                        >
+                            View All Posts
+                        </button>
                     </div>
                 )}
 
-                {posts && posts.length > 0 && (
-                    <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-                        {posts.map((post, idx) => (
-                            <motion.article
-                                key={idx} // Mock posts usually no _id, using idx safe for static
-                                initial={{ opacity: 0, y: 24 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ duration: 0.4, delay: idx * 0.08 }}
-                            >
-                                <Link
-                                    to={`/blogs/${post.slug.current}`}
-                                    className="group flex h-full flex-col overflow-hidden rounded-2xl bg-white shadow-md transition-shadow hover:shadow-xl"
+                {filteredPosts && filteredPosts.length > 0 && (
+                    <motion.div
+                        layout
+                        className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3"
+                    >
+                        <AnimatePresence mode='popLayout'>
+                            {filteredPosts.map((post) => (
+                                <motion.article
+                                    layout
+                                    key={post.id}
+                                    initial={{ opacity: 0, scale: 0.9 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    exit={{ opacity: 0, scale: 0.9 }}
+                                    transition={{ duration: 0.3 }}
                                 >
-                                    {/* Image */}
-                                    <div className="relative h-52 overflow-hidden bg-gray-100">
-                                        {post.mainImage ? (
-                                            <img
-                                                src={post.mainImage}
-                                                alt={post.title}
-                                                loading="lazy"
-                                                className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                                            />
-                                        ) : (
-                                            <div className="flex h-full items-center justify-center bg-gradient-to-br from-red-50 to-red-100">
-                                                <span className="text-4xl text-red-300">📝</span>
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    {/* Content */}
-                                    <div className="flex flex-1 flex-col p-6">
-                                        {/* Date & Categories */}
-                                        <div className="mb-3 flex flex-wrap items-center gap-3 text-xs text-gray-500">
-                                            <span className="flex items-center gap-1">
-                                                <Calendar size={13} />
-                                                {formatDate(post.publishedAt)}
-                                            </span>
-                                            {/* Categories removed from mock for simplicity, or add back if needed */}
+                                    <Link
+                                        to={`/blogs/${post.slug.current}`}
+                                        className="group flex h-full flex-col overflow-hidden rounded-2xl bg-white shadow-md transition-shadow hover:shadow-xl"
+                                    >
+                                        {/* Image */}
+                                        <div className="relative h-52 overflow-hidden bg-gray-100">
+                                            {post.mainImage ? (
+                                                <img
+                                                    src={post.mainImage}
+                                                    alt={post.title}
+                                                    loading="lazy"
+                                                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                                                />
+                                            ) : (
+                                                <div className="flex h-full items-center justify-center bg-gradient-to-br from-red-50 to-red-100">
+                                                    <span className="text-4xl text-red-300">📝</span>
+                                                </div>
+                                            )}
+                                            {/* Category Badge on Image */}
+                                            {post.categories && post.categories.length > 0 && (
+                                                <div className="absolute top-3 left-3">
+                                                    <span className="bg-white/90 backdrop-blur-sm px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider text-neutral-900 shadow-sm">
+                                                        {post.categories[0]}
+                                                    </span>
+                                                </div>
+                                            )}
                                         </div>
 
-                                        <h2 className="mb-2 text-lg font-bold text-gray-900 line-clamp-2 group-hover:text-red-600 transition-colors">
-                                            {post.title}
-                                        </h2>
+                                        {/* Content */}
+                                        <div className="flex flex-1 flex-col p-6">
+                                            {/* Date & Categories */}
+                                            <div className="mb-3 flex flex-wrap items-center gap-3 text-xs text-gray-500">
+                                                <span className="flex items-center gap-1">
+                                                    <Calendar size={13} />
+                                                    {formatDate(post.publishedAt)}
+                                                </span>
+                                            </div>
 
-                                        {post.excerpt && (
-                                            <p className="mb-4 flex-1 text-sm text-gray-600 line-clamp-3">
-                                                {post.excerpt}
-                                            </p>
-                                        )}
+                                            <h2 className="mb-2 text-lg font-bold text-gray-900 line-clamp-2 group-hover:text-red-600 transition-colors">
+                                                {post.title}
+                                            </h2>
 
-                                        <span className="mt-auto inline-flex items-center gap-1 text-sm font-semibold text-red-600 transition-transform group-hover:translate-x-1">
-                                            Read More <ArrowRight size={14} />
-                                        </span>
-                                    </div>
-                                </Link>
-                            </motion.article>
-                        ))}
-                    </div>
+                                            {post.excerpt && (
+                                                <p className="mb-4 flex-1 text-sm text-gray-600 line-clamp-3">
+                                                    {post.excerpt}
+                                                </p>
+                                            )}
+
+                                            <span className="mt-auto inline-flex items-center gap-1 text-sm font-semibold text-red-600 transition-transform group-hover:translate-x-1">
+                                                Read More <ArrowRight size={14} />
+                                            </span>
+                                        </div>
+                                    </Link>
+                                </motion.article>
+                            ))}
+                        </AnimatePresence>
+                    </motion.div>
                 )}
             </section>
         </>
