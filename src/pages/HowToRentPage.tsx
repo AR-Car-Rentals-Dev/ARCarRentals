@@ -326,7 +326,7 @@ export const HowToRentPage: FC = () => {
                 </span>
               </summary>
               <p className="px-6 pb-6 text-neutral-600 leading-relaxed">
-                We offer a 1-hour grace period. Beyond that, hourly charges apply. If the delay exceeds 5 hours, a full day's rental fee will be charged.
+                We offer a 1-hour grace period. Beyond that, hourly charges apply based on the vehicle category: Sedan ₱200/hr, MPV ₱250/hr, SUV ₱300/hr, Van ₱350/hr. If the delay exceeds 5 hours, a full day's rental fee will be charged.
               </p>
             </details>
           </div>

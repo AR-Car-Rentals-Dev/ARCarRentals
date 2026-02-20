@@ -8,6 +8,7 @@ export interface Car {
   category: CarCategory;
   pricePerDay: number;
   carWashFee?: number | null;
+  lateReturnFeePerHour?: number | null;
   currency: string;
   seats: number | string;
   transmission: TransmissionType;

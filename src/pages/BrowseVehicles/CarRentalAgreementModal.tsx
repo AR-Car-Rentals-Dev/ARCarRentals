@@ -8,6 +8,7 @@ interface CarRentalAgreementModalProps {
   onAgree: () => void;
   isSelfDrive: boolean;
   carWashFee?: number | null;
+  lateReturnFeePerHour?: number | null;
 }
 
 /**
@@ -20,6 +21,7 @@ export const CarRentalAgreementModal: FC<CarRentalAgreementModalProps> = ({
   onAgree,
   isSelfDrive,
   carWashFee,
+  lateReturnFeePerHour,
 }) => {
   const [isAgreed, setIsAgreed] = useState(false);
 
@@ -117,7 +119,9 @@ export const CarRentalAgreementModal: FC<CarRentalAgreementModalProps> = ({
                     <tbody className="divide-y divide-neutral-100">
                       <tr className="bg-neutral-50">
                         <td className="px-2 py-1.5 text-neutral-700">Late return</td>
-                        <td className="px-2 py-1.5 text-right font-semibold text-[#E22B2B]">₱500/hr</td>
+                        <td className="px-2 py-1.5 text-right font-semibold text-[#E22B2B]">
+                          {lateReturnFeePerHour != null ? `₱${lateReturnFeePerHour.toLocaleString()}/hr` : '₱200/hr'}
+                        </td>
                       </tr>
                       <tr>
                         <td className="px-2 py-1.5 text-neutral-700">Lost key replacement</td>

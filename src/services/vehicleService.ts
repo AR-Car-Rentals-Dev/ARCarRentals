@@ -24,6 +24,7 @@ export interface Vehicle {
   vehicle_categories?: {
     id: string;
     name: string;
+    late_return_fee_per_hour?: number | null;
   } | null;
 }
 
@@ -152,7 +153,7 @@ export const vehicleService = {
         .from('vehicles')
         .select(`
           *,
-          vehicle_categories:category_id (id, name)
+          vehicle_categories:category_id (id, name, late_return_fee_per_hour)
         `)
         .eq('status', 'available')
         .order('created_at', { ascending: false });
@@ -208,6 +209,7 @@ export const vehicleService = {
           category: validCategory as 'sedan' | 'suv' | 'mpv' | 'van',
           pricePerDay: Number(vehicle.price_per_day),
           carWashFee: vehicle.car_wash_fee || null,
+          lateReturnFeePerHour: vehicle.vehicle_categories?.late_return_fee_per_hour ?? null,
           currency: 'PHP',
           seats: vehicle.seats || '5',
           transmission: (vehicle.transmission?.toLowerCase() || 'automatic') as 'automatic' | 'manual',

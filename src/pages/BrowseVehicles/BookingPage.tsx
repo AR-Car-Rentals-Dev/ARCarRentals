@@ -942,6 +942,7 @@ export const BookingPage: FC = () => {
         onAgree={handleAgreementAccepted}
         isSelfDrive={driveOption === 'self-drive'}
         carWashFee={vehicle.carWashFee}
+        lateReturnFeePerHour={vehicle.lateReturnFeePerHour}
       />
     </div>
   );

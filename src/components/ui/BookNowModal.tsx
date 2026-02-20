@@ -1160,7 +1160,7 @@ export const BookNowModal: FC<BookNowModalProps> = ({
               <h4 className="font-bold text-neutral-900 mb-3">ADDITIONAL REMINDERS</h4>
               <ul className="list-disc pl-5 space-y-2 mb-4">
                 <li><strong>Fuel:</strong> Return vehicle with same fuel level (₱300/bar if not)</li>
-                <li><strong>Excess hours:</strong> Sedan: ₱250/hr; SUV: ₱350/hr; Van: ₱450/hr</li>
+                <li><strong>Excess hours (late return):</strong> Sedan: ₱200/hr; MPV: ₱250/hr; SUV: ₱300/hr; Van: ₱350/hr</li>
               </ul>
 
               {formData.drive_option === 'self-drive' && (
